@@ -1,14 +1,7 @@
 import { SPRITE_KEYS } from '../constants.js';
 import { SpriteManager } from '../SpriteManager.js';
 import { makeButton } from '../Button.js';
-
-const SLOT_DEFS = [
-  { key: SPRITE_KEYS.CHAR_TOP,  label: 'Character\nTop View',    hint: '48×48 px' },
-  { key: SPRITE_KEYS.CHAR_SIDE, label: 'Character\nSide View',   hint: '48×48 px' },
-  { key: SPRITE_KEYS.BG_TOP,    label: 'Background\nTop View',   hint: '256×256 px' },
-  { key: SPRITE_KEYS.BG_SIDE,   label: 'Background\nSide View',  hint: '256×256 px' },
-  { key: SPRITE_KEYS.OBSTACLE,  label: 'Obstacle\nTexture',      hint: '256×256 px' },
-];
+import { GT } from '../data/GameText.js';
 
 export class SettingsScene extends Phaser.Scene {
   constructor() { super('SettingsScene'); }
@@ -17,12 +10,20 @@ export class SettingsScene extends Phaser.Scene {
     const { width: W, height: H } = this.scale;
     const cx = W / 2, cy = H / 2;
 
+    const SLOT_DEFS = [
+      { key: SPRITE_KEYS.CHAR_TOP,  label: GT.slotCharTop,  hint: '48×48 px' },
+      { key: SPRITE_KEYS.CHAR_SIDE, label: GT.slotCharSide, hint: '48×48 px' },
+      { key: SPRITE_KEYS.BG_TOP,    label: GT.slotBgTop,    hint: '256×256 px' },
+      { key: SPRITE_KEYS.BG_SIDE,   label: GT.slotBgSide,   hint: '256×256 px' },
+      { key: SPRITE_KEYS.OBSTACLE,  label: GT.slotObstacle, hint: '256×256 px' },
+    ];
+
     // Background
     this.add.rectangle(cx, cy, W, H, 0x0d0d1a);
-    this.add.text(cx, 22, 'CUSTOMIZE SPRITES', {
+    this.add.text(cx, 22, GT.settingsTitle, {
       fontSize: '28px', fontFamily: '"Arial Black", Arial', color: '#ffffff',
     }).setOrigin(0.5);
-    this.add.text(cx, 54, 'Tap a slot to upload a custom image — tap [reset] to restore default', {
+    this.add.text(cx, 54, GT.settingsSubtitle, {
       fontSize: '12px', fontFamily: 'Arial', color: '#78909c',
     }).setOrigin(0.5);
 
@@ -41,7 +42,7 @@ export class SettingsScene extends Phaser.Scene {
     });
 
     // Back button
-    makeButton(this, cx, H - 36, 200, 44, 'BACK', 0x37474f, 0x263238, () => {
+    makeButton(this, cx, H - 36, 200, 44, GT.btnBack, 0x37474f, 0x263238, () => {
       this.scene.start('MenuScene');
     }, '18px');
 
@@ -141,7 +142,7 @@ export class SettingsScene extends Phaser.Scene {
       this.textures.once('addtexture-' + customKey, () => {
         const preview = this._previews[key];
         if (preview) preview.setTexture(customKey);
-        this._showToast(`Sprite saved! It will apply next game.`);
+        this._showToast(GT.toastSpriteSaved);
       });
       this.textures.addBase64(customKey, dataURL);
     };

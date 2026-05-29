@@ -1,5 +1,6 @@
 import { SPRITE_KEYS } from '../constants.js';
 import { SpriteManager } from '../SpriteManager.js';
+import { applyText } from '../data/GameText.js';
 
 // Maps each sprite key to its file in public/sprites/.
 // Drop matching PNGs into that folder to replace the procedural defaults.
@@ -18,6 +19,9 @@ export class BootScene extends Phaser.Scene {
     // Load user-uploaded sprites (highest priority — stored in localStorage)
     SpriteManager.preloadCustom(this);
 
+    // Load gametext.txt for variant customisation
+    this.load.text('gametext', 'gametext.txt');
+
     // Track which packaged sprites fail so we can fall back to procedural generation
     this._missingSprites = new Set();
     this.load.on('loaderror', (file) => {
@@ -31,6 +35,9 @@ export class BootScene extends Phaser.Scene {
   }
 
   create() {
+    // Apply gametext.txt overrides before any scene reads GT values
+    applyText(this.cache.text.get('gametext'));
+
     // Generate procedural textures only for sprites not found in the folder
     this._generateDefaultTextures(this._missingSprites);
     this.scene.start('MenuScene');

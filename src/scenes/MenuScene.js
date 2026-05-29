@@ -1,6 +1,7 @@
 import { makeButton } from '../Button.js';
 import { SPRITE_KEYS } from '../constants.js';
 import { SpriteManager } from '../SpriteManager.js';
+import { GT } from '../data/GameText.js';
 
 export class MenuScene extends Phaser.Scene {
   constructor() { super('MenuScene'); }
@@ -27,7 +28,7 @@ export class MenuScene extends Phaser.Scene {
     this.add.image(W * 0.80, cy, sideKey).setDisplaySize(96, 96);
 
     // Title
-    this.add.text(cx, cy - 130, 'SPLIT TRIP', {
+    this.add.text(cx, cy - 130, GT.gameTitle, {
       fontSize: '46px',
       fontFamily: '"Arial Black", Arial, sans-serif',
       color: '#ffffff',
@@ -35,7 +36,7 @@ export class MenuScene extends Phaser.Scene {
       strokeThickness: 6,
     }).setOrigin(0.5);
 
-    this.add.text(cx, cy - 82, 'Control two dimensions — survive both views', {
+    this.add.text(cx, cy - 82, GT.gameSubtitle, {
       fontSize: '15px',
       fontFamily: 'Arial, sans-serif',
       color: '#90caf9',
@@ -45,15 +46,15 @@ export class MenuScene extends Phaser.Scene {
     makeButton(this, cx, cy - 18, 220, 50, 'PLAY', 0x29b6f6, 0x0288d1, () => {
       this.scene.start('GameScene');
     }, '18px');
-    makeButton(this, cx, cy + 50, 220, 44, 'CUSTOMIZE SPRITES', 0x37474f, 0x263238, () => {
+    makeButton(this, cx, cy + 50, 220, 44, GT.settingsTitle, 0x37474f, 0x263238, () => {
       this.scene.start('SettingsScene');
     }, '18px');
 
     // How to play
     const tips = [
-      ['LEFT PANEL', '← Drag finger left/right to steer (top-down view)'],
-      ['RIGHT PANEL', '↑ Tap to fly up — release and you fall (side view)'],
-      ['SURVIVE', 'Align both axes to pass through each gap!'],
+      [GT.tipLeftLabel,    GT.tipLeftDesc],
+      [GT.tipRightLabel,   GT.tipRightDesc],
+      [GT.tipSurviveLabel, GT.tipSurviveDesc],
     ];
     tips.forEach(([label, desc], i) => {
       const y = cy + 115 + i * 34;
@@ -68,7 +69,7 @@ export class MenuScene extends Phaser.Scene {
     });
 
     // Version
-    this.add.text(W - 8, H - 6, 'v1.0', {
+    this.add.text(W - 8, H - 6, GT.gameVersion, {
       fontSize: '10px', fontFamily: 'Arial', color: '#546e7a',
     }).setOrigin(1, 1);
   }

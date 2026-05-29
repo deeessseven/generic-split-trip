@@ -8,6 +8,7 @@ import {
   SPRITE_KEYS, GROUND_MARGIN,
 } from '../constants.js';
 import { SpriteManager } from '../SpriteManager.js';
+import { GT } from '../data/GameText.js';
 
 export class GameScene extends Phaser.Scene {
   constructor() { super('GameScene'); }
@@ -106,7 +107,7 @@ export class GameScene extends Phaser.Scene {
     this.add.rectangle(W / 2, H / 2, 3, H, 0x546e7a, 0.9).setDepth(5);
 
     // Score text
-    this.scoreTxt = this.add.text(W / 2, 6, '0s  |  0 walls', {
+    this.scoreTxt = this.add.text(W / 2, 6, `0s  |  0 ${GT.scoreUnit}`, {
       fontSize: '18px',
       fontFamily: '"Arial Black", Arial',
       color: '#ffffff',
@@ -115,11 +116,11 @@ export class GameScene extends Phaser.Scene {
     }).setOrigin(0.5, 0).setDepth(6);
 
     // Panel labels
-    this.add.text(6, 6, 'TOP VIEW\n← drag →', {
+    this.add.text(6, 6, `${GT.labelTopView}\n${GT.labelTopHint}`, {
       fontSize: '11px', fontFamily: 'Arial', color: '#eceff1',
       alpha: 0.7,
     }).setDepth(6);
-    this.add.text(W - 6, 6, 'SIDE VIEW\ntap to rise', {
+    this.add.text(W - 6, 6, `${GT.labelSideView}\n${GT.labelSideHint}`, {
       fontSize: '11px', fontFamily: 'Arial', color: '#eceff1', align: 'right',
       alpha: 0.7,
     }).setOrigin(1, 0).setDepth(6);
@@ -322,11 +323,11 @@ export class GameScene extends Phaser.Scene {
   // ── Touch hint overlay ─────────────────────────────────────────────────────
 
   _showTouchHints() {
-    this.leftHint = this.add.text(this.lW / 2, this.pH * 0.88, '↔ Drag to steer', {
+    this.leftHint = this.add.text(this.lW / 2, this.pH * 0.88, GT.hintSteer, {
       fontSize: '13px', fontFamily: 'Arial', color: '#b2dfdb',
     }).setOrigin(0.5).setDepth(7).setAlpha(0.75);
 
-    this.rightHint = this.add.text(this.rX + this.rW / 2, this.pH * 0.88, 'Tap to rise ↑', {
+    this.rightHint = this.add.text(this.rX + this.rW / 2, this.pH * 0.88, GT.hintRise, {
       fontSize: '13px', fontFamily: 'Arial', color: '#b2dfdb',
     }).setOrigin(0.5).setDepth(7).setAlpha(0.75);
 
@@ -545,7 +546,7 @@ export class GameScene extends Phaser.Scene {
     this.topAngle = Phaser.Math.Linear(this.topAngle, topTarget, 0.30);
     this.charTopSprite.setPosition(this.charXPx, this.charTopY).setAngle(this.topAngle);
     this.charSideSprite.setPosition(this.charSideX, this.charYPx).setAngle(this.sideAngle);
-    this.scoreTxt.setText(`${Math.floor(this.elapsedTime)}s  |  ${this.wallsPassed} walls`);
+    this.scoreTxt.setText(`${Math.floor(this.elapsedTime)}s  |  ${this.wallsPassed} ${GT.scoreUnit}`);
 
     // ── Debug collision outlines ─────────────────────────────────────────────
     this.debugGfx.clear();

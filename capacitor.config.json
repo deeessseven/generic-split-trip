@@ -1,0 +1,20 @@
+{
+  "appId": "com.splitrunner.game",
+  "appName": "Split Runner",
+  "webDir": "dist",
+  "plugins": {
+    "SplashScreen": {
+      "launchAutoHide": true,
+      "backgroundColor": "#1a1a2e",
+      "showSpinner": false
+    },
+    "StatusBar": {
+      "style": "Dark",
+      "backgroundColor": "#1a1a2e",
+      "overlaysWebView": true
+    },
+    "ScreenOrientation": {
+      "orientation": "landscape"
+    }
+  }
+}

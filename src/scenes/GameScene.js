@@ -132,28 +132,30 @@ export class GameScene extends Phaser.Scene {
     this.charTopSprite  = this.add.image(this.charXPx, this.charTopY,  ctKey).setDepth(3);
     this.charSideSprite = this.add.image(this.charSideX, this.charYPx, csKey).setDepth(3);
 
-    // Flap puff emitters (emit on demand from _onDown). Depth just above the sprites.
-    // angle is the emission direction in degrees: 0=right, 90=down, 180=left, 270=up.
-    // Side: 4 puffs from directly under the hero, blasting left/back (≈180°).
+    // Flap puff emitters (emit on demand from _onDown). angle is the emission direction
+    // in degrees: 0=right, 90=down, 180=left, 270=up.
+    // Side: ONE larger soft cloud from the hero's bottom-left opaque corner, shooting
+    // down-left (≈135°). Depth 3.5 (above the hero) so it's clearly visible.
     this.flapFX = this.add.particles(0, 0, 'st_particle', {
-      lifespan: 350,
-      speed: { min: 40, max: 110 },
-      angle: { min: 160, max: 200 },
-      scale: { start: 0.6, end: 0 },
-      alpha: { start: 0.6, end: 0 },
+      lifespan: 450,
+      speed: { min: 25, max: 70 },
+      angle: { min: 115, max: 160 },
+      scale: { start: 1.4, end: 0 },
+      alpha: { start: 0.65, end: 0 },
       emitting: false,
     }).setDepth(3.5);
 
-    // Top: two emitters so left-side origins blast down-left and right-side origins blast
-    // down-right (symmetric "shoot out"). 135° = down-left, 45° = down-right.
-    this.topFlapFXL = this.add.particles(0, 0, 'st_particle', {
-      lifespan: 350, speed: { min: 40, max: 110 }, angle: { min: 110, max: 160 },
-      scale: { start: 0.6, end: 0 }, alpha: { start: 0.6, end: 0 }, emitting: false,
-    }).setDepth(3.5);
-    this.topFlapFXR = this.add.particles(0, 0, 'st_particle', {
-      lifespan: 350, speed: { min: 40, max: 110 }, angle: { min: 20, max: 70 },
-      scale: { start: 0.6, end: 0 }, alpha: { start: 0.6, end: 0 }, emitting: false,
-    }).setDepth(3.5);
+    // Top: ONE extra-large soft poof from the bottom 1/3 of the opaque pixels, drifting
+    // gently downward. Depth 2.6 (BELOW the hero's depth 3) so the bird sits on top of it
+    // and it reads as coming out from underneath.
+    this.topFlapFX = this.add.particles(0, 0, 'st_particle', {
+      lifespan: 500,
+      speed: { min: 10, max: 55 },
+      angle: { min: 60, max: 120 },
+      scale: { start: 2.0, end: 0 },
+      alpha: { start: 0.6, end: 0 },
+      emitting: false,
+    }).setDepth(2.6);
 
     // Scan sprite pixels to build per-row/per-col silhouette profiles for shaped collision
     this.hitboxScale    = 0.85;
@@ -226,39 +228,33 @@ export class GameScene extends Phaser.Scene {
     if (ptr.id === this.leftPointerId) this.leftPointerId = -1;
   }
 
-  // Flap thrust: 4 puffs per view, fired together.
+  // Flap thrust: one puff per view, fired together.
   _emitFlapPuffs() {
-    // Side: 4 puffs from directly under the hero (bottom-center, rotated by the flap tilt
-    // and tracking the ±5% visual scale via displayHeight), shooting left/back.
+    // Side: one larger soft cloud from the bottom-left corner of the opaque silhouette,
+    // shooting down-left. Tracks the flap tilt and the ±5% visual scale (sprite scaleX).
     if (this.flapFX) {
-      const hh = this.charSideSprite.displayHeight / 2;
+      const sb = this.charSideBounds;
+      const sc = this.charSideSprite.scaleX;
+      const cx = sb.w / 2, cy = sb.h / 2;
       const th = this.sideAngle * Math.PI / 180;
-      const ex = this.charSideX - hh * Math.sin(th);
-      const ey = this.charYPx   + hh * Math.cos(th);
-      this.flapFX.emitParticleAt(ex, ey, 4);
+      const cos = Math.cos(th), sin = Math.sin(th);
+      const ex = this.charSideX + ((sb.leftEdge - cx) * cos - (sb.botEdge - cy) * sin) * sc;
+      const ey = this.charYPx   + ((sb.leftEdge - cx) * sin + (sb.botEdge - cy) * cos) * sc;
+      this.flapFX.emitParticleAt(ex, ey, 6);
     }
-    // Top: 4 puffs shooting out from the opaque silhouette — 1/3-from-bottom left & right
-    // edges + the two bottom corners. Left pair → down-left emitter, right pair → down-right.
-    if (this.topFlapFXL && this.topFlapFXR) {
+    // Top: one extra-large soft poof from the middle of the bottom 1/3 of the opaque pixels.
+    if (this.topFlapFX) {
       const tb = this.charTopBounds;
       const tcx = tb.w / 2, tcy = tb.h / 2;
       const th = this.topAngle * Math.PI / 180;
       const cos = Math.cos(th), sin = Math.sin(th);
-      const toWorld = (px, py) => [
-        this.charXPx  + (px - tcx) * cos - (py - tcy) * sin,
-        this.charTopY + (px - tcx) * sin + (py - tcy) * cos,
-      ];
-      const rowThird = Math.round(tb.botEdge - (tb.botEdge - tb.topEdge) / 3);
-      const lThirdX = isFinite(tb.rowMinX[rowThird]) ? tb.rowMinX[rowThird] : tb.leftEdge;
-      const rThirdX = isFinite(tb.rowMaxX[rowThird]) ? tb.rowMaxX[rowThird] : tb.rightEdge;
-      const [lx1, ly1] = toWorld(lThirdX, rowThird);
-      const [lx2, ly2] = toWorld(tb.leftEdge, tb.botEdge);
-      const [rx1, ry1] = toWorld(rThirdX, rowThird);
-      const [rx2, ry2] = toWorld(tb.rightEdge, tb.botEdge);
-      this.topFlapFXL.emitParticleAt(lx1, ly1, 1);
-      this.topFlapFXL.emitParticleAt(lx2, ly2, 1);
-      this.topFlapFXR.emitParticleAt(rx1, ry1, 1);
-      this.topFlapFXR.emitParticleAt(rx2, ry2, 1);
+      const row = Math.round(tb.botEdge - (tb.botEdge - tb.topEdge) / 6); // middle of bottom 1/3
+      const lx = isFinite(tb.rowMinX[row]) ? tb.rowMinX[row] : tb.leftEdge;
+      const rx = isFinite(tb.rowMaxX[row]) ? tb.rowMaxX[row] : tb.rightEdge;
+      const px = (lx + rx) / 2;
+      const ex = this.charXPx  + (px - tcx) * cos - (row - tcy) * sin;
+      const ey = this.charTopY + (px - tcx) * sin + (row - tcy) * cos;
+      this.topFlapFX.emitParticleAt(ex, ey, 7);
     }
   }
 

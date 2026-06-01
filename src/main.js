@@ -7,17 +7,22 @@ import { GameOverScene } from './scenes/GameOverScene.js';
 import { SettingsScene } from './scenes/SettingsScene.js';
 import { GAME_W, GAME_H } from './constants.js';
 
-// On the first tap anywhere, enter fullscreen (hides address bar) and lock to
-// landscape-primary so device rotation has no effect. capture:true fires before
-// Phaser handles the same event. { once:true } so it only runs once.
+// On tap, enter fullscreen (hides address bar) and lock to landscape-primary so device
+// rotation has no effect. capture:true fires before Phaser handles the same event.
+// We retry on each tap until fullscreen first SUCCEEDS, then stop — so a deliberate
+// exit (Esc on desktop, swipe) stays exited instead of snapping back on the next tap.
+let fullscreenAchieved = false;
+document.addEventListener('fullscreenchange', () => {
+  if (document.fullscreenElement) fullscreenAchieved = true;
+});
 document.addEventListener('pointerdown', function () {
-  if (document.fullscreenElement) return; // already fullscreen, nothing to do
+  if (fullscreenAchieved || document.fullscreenElement) return;
   const el = document.documentElement;
   const req = el.requestFullscreen?.bind(el) || el.webkitRequestFullscreen?.bind(el);
   const lockOrientation = () => screen.orientation?.lock('landscape-primary').catch(() => {});
   if (req) req().then(lockOrientation).catch(lockOrientation);
   else lockOrientation();
-}, { capture: true }); // no once:true — retry on every tap until fullscreen actually succeeds
+}, { capture: true });
 
 const config = {
   type: Phaser.AUTO,

@@ -58,6 +58,7 @@ export function applyText(raw) {
     if (eq < 0) continue;
     const key = trimmed.slice(0, eq).trim();
     const val = trimmed.slice(eq + 1).trim();
-    if (key in GT) GT[key] = val.replace(/\\n/g, '\n');
+    // Own-property check only, so inherited names (toString, constructor, ...) can't be clobbered.
+    if (Object.prototype.hasOwnProperty.call(GT, key)) GT[key] = val.replace(/\\n/g, '\n');
   }
 }

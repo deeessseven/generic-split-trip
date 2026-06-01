@@ -16,6 +16,14 @@ import { GT } from '../data/GameText.js';
 const DEBUG_OUTLINE = false;
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Frame-rate-independent lerp. A raw Phaser.Math.Linear(a, b, rate) converges at a
+// fixed amount PER FRAME, so it feels faster at 120fps and slower at 30fps. This
+// rescales `rate` (tuned for 60fps) by the real frame time so smoothing converges at
+// the same wall-clock speed on any refresh rate.
+function smooth(current, target, rate, dt) {
+  return Phaser.Math.Linear(current, target, 1 - Math.pow(1 - rate, dt * 60));
+}
+
 export class GameScene extends Phaser.Scene {
   constructor() { super('GameScene'); }
 
@@ -56,7 +64,10 @@ export class GameScene extends Phaser.Scene {
     this.obstacles     = [];
     this.wallsPassed   = 0;
 
-    // ── Seeded RNG — fixed seed produces identical wall layout every run ──────
+    // ── Seeded RNG ────────────────────────────────────────────────────────────
+    // INTENTIONAL: the fixed seed makes every run use the identical wall layout, so
+    // all players face the same course (fair for score comparison / practice). To get
+    // randomized layouts instead, seed with something variable (e.g. Date.now()).
     this.rng = new Phaser.Math.RandomDataGenerator(['splittrip-v1']);
 
     // ── Top-view sprite rotation ──────────────────────────────────────────────
@@ -81,13 +92,19 @@ export class GameScene extends Phaser.Scene {
     this.bgLeft  = this.add.tileSprite(this.lW / 2, H / 2, this.lW, H, bgTopKey);
     this.bgRight = this.add.tileSprite(this.rX + this.rW / 2, H / 2, this.rW, H, bgSideKey);
 
-    // Ground strip at bottom of side view — 40px tall so custom texture is recognisable
+    // Ground strip at bottom of side view. INTENTIONAL: it reuses the top-view background
+    // texture (bgTopKey) so the floor reads as "ground" (same material as the top-down
+    // terrain) rather than the side-view sky texture.
     this.groundStrip = this.add.tileSprite(this.rX + this.rW / 2, H - 10, this.rW, 20, bgTopKey).setDepth(2.5);
 
-    // Obstacle TileSprite pool — 16 tiles handles up to 4 simultaneous obstacles × 4 tiles each
-    // (at high difficulty the spawn interval shrinks enough that 4 obstacles can be active at once)
+    // Obstacle TileSprite pool. Each visible obstacle uses up to 4 tiles (2 walls in the
+    // top view + 2 in the side view). At max difficulty several obstacles are on-screen in
+    // both views at once, so the worst case approaches ~16-18 tiles. 32 leaves comfortable
+    // headroom — if the pool ran dry, _placeTile would silently skip a wall segment while
+    // collision still triggered, producing an invisible-but-lethal wall. Invisible tiles
+    // are nearly free, so over-allocating is safe.
     const obsKey = SpriteManager.resolveKey(this, SPRITE_KEYS.OBSTACLE);
-    this._obstacleTiles = Array.from({ length: 16 }, () =>
+    this._obstacleTiles = Array.from({ length: 32 }, () =>
       this.add.tileSprite(0, 0, 1, 1, obsKey).setDepth(2).setVisible(false)
     );
     this._obstacleTileIdx = 0;
@@ -190,27 +207,22 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  // Returns per-row X extents and per-col Y extents of non-transparent pixels.
+  // Returns per-row X extents of non-transparent pixels (the only profile collision uses).
   // rowMinX[y] / rowMaxX[y] = leftmost/rightmost opaque pixel in sprite row y (Infinity if empty).
-  // colMinY[x] / colMaxY[x] = topmost/bottommost opaque pixel in sprite col x (Infinity if empty).
   // maxHalfW / maxHalfH = farthest opaque pixel from sprite center, for broad-phase overlap check.
   _spriteBounds(key) {
     const frame = this.textures.getFrame(key);
     const fallback = (w, h) => {
       const rowMinX = new Float32Array(h).fill(0);
       const rowMaxX = new Float32Array(h).fill(w - 1);
-      const colMinY = new Float32Array(w).fill(0);
-      const colMaxY = new Float32Array(w).fill(h - 1);
       return { w, h, topEdge: 0, botEdge: h - 1, maxHalfW: w / 2, maxHalfH: h / 2,
-               rowMinX, rowMaxX, colMinY, colMaxY };
+               rowMinX, rowMaxX };
     };
     if (!frame) return fallback(48, 48);
 
     const w = frame.realWidth, h = frame.realHeight;
     const rowMinX = new Float32Array(h).fill(Infinity);
     const rowMaxX = new Float32Array(h).fill(-Infinity);
-    const colMinY = new Float32Array(w).fill(Infinity);
-    const colMaxY = new Float32Array(w).fill(-Infinity);
 
     // Read every pixel's alpha in ONE getImageData call (a single GPU→CPU readback)
     // instead of per-pixel textures.getPixelAlpha(), which stalls the GPU once per
@@ -235,8 +247,6 @@ export class GameScene extends Phaser.Scene {
         if (alpha > 10) {
           if (x < rowMinX[y]) rowMinX[y] = x;
           if (x > rowMaxX[y]) rowMaxX[y] = x;
-          if (y < colMinY[x]) colMinY[x] = y;
-          if (y > colMaxY[x]) colMaxY[x] = y;
         }
       }
     }
@@ -256,7 +266,7 @@ export class GameScene extends Phaser.Scene {
     // Maximum distance from sprite center to any opaque pixel edge, per axis
     const maxHalfW = Math.max(Math.abs(w / 2 - leftEdge), Math.abs(w / 2 - rightEdge));
     const maxHalfH = Math.max(Math.abs(h / 2 - topEdge),  Math.abs(h / 2 - botEdge));
-    return { w, h, topEdge, botEdge, maxHalfW, maxHalfH, rowMinX, rowMaxX, colMinY, colMaxY };
+    return { w, h, topEdge, botEdge, maxHalfW, maxHalfH, rowMinX, rowMaxX };
   }
 
   // ── Game over ──────────────────────────────────────────────────────────────
@@ -370,7 +380,11 @@ export class GameScene extends Phaser.Scene {
 
   update(_, delta) {
     if (!this.isAlive) return;
-    const dt = delta / 1000;
+    // Clamp dt so a long frame (tab/app backgrounded, GC pause, slow device) can't
+    // integrate a giant physics step that teleports the bird through a wall or skips
+    // an obstacle's collision band entirely (tunneling). Worst case the game briefly
+    // runs in slow-motion instead of breaking.
+    const dt = Math.min(delta / 1000, 1 / 30);
 
     this.elapsedTime += dt;
     this.speed = BASE_SPEED + this.elapsedTime * SPEED_RAMP;
@@ -418,7 +432,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     // ── Horizontal position (top-down, smooth follow finger) ────────────────
-    this.charXPx = Phaser.Math.Linear(this.charXPx, this.targetCharXPx, 0.22);
+    this.charXPx = smooth(this.charXPx, this.targetCharXPx, 0.22, dt);
 
     // ── Spawn obstacles ──────────────────────────────────────────────────────
     while (this.distTraveled >= this.nextSpawnDist) {
@@ -534,7 +548,7 @@ export class GameScene extends Phaser.Scene {
     // ── Update visuals ───────────────────────────────────────────────────────
 
     // Side-view: smooth velY then detect apex crossing with hysteresis band (±15 px/s)
-    this.smoothVelY = Phaser.Math.Linear(this.smoothVelY, this.velY, 0.25);
+    this.smoothVelY = smooth(this.smoothVelY, this.velY, 0.25, dt);
     if (this.wasRising && this.smoothVelY > 15) {
       this.apexTime  = this.time.now;
       this.wasRising = false;
@@ -551,12 +565,12 @@ export class GameScene extends Phaser.Scene {
         targetAngle = 20;
       }
     }
-    this.sideAngle = Phaser.Math.Linear(this.sideAngle, targetAngle, 0.30);
+    this.sideAngle = smooth(this.sideAngle, targetAngle, 0.30, dt);
 
     // Top-view: smooth velX then apply hysteresis (enter ±20 px/s, exit ±5 px/s)
     const rawVelX = (this.charXPx - this.prevCharXPx) / dt;
     this.prevCharXPx = this.charXPx;
-    this.smoothVelX  = Phaser.Math.Linear(this.smoothVelX, rawVelX, 0.2);
+    this.smoothVelX  = smooth(this.smoothVelX, rawVelX, 0.2, dt);
     if (this.topTiltState === 'none') {
       if (this.smoothVelX < -20)      this.topTiltState = 'left';
       else if (this.smoothVelX > 20)  this.topTiltState = 'right';
@@ -566,7 +580,7 @@ export class GameScene extends Phaser.Scene {
       if (this.smoothVelX < 5)        this.topTiltState = 'none';
     }
     const topTarget = this.topTiltState === 'left' ? -20 : this.topTiltState === 'right' ? 20 : 0;
-    this.topAngle = Phaser.Math.Linear(this.topAngle, topTarget, 0.30);
+    this.topAngle = smooth(this.topAngle, topTarget, 0.30, dt);
     this.charTopSprite.setPosition(this.charXPx, this.charTopY).setAngle(this.topAngle);
     this.charSideSprite.setPosition(this.charSideX, this.charYPx).setAngle(this.sideAngle);
     this.scoreTxt.setText(`${Math.floor(this.elapsedTime)}s  |  ${this.wallsPassed} ${GT.scoreUnit}`);

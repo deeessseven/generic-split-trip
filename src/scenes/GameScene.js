@@ -137,10 +137,10 @@ export class GameScene extends Phaser.Scene {
     // Side: ONE larger soft cloud from the hero's bottom-left opaque corner, shooting
     // down-left (≈135°). Depth 3.5 (above the hero) so it's clearly visible.
     this.flapFX = this.add.particles(0, 0, 'st_particle', {
-      lifespan: 450,
-      speed: { min: 25, max: 70 },
-      angle: { min: 115, max: 160 },
-      scale: { start: 1.4, end: 0 },
+      lifespan: 400,
+      speed: { min: 10, max: 40 }, // low: the big puff blooms near the bottom, doesn't fly off
+      angle: { min: 120, max: 150 },
+      scale: { start: 4.2, end: 0 }, // 3x larger
       alpha: { start: 0.65, end: 0 },
       emitting: false,
     }).setDepth(3.5);
@@ -152,7 +152,7 @@ export class GameScene extends Phaser.Scene {
       lifespan: 500,
       speed: { min: 10, max: 55 },
       angle: { min: 60, max: 120 },
-      scale: { start: 2.0, end: 0 },
+      scale: { start: 10.0, end: 0 }, // 5x larger
       alpha: { start: 0.6, end: 0 },
       emitting: false,
     }).setDepth(2.6);
@@ -240,7 +240,7 @@ export class GameScene extends Phaser.Scene {
       const cos = Math.cos(th), sin = Math.sin(th);
       const ex = this.charSideX + ((sb.leftEdge - cx) * cos - (sb.botEdge - cy) * sin) * sc;
       const ey = this.charYPx   + ((sb.leftEdge - cx) * sin + (sb.botEdge - cy) * cos) * sc;
-      this.flapFX.emitParticleAt(ex, ey, 6);
+      this.flapFX.emitParticleAt(ex, ey, 1);
     }
     // Top: one extra-large soft poof from the middle of the bottom 1/3 of the opaque pixels.
     if (this.topFlapFX) {
@@ -254,7 +254,7 @@ export class GameScene extends Phaser.Scene {
       const px = (lx + rx) / 2;
       const ex = this.charXPx  + (px - tcx) * cos - (row - tcy) * sin;
       const ey = this.charTopY + (px - tcx) * sin + (row - tcy) * cos;
-      this.topFlapFX.emitParticleAt(ex, ey, 7);
+      this.topFlapFX.emitParticleAt(ex, ey, 1);
     }
   }
 

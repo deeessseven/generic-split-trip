@@ -132,27 +132,27 @@ export class GameScene extends Phaser.Scene {
     this.charTopSprite  = this.add.image(this.charXPx, this.charTopY,  ctKey).setDepth(3);
     this.charSideSprite = this.add.image(this.charSideX, this.charYPx, csKey).setDepth(3);
 
-    // Flap puff emitter (emits on demand from _onDown). Depth just above the sprites.
-    // angle is the emission direction in degrees (0=right, 90=down, 180=left); 115–155
-    // is a cone centered on 135° = diagonally down-and-left.
+    // Flap puff emitters (emit on demand from _onDown). Depth just above the sprites.
+    // angle is the emission direction in degrees: 0=right, 90=down, 180=left, 270=up.
+    // Side: 4 puffs from directly under the hero, blasting left/back (≈180°).
     this.flapFX = this.add.particles(0, 0, 'st_particle', {
       lifespan: 350,
       speed: { min: 40, max: 110 },
-      angle: { min: 115, max: 155 },
+      angle: { min: 160, max: 200 },
       scale: { start: 0.6, end: 0 },
       alpha: { start: 0.6, end: 0 },
       emitting: false,
     }).setDepth(3.5);
 
-    // Top-view puff — fires straight down (90°) from the bottom of the top hero, in sync
-    // with the side-view flap puff.
-    this.topFlapFX = this.add.particles(0, 0, 'st_particle', {
-      lifespan: 350,
-      speed: { min: 40, max: 110 },
-      angle: { min: 70, max: 110 },
-      scale: { start: 0.6, end: 0 },
-      alpha: { start: 0.6, end: 0 },
-      emitting: false,
+    // Top: two emitters so left-side origins blast down-left and right-side origins blast
+    // down-right (symmetric "shoot out"). 135° = down-left, 45° = down-right.
+    this.topFlapFXL = this.add.particles(0, 0, 'st_particle', {
+      lifespan: 350, speed: { min: 40, max: 110 }, angle: { min: 110, max: 160 },
+      scale: { start: 0.6, end: 0 }, alpha: { start: 0.6, end: 0 }, emitting: false,
+    }).setDepth(3.5);
+    this.topFlapFXR = this.add.particles(0, 0, 'st_particle', {
+      lifespan: 350, speed: { min: 40, max: 110 }, angle: { min: 20, max: 70 },
+      scale: { start: 0.6, end: 0 }, alpha: { start: 0.6, end: 0 }, emitting: false,
     }).setDepth(3.5);
 
     // Scan sprite pixels to build per-row/per-col silhouette profiles for shaped collision
@@ -210,27 +210,7 @@ export class GameScene extends Phaser.Scene {
       this.sideAngle = -20; // snap CCW immediately on tap
       this.hasTapped = true;
       this.wasRising = true;
-      // Thrust puff from the hero's lower-left corner, blasting diagonally down-left.
-      // Rotate the local corner offset (-halfW, +halfH) by the sprite's flap tilt.
-      if (this.flapFX) {
-        const s = this.charSideSprite;
-        const hw = s.displayWidth / 2, hh = s.displayHeight / 2;
-        const th = this.sideAngle * Math.PI / 180;
-        const cos = Math.cos(th), sin = Math.sin(th);
-        const ex = this.charSideX + (-hw) * cos - (hh) * sin;
-        const ey = this.charYPx   + (-hw) * sin + (hh) * cos;
-        this.flapFX.emitParticleAt(ex, ey, 6);
-      }
-      // Synchronous puff from the bottom of the top-view hero (local offset (0, +halfH)
-      // rotated by its left/right tilt), firing downward.
-      if (this.topFlapFX) {
-        const ts = this.charTopSprite;
-        const thh = ts.displayHeight / 2;
-        const tth = this.topAngle * Math.PI / 180;
-        const tx = this.charXPx  - thh * Math.sin(tth);
-        const ty = this.charTopY + thh * Math.cos(tth);
-        this.topFlapFX.emitParticleAt(tx, ty, 6);
-      }
+      this._emitFlapPuffs();
       AudioSystem.playJump();
     }
   }
@@ -244,6 +224,42 @@ export class GameScene extends Phaser.Scene {
 
   _onUp(ptr) {
     if (ptr.id === this.leftPointerId) this.leftPointerId = -1;
+  }
+
+  // Flap thrust: 4 puffs per view, fired together.
+  _emitFlapPuffs() {
+    // Side: 4 puffs from directly under the hero (bottom-center, rotated by the flap tilt
+    // and tracking the ±5% visual scale via displayHeight), shooting left/back.
+    if (this.flapFX) {
+      const hh = this.charSideSprite.displayHeight / 2;
+      const th = this.sideAngle * Math.PI / 180;
+      const ex = this.charSideX - hh * Math.sin(th);
+      const ey = this.charYPx   + hh * Math.cos(th);
+      this.flapFX.emitParticleAt(ex, ey, 4);
+    }
+    // Top: 4 puffs shooting out from the opaque silhouette — 1/3-from-bottom left & right
+    // edges + the two bottom corners. Left pair → down-left emitter, right pair → down-right.
+    if (this.topFlapFXL && this.topFlapFXR) {
+      const tb = this.charTopBounds;
+      const tcx = tb.w / 2, tcy = tb.h / 2;
+      const th = this.topAngle * Math.PI / 180;
+      const cos = Math.cos(th), sin = Math.sin(th);
+      const toWorld = (px, py) => [
+        this.charXPx  + (px - tcx) * cos - (py - tcy) * sin,
+        this.charTopY + (px - tcx) * sin + (py - tcy) * cos,
+      ];
+      const rowThird = Math.round(tb.botEdge - (tb.botEdge - tb.topEdge) / 3);
+      const lThirdX = isFinite(tb.rowMinX[rowThird]) ? tb.rowMinX[rowThird] : tb.leftEdge;
+      const rThirdX = isFinite(tb.rowMaxX[rowThird]) ? tb.rowMaxX[rowThird] : tb.rightEdge;
+      const [lx1, ly1] = toWorld(lThirdX, rowThird);
+      const [lx2, ly2] = toWorld(tb.leftEdge, tb.botEdge);
+      const [rx1, ry1] = toWorld(rThirdX, rowThird);
+      const [rx2, ry2] = toWorld(tb.rightEdge, tb.botEdge);
+      this.topFlapFXL.emitParticleAt(lx1, ly1, 1);
+      this.topFlapFXL.emitParticleAt(lx2, ly2, 1);
+      this.topFlapFXR.emitParticleAt(rx1, ry1, 1);
+      this.topFlapFXR.emitParticleAt(rx2, ry2, 1);
+    }
   }
 
   // ── Obstacle management ────────────────────────────────────────────────────
@@ -275,8 +291,8 @@ export class GameScene extends Phaser.Scene {
     const fallback = (w, h) => {
       const rowMinX = new Float32Array(h).fill(0);
       const rowMaxX = new Float32Array(h).fill(w - 1);
-      return { w, h, topEdge: 0, botEdge: h - 1, maxHalfW: w / 2, maxHalfH: h / 2,
-               rowMinX, rowMaxX };
+      return { w, h, topEdge: 0, botEdge: h - 1, leftEdge: 0, rightEdge: w - 1,
+               maxHalfW: w / 2, maxHalfH: h / 2, rowMinX, rowMaxX };
     };
     if (!frame) return fallback(48, 48);
 
@@ -326,7 +342,7 @@ export class GameScene extends Phaser.Scene {
     // Maximum distance from sprite center to any opaque pixel edge, per axis
     const maxHalfW = Math.max(Math.abs(w / 2 - leftEdge), Math.abs(w / 2 - rightEdge));
     const maxHalfH = Math.max(Math.abs(h / 2 - topEdge),  Math.abs(h / 2 - botEdge));
-    return { w, h, topEdge, botEdge, maxHalfW, maxHalfH, rowMinX, rowMaxX };
+    return { w, h, topEdge, botEdge, leftEdge, rightEdge, maxHalfW, maxHalfH, rowMinX, rowMaxX };
   }
 
   // ── Game over ──────────────────────────────────────────────────────────────

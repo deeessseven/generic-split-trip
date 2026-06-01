@@ -1,6 +1,7 @@
 import { SPRITE_KEYS } from '../constants.js';
 import { SpriteManager } from '../SpriteManager.js';
 import { applyText } from '../data/GameText.js';
+import { lanczosResizeSquare } from '../resample.js';
 
 // Maps each sprite key to its file in public/sprites/.
 // Drop matching PNGs into that folder to replace the procedural defaults.
@@ -66,8 +67,9 @@ export class BootScene extends Phaser.Scene {
       try { if (this.textures.exists(titleKey)) this.textures.remove(titleKey); } catch {}
       this.textures.addCanvas(titleKey, this._squareCanvas(src, 300));
 
-      // 100px gameplay texture — replaces the native-resolution default key in place
-      const small = this._squareCanvas(src, 100);
+      // 100px gameplay texture — replaces the native-resolution default key in place.
+      // Lanczos-3 for the big downscale so the small texture keeps maximum detail.
+      const small = lanczosResizeSquare(src, 100);
       this.textures.remove(key);
       this.textures.addCanvas(key, small);
     }

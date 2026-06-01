@@ -2,6 +2,7 @@ import { SPRITE_KEYS } from '../constants.js';
 import { SpriteManager } from '../SpriteManager.js';
 import { makeButton } from '../Button.js';
 import { GT } from '../data/GameText.js';
+import { lanczosResizeSquare } from '../resample.js';
 
 export class SettingsScene extends Phaser.Scene {
   constructor() { super('SettingsScene'); }
@@ -153,9 +154,11 @@ export class SettingsScene extends Phaser.Scene {
   }
 
   // Hero sprites: resize to 100px (gameplay/collision) and 300px (title display).
-  // One Image decode, two canvas draws — no duplicate file reads.
+  // One Image decode, two resamples — no duplicate file reads. The 100px gameplay
+  // texture uses Lanczos-3 (big downscale, detail matters most); the milder 300px
+  // title downscale uses the high-quality canvas path.
   _saveCharSprite(img, key) {
-    const gameplay = this._canvasResize(img, 100);
+    const gameplay = lanczosResizeSquare(img, 100).toDataURL('image/png');
     const title    = this._canvasResize(img, 300);
 
     SpriteManager.save(key, gameplay);

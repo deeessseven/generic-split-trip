@@ -133,9 +133,12 @@ export class GameScene extends Phaser.Scene {
     this.charSideSprite = this.add.image(this.charSideX, this.charYPx, csKey).setDepth(3);
 
     // Flap puff emitter (emits on demand from _onDown). Depth just above the sprites.
+    // angle is the emission direction in degrees (0=right, 90=down, 180=left); 115–155
+    // is a cone centered on 135° = diagonally down-and-left.
     this.flapFX = this.add.particles(0, 0, 'st_particle', {
       lifespan: 350,
-      speed: { min: 20, max: 80 },
+      speed: { min: 40, max: 110 },
+      angle: { min: 115, max: 155 },
       scale: { start: 0.6, end: 0 },
       alpha: { start: 0.6, end: 0 },
       emitting: false,
@@ -196,8 +199,17 @@ export class GameScene extends Phaser.Scene {
       this.sideAngle = -20; // snap CCW immediately on tap
       this.hasTapped = true;
       this.wasRising = true;
-      // Puff of particles below the side-view hero on each flap
-      if (this.flapFX) this.flapFX.emitParticleAt(this.charSideX, this.charYPx + 14, 5);
+      // Thrust puff from the hero's lower-left corner, blasting diagonally down-left.
+      // Rotate the local corner offset (-halfW, +halfH) by the sprite's flap tilt.
+      if (this.flapFX) {
+        const s = this.charSideSprite;
+        const hw = s.displayWidth / 2, hh = s.displayHeight / 2;
+        const th = this.sideAngle * Math.PI / 180;
+        const cos = Math.cos(th), sin = Math.sin(th);
+        const ex = this.charSideX + (-hw) * cos - (hh) * sin;
+        const ey = this.charYPx   + (-hw) * sin + (hh) * cos;
+        this.flapFX.emitParticleAt(ex, ey, 6);
+      }
       AudioSystem.playJump();
     }
   }

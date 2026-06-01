@@ -65,12 +65,18 @@ export const SpriteManager = {
     return scene.textures.exists(customKey) ? customKey : defaultKey;
   },
 
-  /** Title key: prefers key_title_custom (250px), falls back to key_custom, then default. */
+  /** Title key resolution order:
+   *   1. key_title_custom  — user upload, 250px
+   *   2. key_custom        — user upload, 100px (fallback if title version missing)
+   *   3. key_title         — bundled default, 250px (created by BootScene)
+   *   4. key               — bundled/procedural default (100px or 48px) */
   resolveTitleKey(scene, defaultKey) {
-    const titleKey = defaultKey + '_title_custom';
-    if (scene.textures.exists(titleKey)) return titleKey;
-    const customKey = defaultKey + '_custom';
-    if (scene.textures.exists(customKey)) return customKey;
+    const titleCustom = defaultKey + '_title_custom';
+    if (scene.textures.exists(titleCustom)) return titleCustom;
+    const custom = defaultKey + '_custom';
+    if (scene.textures.exists(custom)) return custom;
+    const titleBundled = defaultKey + '_title';
+    if (scene.textures.exists(titleBundled)) return titleBundled;
     return defaultKey;
   },
 

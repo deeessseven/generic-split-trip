@@ -2,6 +2,7 @@ import { makeButton } from '../Button.js';
 import { SPRITE_KEYS } from '../constants.js';
 import { SpriteManager } from '../SpriteManager.js';
 import { GT } from '../data/GameText.js';
+import { AudioSystem } from '../AudioSystem.js';
 
 export class MenuScene extends Phaser.Scene {
   constructor() { super('MenuScene'); }
@@ -15,9 +16,16 @@ export class MenuScene extends Phaser.Scene {
     const { width: W, height: H } = this.scale;
     const cx = W / 2, cy = H / 2;
 
+    // Start the looping theme (defers until the audio context is unlocked by a tap).
+    AudioSystem.startMusic();
+
     // Background gradient via two rects
     this.add.rectangle(cx, cy, W, H, 0x0d0d1a);
     this.add.rectangle(cx, cy * 0.5, W, cy, 0x1a1a3e, 0.6);
+
+    // Audio toggles (top-left). Persisted; apply game-wide.
+    this._audioToggle(10, 8,  'Music: ', () => AudioSystem.isMusicEnabled(), (v) => AudioSystem.setMusicEnabled(v));
+    this._audioToggle(10, 30, 'Sound: ', () => AudioSystem.isSfxEnabled(),   (v) => AudioSystem.setSfxEnabled(v));
 
     // Decorative split-screen preview lines
     this.add.rectangle(cx, cy, 3, H, 0x29b6f6, 0.4);
@@ -77,5 +85,19 @@ export class MenuScene extends Phaser.Scene {
     this.add.text(W - 8, H - 6, GT.gameVersion, {
       fontSize: '10px', fontFamily: 'Arial', color: '#546e7a',
     }).setOrigin(1, 1);
+  }
+
+  // Small tappable On/Off label that toggles and recolors itself.
+  _audioToggle(x, y, label, getEnabled, setEnabled) {
+    const color = () => (getEnabled() ? '#9fe7ff' : '#667');
+    const txt = this.add.text(x, y, label + (getEnabled() ? 'On' : 'Off'), {
+      fontSize: '13px', fontFamily: 'Arial', color: color(),
+    }).setDepth(10).setInteractive({ useHandCursor: true });
+    txt.on('pointerup', () => {
+      const v = !getEnabled();
+      setEnabled(v);
+      txt.setText(label + (v ? 'On' : 'Off')).setColor(color());
+    });
+    return txt;
   }
 }

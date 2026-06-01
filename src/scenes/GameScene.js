@@ -9,6 +9,7 @@ import {
 } from '../constants.js';
 import { SpriteManager } from '../SpriteManager.js';
 import { GT } from '../data/GameText.js';
+import { AudioSystem } from '../AudioSystem.js';
 
 // ── Debug flag ────────────────────────────────────────────────────────────────
 // Set to true to draw the pixel-accurate collision silhouette over each sprite.
@@ -85,6 +86,10 @@ export class GameScene extends Phaser.Scene {
 
     // ── Input tracking ────────────────────────────────────────────────────────
     this.leftPointerId = -1;
+    this._lastShuffleX = this.charXPx; // for throttling the top-view shuffle SFX
+
+    // Keep the theme going into gameplay (idempotent if already playing)
+    AudioSystem.startMusic();
 
     // ── Visual objects ────────────────────────────────────────────────────────
     const bgTopKey  = SpriteManager.resolveKey(this, SPRITE_KEYS.BG_TOP);
@@ -198,6 +203,7 @@ export class GameScene extends Phaser.Scene {
       this.wasRising = true;
       // Puff of particles below the side-view hero on each flap
       if (this.flapFX) this.flapFX.emitParticleAt(this.charSideX, this.charYPx + 14, 5);
+      AudioSystem.playJump();
     }
   }
 
@@ -485,6 +491,12 @@ export class GameScene extends Phaser.Scene {
 
     // ── Horizontal position (top-down, smooth follow finger) ────────────────
     this.charXPx = smooth(this.charXPx, this.targetCharXPx, 0.22, dt);
+
+    // Shuffle SFX: one tick per ~40px of top-view movement (footstep feel; ignores jitter)
+    if (Math.abs(this.charXPx - this._lastShuffleX) > 40) {
+      AudioSystem.playShuffle();
+      this._lastShuffleX = this.charXPx;
+    }
 
     // ── Spawn obstacles ──────────────────────────────────────────────────────
     while (this.distTraveled >= this.nextSpawnDist) {

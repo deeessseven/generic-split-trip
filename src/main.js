@@ -6,6 +6,10 @@ import { GameScene }     from './scenes/GameScene.js';
 import { GameOverScene } from './scenes/GameOverScene.js';
 import { SettingsScene } from './scenes/SettingsScene.js';
 import { GAME_W, GAME_H } from './constants.js';
+import { AudioSystem } from './AudioSystem.js';
+
+// Audio contexts start suspended until a user gesture — unlock (and start music) on tap.
+document.addEventListener('pointerdown', () => AudioSystem.unlock(), { capture: true });
 
 // On tap, enter fullscreen (hides address bar) and lock to landscape-primary so device
 // rotation has no effect. capture:true fires before Phaser handles the same event.

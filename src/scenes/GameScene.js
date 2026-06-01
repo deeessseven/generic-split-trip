@@ -675,7 +675,11 @@ export class GameScene extends Phaser.Scene {
     const topTarget = this.topTiltState === 'left' ? -20 : this.topTiltState === 'right' ? 20 : 0;
     this.topAngle = smooth(this.topAngle, topTarget, 0.30, dt);
     this.charTopSprite.setPosition(this.charXPx, this.charTopY).setAngle(this.topAngle);
-    this.charSideSprite.setPosition(this.charSideX, this.charYPx).setAngle(this.sideAngle);
+    // Visual-only: scale the side hero ±5% with the top hero's horizontal position
+    // (right = bigger, left = smaller). Collision uses charSideBounds × hitboxScale and is
+    // never read from the sprite's display scale, so the hitbox is unaffected.
+    const sideVisScale = Phaser.Math.Clamp(1 + (this.charXPx / this.lW - 0.5) * 0.10, 0.95, 1.05);
+    this.charSideSprite.setPosition(this.charSideX, this.charYPx).setAngle(this.sideAngle).setScale(sideVisScale);
     this.scoreTxt.setText(`${Math.floor(this.elapsedTime)}s  |  ${this.wallsPassed} ${GT.scoreUnit}`);
 
     // ── Debug collision outlines ─────────────────────────────────────────────

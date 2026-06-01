@@ -224,6 +224,40 @@ export const AudioSystem = {
     src.stop(t + 0.1);
   },
 
+  // Collision/death impact: a low filtered-noise thud layered with a descending tone.
+  playCrash() {
+    if (!this.sfxEnabled || !this.ctx) return;
+    if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
+    const t = this.ctx.currentTime;
+
+    // Thud — looped noise through a lowpass that sweeps down.
+    const src = this.ctx.createBufferSource();
+    src.buffer = this._noiseBuffer();
+    src.loop = true;
+    const lp = this.ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.setValueAtTime(900, t);
+    lp.frequency.exponentialRampToValueAtTime(120, t + 0.3);
+    const ng = this.ctx.createGain();
+    ng.gain.setValueAtTime(0.0001, t);
+    ng.gain.linearRampToValueAtTime(0.3, t + 0.01);
+    ng.gain.exponentialRampToValueAtTime(0.0001, t + 0.4);
+    src.connect(lp); lp.connect(ng); ng.connect(this._master);
+    src.start(t); src.stop(t + 0.42);
+
+    // Descending tone for a "fail" impact.
+    const o = this.ctx.createOscillator();
+    const og = this.ctx.createGain();
+    o.type = 'square';
+    o.frequency.setValueAtTime(420, t);
+    o.frequency.exponentialRampToValueAtTime(70, t + 0.35);
+    og.gain.setValueAtTime(0.0001, t);
+    og.gain.linearRampToValueAtTime(0.16, t + 0.01);
+    og.gain.exponentialRampToValueAtTime(0.0001, t + 0.38);
+    o.connect(og); og.connect(this._master);
+    o.start(t); o.stop(t + 0.4);
+  },
+
   _noiseBuffer() {
     if (this._noise) return this._noise;
     const len = Math.floor(this.ctx.sampleRate * 0.2);

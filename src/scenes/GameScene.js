@@ -144,6 +144,17 @@ export class GameScene extends Phaser.Scene {
       emitting: false,
     }).setDepth(3.5);
 
+    // Top-view puff — fires straight down (90°) from the bottom of the top hero, in sync
+    // with the side-view flap puff.
+    this.topFlapFX = this.add.particles(0, 0, 'st_particle', {
+      lifespan: 350,
+      speed: { min: 40, max: 110 },
+      angle: { min: 70, max: 110 },
+      scale: { start: 0.6, end: 0 },
+      alpha: { start: 0.6, end: 0 },
+      emitting: false,
+    }).setDepth(3.5);
+
     // Scan sprite pixels to build per-row/per-col silhouette profiles for shaped collision
     this.hitboxScale    = 0.85;
     this.charTopBounds  = this._spriteBounds(ctKey);
@@ -209,6 +220,16 @@ export class GameScene extends Phaser.Scene {
         const ex = this.charSideX + (-hw) * cos - (hh) * sin;
         const ey = this.charYPx   + (-hw) * sin + (hh) * cos;
         this.flapFX.emitParticleAt(ex, ey, 6);
+      }
+      // Synchronous puff from the bottom of the top-view hero (local offset (0, +halfH)
+      // rotated by its left/right tilt), firing downward.
+      if (this.topFlapFX) {
+        const ts = this.charTopSprite;
+        const thh = ts.displayHeight / 2;
+        const tth = this.topAngle * Math.PI / 180;
+        const tx = this.charXPx  - thh * Math.sin(tth);
+        const ty = this.charTopY + thh * Math.cos(tth);
+        this.topFlapFX.emitParticleAt(tx, ty, 6);
       }
       AudioSystem.playJump();
     }
@@ -314,6 +335,7 @@ export class GameScene extends Phaser.Scene {
     if (this.isDying) return;
     this.isDying = true;
     this.isAlive = false;
+    AudioSystem.playCrash();
 
     if (hitX !== undefined) {
       const g = this.add.graphics().setDepth(10);

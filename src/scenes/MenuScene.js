@@ -23,12 +23,12 @@ export class MenuScene extends Phaser.Scene {
     this.add.rectangle(cx, cy, 3, H, 0x29b6f6, 0.4);
 
     // Hero sprite previews — top view left, side view right, 2× scale
-    // Use 250px title-size textures for crisp display; fall back gracefully if not yet uploaded.
-    // Size relative to canvas width (capped at the 250px native size) so the side heroes never
+    // Use 300px title-size textures for crisp display; fall back gracefully if not yet uploaded.
+    // Size relative to canvas width (capped at the 300px native size) so the side heroes never
     // grow into the centered PLAY button on narrow landscape screens.
     const topKey  = SpriteManager.resolveTitleKey(this, SPRITE_KEYS.CHAR_TOP);
     const sideKey = SpriteManager.resolveTitleKey(this, SPRITE_KEYS.CHAR_SIDE);
-    const heroSize = Math.min(250, W * 0.20);
+    const heroSize = Math.min(300, W * 0.20);
     this.add.image(W * 0.20, cy, topKey).setDisplaySize(heroSize, heroSize);
     this.add.image(W * 0.80, cy, sideKey).setDisplaySize(heroSize, heroSize);
 

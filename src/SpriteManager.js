@@ -3,7 +3,7 @@ import { SPRITE_KEYS } from './constants.js';
 const PREFIX       = 'splittrip_sprite_';
 const TITLE_PREFIX = 'splittrip_sprite_title_';
 
-// Keys that get two stored sizes: 100px for gameplay collision, 250px for title display.
+// Keys that get two stored sizes: 100px for gameplay collision, 300px for title display.
 const CHAR_KEYS = new Set([SPRITE_KEYS.CHAR_TOP, SPRITE_KEYS.CHAR_SIDE]);
 
 export const SpriteManager = {
@@ -30,7 +30,7 @@ export const SpriteManager = {
     } catch { /* ignore */ }
   },
 
-  // ── Title-size storage (250px, CHAR keys only) ────────────────────────────
+  // ── Title-size storage (300px, CHAR keys only) ────────────────────────────
   saveTitle(key, dataURL) {
     try {
       localStorage.setItem(TITLE_PREFIX + key, dataURL);
@@ -66,9 +66,9 @@ export const SpriteManager = {
   },
 
   /** Title key resolution order:
-   *   1. key_title_custom  — user upload, 250px
+   *   1. key_title_custom  — user upload, 300px
    *   2. key_custom        — user upload, 100px (fallback if title version missing)
-   *   3. key_title         — bundled default, 250px (created by BootScene)
+   *   3. key_title         — bundled default, 300px (created by BootScene)
    *   4. key               — bundled/procedural default (100px or 48px) */
   resolveTitleKey(scene, defaultKey) {
     const titleCustom = defaultKey + '_title_custom';
@@ -96,7 +96,7 @@ export const SpriteManager = {
     }
   },
 
-  /** Load title-size sprites (250px) for CHAR keys only.
+  /** Load title-size sprites (300px) for CHAR keys only.
    *  Call in a scene's preload(). Registers textures under key + '_title_custom'. */
   preloadCustomTitle(scene) {
     for (const key of [SPRITE_KEYS.CHAR_TOP, SPRITE_KEYS.CHAR_SIDE]) {

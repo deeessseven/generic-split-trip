@@ -9,14 +9,11 @@ import { GAME_W, GAME_H } from './constants.js';
 
 // On tap, enter fullscreen (hides address bar) and lock to landscape-primary so device
 // rotation has no effect. capture:true fires before Phaser handles the same event.
-// We retry on each tap until fullscreen first SUCCEEDS, then stop — so a deliberate
-// exit (Esc on desktop, swipe) stays exited instead of snapping back on the next tap.
-let fullscreenAchieved = false;
-document.addEventListener('fullscreenchange', () => {
-  if (document.fullscreenElement) fullscreenAchieved = true;
-});
+// Retry on EVERY tap (no "achieved" latch): if the player ever exits fullscreen, the next
+// tap re-expands the game. Keeping the game fullscreen matters more than honoring a manual
+// exit, and the first attempt can also silently fail, so retrying guarantees it catches.
 document.addEventListener('pointerdown', function () {
-  if (fullscreenAchieved || document.fullscreenElement) return;
+  if (document.fullscreenElement) return; // already fullscreen, nothing to do
   const el = document.documentElement;
   const req = el.requestFullscreen?.bind(el) || el.webkitRequestFullscreen?.bind(el);
   const lockOrientation = () => screen.orientation?.lock('landscape-primary').catch(() => {});

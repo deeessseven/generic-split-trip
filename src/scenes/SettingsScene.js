@@ -60,7 +60,7 @@ export class SettingsScene extends Phaser.Scene {
       .setStrokeStyle(1, 0x37474f)
       .setInteractive({ useHandCursor: true });
 
-    // Preview — char keys use the title-size texture (250px) for a crisper preview
+    // Preview — char keys use the title-size texture (300px) for a crisper preview
     const previewKey = SpriteManager.isCharKey(key)
       ? SpriteManager.resolveTitleKey(this, key)
       : SpriteManager.resolveKey(this, key);
@@ -152,11 +152,11 @@ export class SettingsScene extends Phaser.Scene {
     reader.readAsDataURL(file);
   }
 
-  // Hero sprites: resize to 100px (gameplay/collision) and 250px (title display).
+  // Hero sprites: resize to 100px (gameplay/collision) and 300px (title display).
   // One Image decode, two canvas draws — no duplicate file reads.
   _saveCharSprite(img, key) {
     const gameplay = this._canvasResize(img, 100);
-    const title    = this._canvasResize(img, 250);
+    const title    = this._canvasResize(img, 300);
 
     SpriteManager.save(key, gameplay);
     SpriteManager.saveTitle(key, title);
@@ -172,7 +172,7 @@ export class SettingsScene extends Phaser.Scene {
       loaded++;
       if (loaded === 2) {
         const preview = this._previews[key];
-        // Show the 250px version in the settings preview (crisper)
+        // Show the 300px version in the settings preview (crisper)
         if (preview) preview.setTexture(titleKey);
         this._showToast(GT.toastSpriteSaved);
       }

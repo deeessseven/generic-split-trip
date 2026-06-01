@@ -11,8 +11,8 @@ export class SettingsScene extends Phaser.Scene {
     const cx = W / 2, cy = H / 2;
 
     const SLOT_DEFS = [
-      { key: SPRITE_KEYS.CHAR_TOP,  label: GT.slotCharTop,  hint: '48×48 px' },
-      { key: SPRITE_KEYS.CHAR_SIDE, label: GT.slotCharSide, hint: '48×48 px' },
+      { key: SPRITE_KEYS.CHAR_TOP,  label: GT.slotCharTop,  hint: 'any size' },
+      { key: SPRITE_KEYS.CHAR_SIDE, label: GT.slotCharSide, hint: 'any size' },
       { key: SPRITE_KEYS.BG_TOP,    label: GT.slotBgTop,    hint: '256×256 px' },
       { key: SPRITE_KEYS.BG_SIDE,   label: GT.slotBgSide,   hint: '256×256 px' },
       { key: SPRITE_KEYS.OBSTACLE,  label: GT.slotObstacle, hint: '256×256 px' },
@@ -60,8 +60,10 @@ export class SettingsScene extends Phaser.Scene {
       .setStrokeStyle(1, 0x37474f)
       .setInteractive({ useHandCursor: true });
 
-    // Preview image
-    const previewKey = SpriteManager.resolveKey(this, key);
+    // Preview — char keys use the title-size texture (250px) for a crisper preview
+    const previewKey = SpriteManager.isCharKey(key)
+      ? SpriteManager.resolveTitleKey(this, key)
+      : SpriteManager.resolveKey(this, key);
     const preview = this.add.image(x, y - 32, previewKey).setDisplaySize(72, 72);
     this._previews[key] = preview;
 
@@ -88,11 +90,16 @@ export class SettingsScene extends Phaser.Scene {
     bg.on('pointerout',   () => bg.setFillStyle(0x1a2332));
     bg.on('pointerup',    () => this._openFilePicker(key));
 
-    // Reset on tap
+    // Reset on tap — removes both sizes for char keys
     resetTxt.on('pointerup', () => {
       SpriteManager.remove(key);
       const customKey = key + '_custom';
       try { if (this.textures.exists(customKey)) this.textures.remove(customKey); } catch {}
+      if (SpriteManager.isCharKey(key)) {
+        SpriteManager.removeTitle(key);
+        const titleKey = key + '_title_custom';
+        try { if (this.textures.exists(titleKey)) this.textures.remove(titleKey); } catch {}
+      }
       preview.setTexture(key);
     });
   }
@@ -132,21 +139,70 @@ export class SettingsScene extends Phaser.Scene {
   _readImageFile(file, key) {
     const reader = new FileReader();
     reader.onload = (e) => {
-      const dataURL = e.target.result;
-      SpriteManager.save(key, dataURL);
-
-      const customKey = key + '_custom';
-      // Remove stale texture then load new one via base64
-      try { if (this.textures.exists(customKey)) this.textures.remove(customKey); } catch {}
-
-      this.textures.once('addtexture-' + customKey, () => {
-        const preview = this._previews[key];
-        if (preview) preview.setTexture(customKey);
-        this._showToast(GT.toastSpriteSaved);
-      });
-      this.textures.addBase64(customKey, dataURL);
+      const img = new Image();
+      img.onload = () => {
+        if (SpriteManager.isCharKey(key)) {
+          this._saveCharSprite(img, key);
+        } else {
+          this._saveGenericSprite(e.target.result, key);
+        }
+      };
+      img.src = e.target.result;
     };
     reader.readAsDataURL(file);
+  }
+
+  // Hero sprites: resize to 100px (gameplay/collision) and 250px (title display).
+  // One Image decode, two canvas draws — no duplicate file reads.
+  _saveCharSprite(img, key) {
+    const gameplay = this._canvasResize(img, 100);
+    const title    = this._canvasResize(img, 250);
+
+    SpriteManager.save(key, gameplay);
+    SpriteManager.saveTitle(key, title);
+
+    const customKey = key + '_custom';
+    const titleKey  = key + '_title_custom';
+    try { if (this.textures.exists(customKey)) this.textures.remove(customKey); } catch {}
+    try { if (this.textures.exists(titleKey))  this.textures.remove(titleKey);  } catch {}
+
+    // Wait for both textures to load before updating the preview
+    let loaded = 0;
+    const onBothLoaded = () => {
+      loaded++;
+      if (loaded === 2) {
+        const preview = this._previews[key];
+        // Show the 250px version in the settings preview (crisper)
+        if (preview) preview.setTexture(titleKey);
+        this._showToast(GT.toastSpriteSaved);
+      }
+    };
+    this.textures.once('addtexture-' + customKey, onBothLoaded);
+    this.textures.once('addtexture-' + titleKey,  onBothLoaded);
+    this.textures.addBase64(customKey, gameplay);
+    this.textures.addBase64(titleKey,  title);
+  }
+
+  // Non-hero sprites: store the raw dataURL unchanged (no resize needed).
+  _saveGenericSprite(dataURL, key) {
+    SpriteManager.save(key, dataURL);
+    const customKey = key + '_custom';
+    try { if (this.textures.exists(customKey)) this.textures.remove(customKey); } catch {}
+    this.textures.once('addtexture-' + customKey, () => {
+      const preview = this._previews[key];
+      if (preview) preview.setTexture(customKey);
+      this._showToast(GT.toastSpriteSaved);
+    });
+    this.textures.addBase64(customKey, dataURL);
+  }
+
+  // Resize any image to a square canvas of the given px size, return PNG dataURL.
+  _canvasResize(img, size) {
+    const canvas = document.createElement('canvas');
+    canvas.width  = size;
+    canvas.height = size;
+    canvas.getContext('2d').drawImage(img, 0, 0, size, size);
+    return canvas.toDataURL('image/png');
   }
 
   _showToast(msg) {

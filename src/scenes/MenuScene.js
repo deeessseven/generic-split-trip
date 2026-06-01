@@ -8,6 +8,7 @@ export class MenuScene extends Phaser.Scene {
 
   preload() {
     SpriteManager.preloadCustom(this);
+    SpriteManager.preloadCustomTitle(this);
   }
 
   create() {
@@ -22,10 +23,11 @@ export class MenuScene extends Phaser.Scene {
     this.add.rectangle(cx, cy, 3, H, 0x29b6f6, 0.4);
 
     // Hero sprite previews — top view left, side view right, 2× scale
-    const topKey  = SpriteManager.resolveKey(this, SPRITE_KEYS.CHAR_TOP);
-    const sideKey = SpriteManager.resolveKey(this, SPRITE_KEYS.CHAR_SIDE);
-    this.add.image(W * 0.20, cy, topKey).setDisplaySize(96, 96);
-    this.add.image(W * 0.80, cy, sideKey).setDisplaySize(96, 96);
+    // Use 250px title-size textures for crisp display; fall back gracefully if not yet uploaded
+    const topKey  = SpriteManager.resolveTitleKey(this, SPRITE_KEYS.CHAR_TOP);
+    const sideKey = SpriteManager.resolveTitleKey(this, SPRITE_KEYS.CHAR_SIDE);
+    this.add.image(W * 0.20, cy, topKey).setDisplaySize(250, 250);
+    this.add.image(W * 0.80, cy, sideKey).setDisplaySize(250, 250);
 
     // Title
     this.add.text(cx, cy - 130, GT.gameTitle, {

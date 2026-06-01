@@ -212,10 +212,27 @@ export class GameScene extends Phaser.Scene {
     const colMinY = new Float32Array(w).fill(Infinity);
     const colMaxY = new Float32Array(w).fill(-Infinity);
 
+    // Read every pixel's alpha in ONE getImageData call (a single GPU→CPU readback)
+    // instead of per-pixel textures.getPixelAlpha(), which stalls the GPU once per
+    // pixel — ~200x slower and the cause of the multi-minute hang on real devices.
+    // The opaque-pixel result is identical; only the read primitive changes.
+    let data;
+    try {
+      const src = this.textures.get(key).getSourceImage();
+      const canvas = document.createElement('canvas');
+      canvas.width  = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(src, 0, 0, w, h);
+      data = ctx.getImageData(0, 0, w, h).data;
+    } catch (e) {
+      return fallback(w, h);
+    }
+
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
-        const alpha = this.textures.getPixelAlpha(x, y, key);
-        if (alpha !== null && alpha > 10) {
+        const alpha = data[(y * w + x) * 4 + 3];
+        if (alpha > 10) {
           if (x < rowMinX[y]) rowMinX[y] = x;
           if (x > rowMaxX[y]) rowMaxX[y] = x;
           if (y < colMinY[x]) colMinY[x] = y;

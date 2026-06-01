@@ -11,6 +11,17 @@ import { AudioSystem } from './AudioSystem.js';
 // Audio contexts start suspended until a user gesture — unlock (and start music) on tap.
 document.addEventListener('pointerdown', () => AudioSystem.unlock(), { capture: true });
 
+// Stop the music whenever the page leaves view (tab switch, minimize, screen lock, app
+// switch); resume when it returns. visibilitychange covers most cases; blur/focus also
+// catches switching to another window on desktop.
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) AudioSystem.pauseForBackground();
+  else AudioSystem.resumeFromBackground();
+});
+window.addEventListener('blur',  () => AudioSystem.pauseForBackground());
+window.addEventListener('focus', () => AudioSystem.resumeFromBackground());
+window.addEventListener('pagehide', () => AudioSystem.pauseForBackground());
+
 // On tap, enter fullscreen (hides address bar) and lock to landscape-primary so device
 // rotation has no effect. capture:true fires before Phaser handles the same event.
 // Retry on EVERY tap (no "achieved" latch): if the player ever exits fullscreen, the next

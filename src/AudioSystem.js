@@ -9,11 +9,12 @@
 // Note frequencies (Hz)
 const N = {
   C2: 65.41, F2: 87.31, G2: 98.00, A2: 110.00,
+  C3: 130.81, D3: 146.83, E3: 164.81,
   C4: 261.63, D4: 293.66, E4: 329.63, F4: 349.23, G4: 392.00, A4: 440.00, B4: 493.88,
   C5: 523.25, D5: 587.33, E5: 659.25, F5: 698.46,
 };
 
-const BPM = 120;
+const BPM = 134;
 const BEAT = 60 / BPM;   // 0.5s
 const LOOP_BEATS = 32;   // 8 bars of 4/4 → 16s loop
 
@@ -35,6 +36,13 @@ function buildSong() {
   roots.forEach((f, i) => {
     ev.push({ b: i * 4,     d: 1.6, f, v: 'bass' });
     ev.push({ b: i * 4 + 2, d: 1.6, f, v: 'bass' });
+  });
+
+  // Light off-beat "bounce" (the fifth of each root) on beats 2 and 4 — adds upbeat lift.
+  const fifths = ['G2', 'D3', 'E3', 'C3', 'G2', 'D3', 'C3', 'D3'];
+  fifths.forEach((f, i) => {
+    ev.push({ b: i * 4 + 1, d: 0.6, f, v: 'bounce' });
+    ev.push({ b: i * 4 + 3, d: 0.6, f, v: 'bounce' });
   });
 
   // Lead — a singable phrase with longer notes and rests (no constant arpeggio buzz).
@@ -88,7 +96,7 @@ export const AudioSystem = {
         this._musicGain.gain.value = 0.4;
         this._musicLP = this.ctx.createBiquadFilter();
         this._musicLP.type = 'lowpass';
-        this._musicLP.frequency.value = 3000;
+        this._musicLP.frequency.value = 3500;
         this._musicLP.Q.value = 0.6;
         this._musicGain.connect(this._musicLP);
         this._musicLP.connect(this._master);
@@ -105,6 +113,20 @@ export const AudioSystem = {
 
   isMusicEnabled() { this.init(); return this.musicEnabled; },
   isSfxEnabled()   { this.init(); return this.sfxEnabled; },
+
+  // Called when the page is hidden/blurred/minimized/screen-locked: halt the music loop
+  // and suspend the whole context so nothing plays in the background.
+  pauseForBackground() {
+    this.stopMusic();
+    if (this.ctx && this.ctx.state === 'running') this.ctx.suspend().catch(() => {});
+  },
+
+  // Called when the page becomes visible/focused again: resume and restart music if on.
+  resumeFromBackground() {
+    if (!this.ctx) return;
+    if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
+    if (this.musicEnabled) this.startMusic();
+  },
 
   setMusicEnabled(on) {
     this.init();
@@ -161,9 +183,10 @@ export const AudioSystem = {
     const freq = N[ev.f];
     if (!freq) return;
     const d = ev.d * BEAT;
-    if (ev.v === 'pad')       this._voice(freq, t, d, 'triangle', 0.045, 0.12, 0.45);
-    else if (ev.v === 'bass') this._voice(freq, t, d, 'sine',     0.12,  0.01, 0.12);
-    else                      this._voice(freq, t, d, 'triangle', 0.12,  0.02, 0.14);
+    if (ev.v === 'pad')         this._voice(freq, t, d, 'triangle', 0.045, 0.12, 0.45);
+    else if (ev.v === 'bass')   this._voice(freq, t, d, 'sine',     0.12,  0.01, 0.12);
+    else if (ev.v === 'bounce') this._voice(freq, t, d, 'triangle', 0.06,  0.01, 0.08);
+    else                        this._voice(freq, t, d, 'triangle', 0.12,  0.02, 0.14);
   },
 
   // One enveloped note (attack / hold / release) into the music bus.

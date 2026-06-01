@@ -1,27 +1,59 @@
 // Procedural audio (Web Audio API) — no asset files.
-//  • A cheerful, looping "adventure" theme (I–V–vi–IV in C major).
+//  • A warm, gentle "adventure" theme: soft pad + bass + a melodic lead over an 8-bar
+//    loop (I–V–vi–IV in C major). Triangle/sine voices through a lowpass bus with smooth
+//    ADSR envelopes — deliberately mellow, not a buzzy chiptune.
 //  • SFX: jump (rising blip, side-view flap) and shuffle (soft noise tick, top-view move).
-//  • Music and SFX can be toggled independently; both persist in localStorage.
-// Everything is guarded: if Web Audio is unavailable, all methods no-op safely.
+//  • Music and SFX toggle independently and persist in localStorage.
+// All guarded: if Web Audio is unavailable, every method no-ops safely.
 
 // Note frequencies (Hz)
 const N = {
   C2: 65.41, F2: 87.31, G2: 98.00, A2: 110.00,
   C4: 261.63, D4: 293.66, E4: 329.63, F4: 349.23, G4: 392.00, A4: 440.00, B4: 493.88,
-  C5: 523.25, D5: 587.33, E5: 659.25,
+  C5: 523.25, D5: 587.33, E5: 659.25, F5: 698.46,
 };
 
-// Four bars: C major, G major, A minor, F major. Each bar = 8 eighth-note lead steps.
-const BARS = [
-  { bass: 'C2', lead: ['C4', 'E4', 'G4', 'E4', 'C5', 'G4', 'E4', 'G4'] },
-  { bass: 'G2', lead: ['D4', 'G4', 'B4', 'G4', 'D5', 'B4', 'G4', 'B4'] },
-  { bass: 'A2', lead: ['E4', 'A4', 'C5', 'A4', 'E5', 'C5', 'A4', 'C5'] },
-  { bass: 'F2', lead: ['C4', 'F4', 'A4', 'F4', 'C5', 'A4', 'F4', 'A4'] },
-];
+const BPM = 120;
+const BEAT = 60 / BPM;   // 0.5s
+const LOOP_BEATS = 32;   // 8 bars of 4/4 → 16s loop
 
-const BPM = 132;
-const EIGHTH = 60 / BPM / 2;   // seconds per eighth note
-const STEPS = BARS.length * 8; // 32
+// Build the song as a flat, beat-sorted event list: { b: startBeat, d: durBeats, f, v }.
+function buildSong() {
+  const ev = [];
+
+  // Pad — sustained chord tones, one event per note (close voicings for smooth changes).
+  const chords = [
+    [0,  ['C4', 'E4', 'G4']], [4,  ['D4', 'G4', 'B4']],
+    [8,  ['C4', 'E4', 'A4']], [12, ['C4', 'F4', 'A4']],
+    [16, ['C4', 'E4', 'G4']], [20, ['D4', 'G4', 'B4']],
+    [24, ['C4', 'F4', 'A4']], [28, ['D4', 'G4', 'B4']],
+  ];
+  for (const [b, notes] of chords) for (const f of notes) ev.push({ b, d: 3.8, f, v: 'pad' });
+
+  // Bass — root on beats 1 and 3 of each bar.
+  const roots = ['C2', 'G2', 'A2', 'F2', 'C2', 'G2', 'F2', 'G2'];
+  roots.forEach((f, i) => {
+    ev.push({ b: i * 4,     d: 1.6, f, v: 'bass' });
+    ev.push({ b: i * 4 + 2, d: 1.6, f, v: 'bass' });
+  });
+
+  // Lead — a singable phrase with longer notes and rests (no constant arpeggio buzz).
+  const lead = [
+    [0, 1, 'E4'], [1, 1, 'G4'], [2, 2, 'C5'],
+    [4, 1.5, 'B4'], [5.5, 0.5, 'A4'], [6, 2, 'G4'],
+    [8, 1, 'A4'], [9, 1, 'C5'], [10, 2, 'B4'],
+    [12, 2, 'A4'], [14, 2, 'G4'],
+    [16, 1, 'E4'], [17, 1, 'G4'], [18, 2, 'E5'],
+    [20, 1.5, 'D5'], [21.5, 0.5, 'B4'], [22, 2, 'G4'],
+    [24, 1, 'A4'], [25, 1, 'C5'], [26, 1, 'F5'], [27, 1, 'C5'],
+    [28, 2, 'D5'], [30, 1, 'B4'],
+  ];
+  for (const [b, d, f] of lead) ev.push({ b, d, f, v: 'lead' });
+
+  ev.sort((a, b) => a.b - b.b);
+  return ev;
+}
+const SONG = buildSong();
 
 export const AudioSystem = {
   ctx: null,
@@ -30,13 +62,13 @@ export const AudioSystem = {
   _inited: false,
   _musicOn: false,
   _timer: null,
-  _step: 0,
-  _nextNoteTime: 0,
+  _evIdx: 0,
+  _loopStart: 0,
   _master: null,
   _musicGain: null,
+  _musicLP: null,
   _noise: null,
 
-  // Build the audio graph and load saved preferences. Safe to call repeatedly.
   init() {
     if (this._inited) return;
     this._inited = true;
@@ -49,16 +81,21 @@ export const AudioSystem = {
       if (AC) {
         this.ctx = new AC();
         this._master = this.ctx.createGain();
-        this._master.gain.value = 0.45;
+        this._master.gain.value = 0.5;
         this._master.connect(this.ctx.destination);
+        // Music bus: gain -> gentle lowpass (warmth, tames harsh harmonics) -> master.
         this._musicGain = this.ctx.createGain();
-        this._musicGain.gain.value = 0.5;
-        this._musicGain.connect(this._master);
+        this._musicGain.gain.value = 0.4;
+        this._musicLP = this.ctx.createBiquadFilter();
+        this._musicLP.type = 'lowpass';
+        this._musicLP.frequency.value = 3000;
+        this._musicLP.Q.value = 0.6;
+        this._musicGain.connect(this._musicLP);
+        this._musicLP.connect(this._master);
       }
     } catch { this.ctx = null; }
   },
 
-  // Call on a user gesture (audio contexts start suspended until then).
   unlock() {
     this.init();
     if (!this.ctx) return;
@@ -89,8 +126,8 @@ export const AudioSystem = {
     const begin = () => {
       if (this._musicOn || !this.musicEnabled) return;
       this._musicOn = true;
-      this._step = 0;
-      this._nextNoteTime = this.ctx.currentTime + 0.1;
+      this._evIdx = 0;
+      this._loopStart = this.ctx.currentTime + 0.15;
       this._timer = setInterval(() => this._tick(), 25);
     };
     if (this.ctx.state === 'running') begin();
@@ -102,38 +139,52 @@ export const AudioSystem = {
     if (this._timer) { clearInterval(this._timer); this._timer = null; }
   },
 
-  // Scheduler: queue any notes due within the lookahead window.
+  // Schedule any events due within the lookahead window, looping at LOOP_BEATS.
   _tick() {
     if (!this.ctx || !this._musicOn) return;
-    const ahead = 0.12;
-    while (this._nextNoteTime < this.ctx.currentTime + ahead) {
-      const step = this._step;
-      const bar = Math.floor(step / 8);
-      const pos = step % 8;
-      const b = BARS[bar];
-      this._note(N[b.lead[pos]], this._nextNoteTime, 0.18, 'square', 0.10);
-      if (pos % 2 === 0) this._note(N[b.bass], this._nextNoteTime, 0.42, 'triangle', 0.16);
-      this._nextNoteTime += EIGHTH;
-      this._step = (step + 1) % STEPS;
+    const ahead = 0.2;
+    let guard = 0;
+    while (guard++ < 256) {
+      const ev = SONG[this._evIdx];
+      const evTime = this._loopStart + ev.b * BEAT;
+      if (evTime >= this.ctx.currentTime + ahead) break;
+      this._playEvent(ev, evTime);
+      this._evIdx++;
+      if (this._evIdx >= SONG.length) {
+        this._evIdx = 0;
+        this._loopStart += LOOP_BEATS * BEAT;
+      }
     }
   },
 
-  _note(freq, t, dur, type, gain) {
+  _playEvent(ev, t) {
+    const freq = N[ev.f];
     if (!freq) return;
+    const d = ev.d * BEAT;
+    if (ev.v === 'pad')       this._voice(freq, t, d, 'triangle', 0.045, 0.12, 0.45);
+    else if (ev.v === 'bass') this._voice(freq, t, d, 'sine',     0.12,  0.01, 0.12);
+    else                      this._voice(freq, t, d, 'triangle', 0.12,  0.02, 0.14);
+  },
+
+  // One enveloped note (attack / hold / release) into the music bus.
+  _voice(freq, t, dur, type, peak, attack, release) {
     const o = this.ctx.createOscillator();
     const g = this.ctx.createGain();
     o.type = type;
     o.frequency.value = freq;
-    g.gain.setValueAtTime(0, t);
-    g.gain.linearRampToValueAtTime(gain, t + 0.02);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    const rel = Math.min(release, dur * 0.5);
+    const holdEnd = Math.max(t + attack, t + dur - rel);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(peak, t + attack);
+    g.gain.setValueAtTime(peak, holdEnd);
+    g.gain.linearRampToValueAtTime(0.0001, t + dur);
     o.connect(g);
     g.connect(this._musicGain);
     o.start(t);
-    o.stop(t + dur + 0.02);
+    o.stop(t + dur + 0.03);
   },
 
-  // ── SFX (routed past the music gain so the music toggle doesn't affect them) ──
+  // ── SFX (routed past the music bus so the music toggle doesn't affect them) ──
   playJump() {
     if (!this.sfxEnabled || !this.ctx) return;
     if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
@@ -144,7 +195,7 @@ export const AudioSystem = {
     o.frequency.setValueAtTime(320, t);
     o.frequency.exponentialRampToValueAtTime(720, t + 0.12);
     g.gain.setValueAtTime(0.0001, t);
-    g.gain.linearRampToValueAtTime(0.16, t + 0.01);
+    g.gain.linearRampToValueAtTime(0.08, t + 0.01); // 50% quieter than before
     g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
     o.connect(g);
     g.connect(this._master);

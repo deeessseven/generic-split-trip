@@ -129,11 +129,6 @@ export class GameScene extends Phaser.Scene {
     // Character sprites (on top of obstacles and gap indicator)
     const ctKey = SpriteManager.resolveKey(this, SPRITE_KEYS.CHAR_TOP);
     const csKey = SpriteManager.resolveKey(this, SPRITE_KEYS.CHAR_SIDE);
-    // Soft drop-shadows under each hero (depth just below the sprites) so they pop against
-    // busy backgrounds. Plain ellipses — they don't rotate with the sprite.
-    this.topShadow  = this.add.ellipse(this.charXPx, this.charTopY + 12, 64, 22, 0x000000, 0.28).setDepth(2.9);
-    this.sideShadow = this.add.ellipse(this.charSideX + 5, this.charYPx + 10, 64, 22, 0x000000, 0.28).setDepth(2.9);
-
     this.charTopSprite  = this.add.image(this.charXPx, this.charTopY,  ctKey).setDepth(3);
     this.charSideSprite = this.add.image(this.charSideX, this.charYPx, csKey).setDepth(3);
 
@@ -647,8 +642,6 @@ export class GameScene extends Phaser.Scene {
     this.topAngle = smooth(this.topAngle, topTarget, 0.30, dt);
     this.charTopSprite.setPosition(this.charXPx, this.charTopY).setAngle(this.topAngle);
     this.charSideSprite.setPosition(this.charSideX, this.charYPx).setAngle(this.sideAngle);
-    this.topShadow.setPosition(this.charXPx, this.charTopY + 12);
-    this.sideShadow.setPosition(this.charSideX + 5, this.charYPx + 10);
     this.scoreTxt.setText(`${Math.floor(this.elapsedTime)}s  |  ${this.wallsPassed} ${GT.scoreUnit}`);
 
     // ── Debug collision outlines ─────────────────────────────────────────────

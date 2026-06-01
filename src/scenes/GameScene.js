@@ -10,6 +10,12 @@ import {
 import { SpriteManager } from '../SpriteManager.js';
 import { GT } from '../data/GameText.js';
 
+// ── Debug flag ────────────────────────────────────────────────────────────────
+// Set to true to draw the pixel-accurate collision silhouette over each sprite.
+// Keep false in production — the black outline is visible to players.
+const DEBUG_OUTLINE = false;
+// ─────────────────────────────────────────────────────────────────────────────
+
 export class GameScene extends Phaser.Scene {
   constructor() { super('GameScene'); }
 
@@ -89,8 +95,8 @@ export class GameScene extends Phaser.Scene {
     // Gap indicator graphics — drawn each frame on top of wall tiles, below characters
     this.gapGfx = this.add.graphics().setDepth(2.5);
 
-    // Debug collision outline — drawn each frame on top of everything
-    this.debugGfx = this.add.graphics().setDepth(20);
+    // Debug collision outline — only created when DEBUG_OUTLINE is enabled
+    this.debugGfx = DEBUG_OUTLINE ? this.add.graphics().setDepth(20) : null;
 
     // Character sprites (on top of obstacles and gap indicator)
     const ctKey = SpriteManager.resolveKey(this, SPRITE_KEYS.CHAR_TOP);
@@ -549,53 +555,57 @@ export class GameScene extends Phaser.Scene {
     this.scoreTxt.setText(`${Math.floor(this.elapsedTime)}s  |  ${this.wallsPassed} ${GT.scoreUnit}`);
 
     // ── Debug collision outlines ─────────────────────────────────────────────
-    this.debugGfx.clear();
-    this.debugGfx.lineStyle(2, 0x000000, 1);
+    // Draws the pixel-accurate silhouette used for collision detection.
+    // To enable: set DEBUG_OUTLINE = true at the top of this file.
+    if (DEBUG_OUTLINE) {
+      this.debugGfx.clear();
+      this.debugGfx.lineStyle(2, 0x000000, 1);
 
-    // Top-view: rotated per-row silhouette (matches topAngle and collision)
-    const tLeftPts = [], tRightPts = [];
-    for (let row = 0; row < tb.h; row++) {
-      if (!isFinite(tb.rowMinX[row])) continue;
-      const py = row;
-      tLeftPts.push({
-        x: this.charXPx  + ((tb.rowMinX[row]-tcx)*cosT - (py-tcy)*sinT) * S,
-        y: this.charTopY + ((tb.rowMinX[row]-tcx)*sinT + (py-tcy)*cosT) * S,
-      });
-      tRightPts.push({
-        x: this.charXPx  + ((tb.rowMaxX[row]-tcx)*cosT - (py-tcy)*sinT) * S,
-        y: this.charTopY + ((tb.rowMaxX[row]-tcx)*sinT + (py-tcy)*cosT) * S,
-      });
-    }
-    if (tLeftPts.length > 0) {
-      this.debugGfx.beginPath();
-      this.debugGfx.moveTo(tLeftPts[0].x, tLeftPts[0].y);
-      for (let i = 1; i < tLeftPts.length; i++) this.debugGfx.lineTo(tLeftPts[i].x, tLeftPts[i].y);
-      for (let i = tRightPts.length - 1; i >= 0; i--) this.debugGfx.lineTo(tRightPts[i].x, tRightPts[i].y);
-      this.debugGfx.closePath();
-      this.debugGfx.strokePath();
-    }
+      // Top-view: rotated per-row silhouette (matches topAngle and collision)
+      const tLeftPts = [], tRightPts = [];
+      for (let row = 0; row < tb.h; row++) {
+        if (!isFinite(tb.rowMinX[row])) continue;
+        const py = row;
+        tLeftPts.push({
+          x: this.charXPx  + ((tb.rowMinX[row]-tcx)*cosT - (py-tcy)*sinT) * S,
+          y: this.charTopY + ((tb.rowMinX[row]-tcx)*sinT + (py-tcy)*cosT) * S,
+        });
+        tRightPts.push({
+          x: this.charXPx  + ((tb.rowMaxX[row]-tcx)*cosT - (py-tcy)*sinT) * S,
+          y: this.charTopY + ((tb.rowMaxX[row]-tcx)*sinT + (py-tcy)*cosT) * S,
+        });
+      }
+      if (tLeftPts.length > 0) {
+        this.debugGfx.beginPath();
+        this.debugGfx.moveTo(tLeftPts[0].x, tLeftPts[0].y);
+        for (let i = 1; i < tLeftPts.length; i++) this.debugGfx.lineTo(tLeftPts[i].x, tLeftPts[i].y);
+        for (let i = tRightPts.length - 1; i >= 0; i--) this.debugGfx.lineTo(tRightPts[i].x, tRightPts[i].y);
+        this.debugGfx.closePath();
+        this.debugGfx.strokePath();
+      }
 
-    // Side-view: rotated per-row silhouette (matches actual sprite orientation)
-    const sLeftPts = [], sRightPts = [];
-    for (let row = 0; row < sb.h; row++) {
-      if (!isFinite(sb.rowMinX[row])) continue;
-      const py = row;
-      sLeftPts.push({
-        x: this.charSideX + ((sb.rowMinX[row]-cx)*cosθ - (py-cy)*sinθ) * S,
-        y: this.charYPx   + ((sb.rowMinX[row]-cx)*sinθ + (py-cy)*cosθ) * S,
-      });
-      sRightPts.push({
-        x: this.charSideX + ((sb.rowMaxX[row]-cx)*cosθ - (py-cy)*sinθ) * S,
-        y: this.charYPx   + ((sb.rowMaxX[row]-cx)*sinθ + (py-cy)*cosθ) * S,
-      });
-    }
-    if (sLeftPts.length > 0) {
-      this.debugGfx.beginPath();
-      this.debugGfx.moveTo(sLeftPts[0].x, sLeftPts[0].y);
-      for (let i = 1; i < sLeftPts.length; i++) this.debugGfx.lineTo(sLeftPts[i].x, sLeftPts[i].y);
-      for (let i = sRightPts.length - 1; i >= 0; i--) this.debugGfx.lineTo(sRightPts[i].x, sRightPts[i].y);
-      this.debugGfx.closePath();
-      this.debugGfx.strokePath();
+      // Side-view: rotated per-row silhouette (matches actual sprite orientation)
+      const sLeftPts = [], sRightPts = [];
+      for (let row = 0; row < sb.h; row++) {
+        if (!isFinite(sb.rowMinX[row])) continue;
+        const py = row;
+        sLeftPts.push({
+          x: this.charSideX + ((sb.rowMinX[row]-cx)*cosθ - (py-cy)*sinθ) * S,
+          y: this.charYPx   + ((sb.rowMinX[row]-cx)*sinθ + (py-cy)*cosθ) * S,
+        });
+        sRightPts.push({
+          x: this.charSideX + ((sb.rowMaxX[row]-cx)*cosθ - (py-cy)*sinθ) * S,
+          y: this.charYPx   + ((sb.rowMaxX[row]-cx)*sinθ + (py-cy)*cosθ) * S,
+        });
+      }
+      if (sLeftPts.length > 0) {
+        this.debugGfx.beginPath();
+        this.debugGfx.moveTo(sLeftPts[0].x, sLeftPts[0].y);
+        for (let i = 1; i < sLeftPts.length; i++) this.debugGfx.lineTo(sLeftPts[i].x, sLeftPts[i].y);
+        for (let i = sRightPts.length - 1; i >= 0; i--) this.debugGfx.lineTo(sRightPts[i].x, sRightPts[i].y);
+        this.debugGfx.closePath();
+        this.debugGfx.strokePath();
+      }
     }
 
     this._renderObstacles();

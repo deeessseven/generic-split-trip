@@ -197,11 +197,16 @@ export class SettingsScene extends Phaser.Scene {
   }
 
   // Resize any image to a square canvas of the given px size, return PNG dataURL.
+  // High-quality smoothing preserves detail when downscaling a large upload into the small
+  // (100px gameplay) texture — the browser default ('low') looks soft/aliased.
   _canvasResize(img, size) {
     const canvas = document.createElement('canvas');
     canvas.width  = size;
     canvas.height = size;
-    canvas.getContext('2d').drawImage(img, 0, 0, size, size);
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(img, 0, 0, size, size);
     return canvas.toDataURL('image/png');
   }
 

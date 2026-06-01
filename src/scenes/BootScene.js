@@ -74,11 +74,17 @@ export class BootScene extends Phaser.Scene {
   }
 
   // Draw any image source onto a square canvas of the given px size; returns the canvas.
+  // High-quality smoothing matters here: hero source files are large (e.g. 555-840px) and
+  // get downscaled 5-8x, so the browser default ('low') yields a soft/aliased result. 'high'
+  // uses a better resampling kernel and preserves much more detail within the same pixels.
   _squareCanvas(src, size) {
     const canvas = document.createElement('canvas');
     canvas.width  = size;
     canvas.height = size;
-    canvas.getContext('2d').drawImage(src, 0, 0, size, size);
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(src, 0, 0, size, size);
     return canvas;
   }
 

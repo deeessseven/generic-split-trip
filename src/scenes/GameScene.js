@@ -92,6 +92,12 @@ export class GameScene extends Phaser.Scene {
     this.bgLeft  = this.add.tileSprite(this.lW / 2, H / 2, this.lW, H, bgTopKey);
     this.bgRight = this.add.tileSprite(this.rX + this.rW / 2, H / 2, this.rW, H, bgSideKey);
 
+    // Parallax layer over each panel — same dot texture, scrolls slower than the base
+    // background (see update) to suggest depth. Depth 0.5 keeps it above the base bg (0)
+    // and below obstacles (2).
+    this.bgLeftPara  = this.add.tileSprite(this.lW / 2, H / 2, this.lW, H, 'st_parallax').setDepth(0.5).setAlpha(0.3);
+    this.bgRightPara = this.add.tileSprite(this.rX + this.rW / 2, H / 2, this.rW, H, 'st_parallax').setDepth(0.5).setAlpha(0.3);
+
     // Ground strip at bottom of side view. INTENTIONAL: it reuses the top-view background
     // texture (bgTopKey) so the floor reads as "ground" (same material as the top-down
     // terrain) rather than the side-view sky texture.
@@ -118,8 +124,22 @@ export class GameScene extends Phaser.Scene {
     // Character sprites (on top of obstacles and gap indicator)
     const ctKey = SpriteManager.resolveKey(this, SPRITE_KEYS.CHAR_TOP);
     const csKey = SpriteManager.resolveKey(this, SPRITE_KEYS.CHAR_SIDE);
+    // Soft drop-shadows under each hero (depth just below the sprites) so they pop against
+    // busy backgrounds. Plain ellipses — they don't rotate with the sprite.
+    this.topShadow  = this.add.ellipse(this.charXPx, this.charTopY + 12, 64, 22, 0x000000, 0.28).setDepth(2.9);
+    this.sideShadow = this.add.ellipse(this.charSideX + 5, this.charYPx + 10, 64, 22, 0x000000, 0.28).setDepth(2.9);
+
     this.charTopSprite  = this.add.image(this.charXPx, this.charTopY,  ctKey).setDepth(3);
     this.charSideSprite = this.add.image(this.charSideX, this.charYPx, csKey).setDepth(3);
+
+    // Flap puff emitter (emits on demand from _onDown). Depth just above the sprites.
+    this.flapFX = this.add.particles(0, 0, 'st_particle', {
+      lifespan: 350,
+      speed: { min: 20, max: 80 },
+      scale: { start: 0.6, end: 0 },
+      alpha: { start: 0.6, end: 0 },
+      emitting: false,
+    }).setDepth(3.5);
 
     // Scan sprite pixels to build per-row/per-col silhouette profiles for shaped collision
     this.hitboxScale    = 0.85;
@@ -128,6 +148,10 @@ export class GameScene extends Phaser.Scene {
 
     // Static center divider — drawn once, never needs to be redrawn
     this.add.rectangle(W / 2, H / 2, 3, H, 0x546e7a, 0.9).setDepth(5);
+
+    // Vignette — radial gradient texture stretched over the screen for focus/depth.
+    // Transparent center means HUD readability near the middle is unaffected.
+    this.add.image(W / 2, H / 2, 'st_vignette').setDisplaySize(W, H).setDepth(8);
 
     // Score text
     this.scoreTxt = this.add.text(W / 2, 6, `0s  |  0 ${GT.scoreUnit}`, {
@@ -172,6 +196,8 @@ export class GameScene extends Phaser.Scene {
       this.sideAngle = -20; // snap CCW immediately on tap
       this.hasTapped = true;
       this.wasRising = true;
+      // Puff of particles below the side-view hero on each flap
+      if (this.flapFX) this.flapFX.emitParticleAt(this.charSideX, this.charYPx + 14, 5);
     }
   }
 
@@ -284,6 +310,16 @@ export class GameScene extends Phaser.Scene {
       g.lineBetween(hitX + r, hitY - r, hitX - r, hitY + r);
       g.lineStyle(2, 0xff4444, 0.6);
       g.strokeCircle(hitX, hitY, r + 4);
+
+      // Debris burst at the impact point
+      this.add.particles(0, 0, 'st_particle', {
+        lifespan: 600,
+        speed: { min: 60, max: 200 },
+        scale: { start: 0.9, end: 0 },
+        alpha: { start: 0.9, end: 0 },
+        tint: [0xffffff, 0xff8888, 0xffd54f],
+        emitting: false,
+      }).setDepth(11).explode(24, hitX, hitY);
     }
 
     this.cameras.main.shake(400, 0.018);
@@ -329,9 +365,12 @@ export class GameScene extends Phaser.Scene {
     const rightW = this.lW - rightStart;
     if (rightW > 0) this._placeTile(rightStart, wallY, rightW, WALL_THICKNESS);
 
-    // Subtle gap indicator so players can see where to aim in the top-down view
-    this.gapGfx.lineStyle(1, 0xffffff, 0.12);
+    // Gap aim guide (top-down): a line across the opening with ticks marking each edge.
+    this.gapGfx.lineStyle(2, 0x9fe7ff, 0.25);
     this.gapGfx.lineBetween(gapCX - gapHW, screenY, gapCX + gapHW, screenY);
+    this.gapGfx.lineStyle(2, 0x9fe7ff, 0.5);
+    this.gapGfx.lineBetween(gapCX - gapHW, screenY - 6, gapCX - gapHW, screenY + 6);
+    this.gapGfx.lineBetween(gapCX + gapHW, screenY - 6, gapCX + gapHW, screenY + 6);
   }
 
   _drawSideObstacle(obs) {
@@ -351,6 +390,15 @@ export class GameScene extends Phaser.Scene {
 
     if (gapTop > 0)          this._placeTile(drawX, 0,         drawW, gapTop,              clipOffset);
     if (gapBottom < this.pH) this._placeTile(drawX, gapBottom, drawW, this.pH - gapBottom, clipOffset);
+
+    // Gap aim guide (side): a vertical line down the opening with ticks at each edge,
+    // clamped to stay inside the right panel.
+    const mx = Phaser.Math.Clamp(screenX, this.rX + 2, this.rX + this.rW - 2);
+    this.gapGfx.lineStyle(2, 0x9fe7ff, 0.25);
+    this.gapGfx.lineBetween(mx, gapTop, mx, gapBottom);
+    this.gapGfx.lineStyle(2, 0x9fe7ff, 0.5);
+    this.gapGfx.lineBetween(mx - 6, gapTop, mx + 6, gapTop);
+    this.gapGfx.lineBetween(mx - 6, gapBottom, mx + 6, gapBottom);
   }
 
   // ── Touch hint overlay ─────────────────────────────────────────────────────
@@ -394,6 +442,10 @@ export class GameScene extends Phaser.Scene {
     this.bgLeft.tilePositionY  -= this.speed * this.topScale  * dt;
     this.bgRight.tilePositionX     += this.speed * this.sideScale * dt;
     this.groundStrip.tilePositionX += this.speed * this.sideScale * dt;
+
+    // Parallax layers scroll at 45% speed for a sense of depth
+    this.bgLeftPara.tilePositionY  -= this.speed * this.topScale  * dt * 0.45;
+    this.bgRightPara.tilePositionX += this.speed * this.sideScale * dt * 0.45;
 
     // ── Vertical physics (side view) ────────────────────────────────────────
     this.velY    += GRAVITY * dt;
@@ -583,6 +635,8 @@ export class GameScene extends Phaser.Scene {
     this.topAngle = smooth(this.topAngle, topTarget, 0.30, dt);
     this.charTopSprite.setPosition(this.charXPx, this.charTopY).setAngle(this.topAngle);
     this.charSideSprite.setPosition(this.charSideX, this.charYPx).setAngle(this.sideAngle);
+    this.topShadow.setPosition(this.charXPx, this.charTopY + 12);
+    this.sideShadow.setPosition(this.charSideX + 5, this.charYPx + 10);
     this.scoreTxt.setText(`${Math.floor(this.elapsedTime)}s  |  ${this.wallsPassed} ${GT.scoreUnit}`);
 
     // ── Debug collision outlines ─────────────────────────────────────────────

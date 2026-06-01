@@ -44,7 +44,51 @@ export class BootScene extends Phaser.Scene {
     // Normalize bundled hero sprites into 100px (gameplay) + 300px (title) textures
     this._normalizeCharSprites();
 
+    // Generate decorative FX textures (vignette, parallax dots, particle) once
+    this._generateFXTextures();
+
     this.scene.start('MenuScene');
+  }
+
+  // Procedural textures used by GameScene effects. Generated once at boot (global texture
+  // manager), guarded so a scene restart never re-adds them.
+  _generateFXTextures() {
+    // Vignette: radial gradient, transparent center -> dark edges (stretched to screen).
+    if (!this.textures.exists('st_vignette')) {
+      const c = document.createElement('canvas'); c.width = 512; c.height = 512;
+      const ctx = c.getContext('2d');
+      const g = ctx.createRadialGradient(256, 256, 150, 256, 256, 380);
+      g.addColorStop(0, 'rgba(0,0,0,0)');
+      g.addColorStop(1, 'rgba(0,0,0,0.5)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, 512, 512);
+      this.textures.addCanvas('st_vignette', c);
+    }
+    // Parallax: sparse soft dots, tiled at low alpha for a subtle depth layer.
+    if (!this.textures.exists('st_parallax')) {
+      const c = document.createElement('canvas'); c.width = 256; c.height = 256;
+      const ctx = c.getContext('2d');
+      for (let i = 0; i < 40; i++) {
+        const x = Math.random() * 256, y = Math.random() * 256, r = 1 + Math.random() * 2;
+        const g = ctx.createRadialGradient(x, y, 0, x, y, r * 2);
+        g.addColorStop(0, 'rgba(255,255,255,0.55)');
+        g.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(x, y, r * 2, 0, Math.PI * 2); ctx.fill();
+      }
+      this.textures.addCanvas('st_parallax', c);
+    }
+    // Particle: soft white dot for flap puffs and collision debris.
+    if (!this.textures.exists('st_particle')) {
+      const c = document.createElement('canvas'); c.width = 16; c.height = 16;
+      const ctx = c.getContext('2d');
+      const g = ctx.createRadialGradient(8, 8, 0, 8, 8, 8);
+      g.addColorStop(0, 'rgba(255,255,255,1)');
+      g.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, 16, 16);
+      this.textures.addCanvas('st_particle', c);
+    }
   }
 
   // Bundled hero PNGs in public/sprites/ can be any resolution (e.g. 555×555, 840×840).

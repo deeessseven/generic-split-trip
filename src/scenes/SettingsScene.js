@@ -13,9 +13,9 @@ export class SettingsScene extends Phaser.Scene {
     const SLOT_DEFS = [
       { key: SPRITE_KEYS.CHAR_TOP,  label: GT.slotCharTop,  hint: 'any size' },
       { key: SPRITE_KEYS.CHAR_SIDE, label: GT.slotCharSide, hint: 'any size' },
-      { key: SPRITE_KEYS.BG_TOP,    label: GT.slotBgTop,    hint: '256×256 px' },
-      { key: SPRITE_KEYS.BG_SIDE,   label: GT.slotBgSide,   hint: '256×256 px' },
-      { key: SPRITE_KEYS.OBSTACLE,  label: GT.slotObstacle, hint: '256×256 px' },
+      { key: SPRITE_KEYS.BG_TOP,    label: GT.slotBgTop,    hint: '512×512 tileable' },
+      { key: SPRITE_KEYS.BG_SIDE,   label: GT.slotBgSide,   hint: '512×512 tileable' },
+      { key: SPRITE_KEYS.OBSTACLE,  label: GT.slotObstacle, hint: '256×256 tileable' },
     ];
 
     // Background
@@ -144,7 +144,7 @@ export class SettingsScene extends Phaser.Scene {
         if (SpriteManager.isCharKey(key)) {
           this._saveCharSprite(img, key);
         } else {
-          this._saveGenericSprite(e.target.result, key);
+          this._saveGenericSprite(img, key);
         }
       };
       img.src = e.target.result;
@@ -183,8 +183,12 @@ export class SettingsScene extends Phaser.Scene {
     this.textures.addBase64(titleKey,  title);
   }
 
-  // Non-hero sprites: store the raw dataURL unchanged (no resize needed).
-  _saveGenericSprite(dataURL, key) {
+  // Backgrounds and the wall/obstacle are tiled. Resize uploads to a power-of-two square
+  // (512 backgrounds, 256 wall) so they: (a) tile cleanly with REPEAT wrap in WebGL1,
+  // (b) can mipmap, and (c) don't bloat localStorage at raw camera resolution.
+  _saveGenericSprite(img, key) {
+    const size = (key === SPRITE_KEYS.OBSTACLE) ? 256 : 512;
+    const dataURL = this._canvasResize(img, size);
     SpriteManager.save(key, dataURL);
     const customKey = key + '_custom';
     try { if (this.textures.exists(customKey)) this.textures.remove(customKey); } catch {}
@@ -197,8 +201,8 @@ export class SettingsScene extends Phaser.Scene {
   }
 
   // Resize any image to a square canvas of the given px size, return PNG dataURL.
-  // High-quality smoothing preserves detail when downscaling a large upload into the small
-  // (100px gameplay) texture — the browser default ('low') looks soft/aliased.
+  // High-quality smoothing preserves detail when down/upscaling an upload to the target
+  // size — the browser default ('low') looks soft/aliased.
   _canvasResize(img, size) {
     const canvas = document.createElement('canvas');
     canvas.width  = size;

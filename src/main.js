@@ -25,6 +25,13 @@ const config = {
   type: Phaser.AUTO,
   parent: 'game-container',
   backgroundColor: '#1a1a2e',
+  // Generate mipmaps (power-of-two textures only) so scrolling/minified textures don't
+  // shimmer; antialias is the WebGL default but set explicitly. NPOT textures (heroes)
+  // simply skip mipmaps — no error.
+  render: {
+    mipmapFilter: 'LINEAR_MIPMAP_LINEAR',
+    antialias: true,
+  },
   scale: {
     // RESIZE makes the canvas fill the container exactly — no black bars.
     // The container is always sized in landscape dimensions (see style.css), so the

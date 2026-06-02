@@ -10,6 +10,7 @@ const SPRITE_FILES = {
   [SPRITE_KEYS.BG_TOP]:    'sprites/bkgdTop.png',
   [SPRITE_KEYS.BG_SIDE]:   'sprites/bkgdSide.png',
   [SPRITE_KEYS.OBSTACLE]:  'sprites/wall.png',
+  [SPRITE_KEYS.HIT_MARK]:  'sprites/hitmark.png',
 };
 
 export class BootScene extends Phaser.Scene {
@@ -78,6 +79,23 @@ export class BootScene extends Phaser.Scene {
       }
       this.textures.addCanvas('st_parallax', c);
     }
+    // Default collision mark: a red X + ring (256px). Only if no bundled/uploaded one
+    // exists — so a real sprites/hitmark.png or a Settings upload takes priority.
+    if (!this.textures.exists(SPRITE_KEYS.HIT_MARK)) {
+      const c = document.createElement('canvas'); c.width = 256; c.height = 256;
+      const ctx = c.getContext('2d');
+      const C = 128, R = 78;
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = 'rgba(255,17,17,1)'; ctx.lineWidth = 22;
+      ctx.beginPath();
+      ctx.moveTo(C - R, C - R); ctx.lineTo(C + R, C + R);
+      ctx.moveTo(C + R, C - R); ctx.lineTo(C - R, C + R);
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,68,68,0.6)'; ctx.lineWidth = 12;
+      ctx.beginPath(); ctx.arc(C, C, R + 30, 0, Math.PI * 2); ctx.stroke();
+      this.textures.addCanvas(SPRITE_KEYS.HIT_MARK, c);
+    }
+
     // Particle: soft white dot for flap puffs and collision debris.
     if (!this.textures.exists('st_particle')) {
       const c = document.createElement('canvas'); c.width = 16; c.height = 16;

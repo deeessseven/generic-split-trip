@@ -34,4 +34,5 @@ export const SPRITE_KEYS = {
   BG_TOP:    'bg_top',
   BG_SIDE:   'bg_side',
   OBSTACLE:  'obstacle',
+  HIT_MARK:  'hit_mark',
 };

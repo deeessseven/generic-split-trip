@@ -16,6 +16,7 @@ export class SettingsScene extends Phaser.Scene {
       { key: SPRITE_KEYS.BG_TOP,    label: GT.slotBgTop,    hint: '512×512 tileable' },
       { key: SPRITE_KEYS.BG_SIDE,   label: GT.slotBgSide,   hint: '512×512 tileable' },
       { key: SPRITE_KEYS.OBSTACLE,  label: GT.slotObstacle, hint: '256×256 tileable' },
+      { key: SPRITE_KEYS.HIT_MARK,  label: GT.slotHitMark,  hint: '256×256' },
     ];
 
     // Background
@@ -27,17 +28,18 @@ export class SettingsScene extends Phaser.Scene {
       fontSize: '12px', fontFamily: 'Arial', color: '#78909c',
     }).setOrigin(0.5);
 
-    // Slot grid — 5 slots across
-    const slotW  = 140;
+    // Slot grid — one row; shrink slot width to fit however many slots within the screen.
+    const gap    = 14;
+    const slotW  = Math.min(140, (W * 0.95 - (SLOT_DEFS.length - 1) * gap) / SLOT_DEFS.length);
     const slotH  = 170;
-    const totalW = SLOT_DEFS.length * slotW + (SLOT_DEFS.length - 1) * 14;
+    const totalW = SLOT_DEFS.length * slotW + (SLOT_DEFS.length - 1) * gap;
     const startX = cx - totalW / 2 + slotW / 2;
     const slotY  = cy + 10;
 
     this._previews = {};
 
     SLOT_DEFS.forEach((def, i) => {
-      const x = startX + i * (slotW + 14);
+      const x = startX + i * (slotW + gap);
       this._buildSlot(x, slotY, slotW, slotH, def);
     });
 
@@ -187,7 +189,8 @@ export class SettingsScene extends Phaser.Scene {
   // (512 backgrounds, 256 wall) so they: (a) tile cleanly with REPEAT wrap in WebGL1,
   // (b) can mipmap, and (c) don't bloat localStorage at raw camera resolution.
   _saveGenericSprite(img, key) {
-    const size = (key === SPRITE_KEYS.OBSTACLE) ? 256 : 512;
+    // Backgrounds tile across a whole panel (512); the wall and hit mark are smaller (256).
+    const size = (key === SPRITE_KEYS.BG_TOP || key === SPRITE_KEYS.BG_SIDE) ? 512 : 256;
     const dataURL = this._canvasResize(img, size);
     SpriteManager.save(key, dataURL);
     const customKey = key + '_custom';

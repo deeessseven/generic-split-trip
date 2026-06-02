@@ -38,6 +38,7 @@ export const GT = {
   slotBgTop:        'Background\nTop View',
   slotBgSide:       'Background\nSide View',
   slotObstacle:     'Obstacle\nTexture',
+  slotHitMark:      'Collision\nMark',
   btnBack:          'BACK',
   toastSpriteSaved: 'Sprite saved! It will apply next game.',
 

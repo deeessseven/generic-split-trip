@@ -351,13 +351,9 @@ export class GameScene extends Phaser.Scene {
     AudioSystem.playCrash();
 
     if (hitX !== undefined) {
-      const g = this.add.graphics().setDepth(10);
-      const r = 10;
-      g.lineStyle(3, 0xff1111, 1);
-      g.lineBetween(hitX - r, hitY - r, hitX + r, hitY + r);
-      g.lineBetween(hitX + r, hitY - r, hitX - r, hitY + r);
-      g.lineStyle(2, 0xff4444, 0.6);
-      g.strokeCircle(hitX, hitY, r + 4);
+      // Collision mark — uploadable sprite (default: red X). Displayed ~56px at the contact.
+      const hitKey = SpriteManager.resolveKey(this, SPRITE_KEYS.HIT_MARK);
+      this.add.image(hitX, hitY, hitKey).setDisplaySize(56, 56).setDepth(10);
 
       // Debris burst at the impact point
       this.add.particles(0, 0, 'st_particle', {

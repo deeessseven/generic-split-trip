@@ -241,25 +241,30 @@ export const AudioSystem = {
     o.stop(t + 0.18);
   },
 
+  // Whoosh — looped noise through a bandpass whose center frequency sweeps up then back
+  // down, giving an airy "movement" sound. Triggered by top-view horizontal motion.
   playShuffle() {
     if (!this.sfxEnabled || !this.ctx) return;
     if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
     const t = this.ctx.currentTime;
     const src = this.ctx.createBufferSource();
     src.buffer = this._noiseBuffer();
+    src.loop = true;
     const bp = this.ctx.createBiquadFilter();
     bp.type = 'bandpass';
-    bp.frequency.value = 1800;
-    bp.Q.value = 0.8;
+    bp.Q.value = 1.1;
+    bp.frequency.setValueAtTime(450, t);
+    bp.frequency.exponentialRampToValueAtTime(2600, t + 0.11);
+    bp.frequency.exponentialRampToValueAtTime(700, t + 0.24);
     const g = this.ctx.createGain();
     g.gain.setValueAtTime(0.0001, t);
-    g.gain.linearRampToValueAtTime(0.11, t + 0.01);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
+    g.gain.linearRampToValueAtTime(0.085, t + 0.04);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.24);
     src.connect(bp);
     bp.connect(g);
     g.connect(this._master);
     src.start(t);
-    src.stop(t + 0.1);
+    src.stop(t + 0.26);
   },
 
   // Collision/death impact: a low filtered-noise thud layered with a descending tone.

@@ -23,9 +23,9 @@ export class MenuScene extends Phaser.Scene {
     this.add.rectangle(cx, cy, W, H, 0x0d0d1a);
     this.add.rectangle(cx, cy * 0.5, W, cy, 0x1a1a3e, 0.6);
 
-    // Audio toggle pills (top-left). Persisted; apply game-wide.
-    this._audioToggle(10, 31, 'Music: ', () => AudioSystem.isMusicEnabled(), (v) => AudioSystem.setMusicEnabled(v));
-    this._audioToggle(10, 85, 'Sound: ', () => AudioSystem.isSfxEnabled(),   (v) => AudioSystem.setSfxEnabled(v));
+    // Audio toggle pills (top-left), pushed to the top edge. Persisted; apply game-wide.
+    this._audioToggle(8, 3,  'Music: ', () => AudioSystem.isMusicEnabled(), (v) => AudioSystem.setMusicEnabled(v));
+    this._audioToggle(8, 29, 'Sound: ', () => AudioSystem.isSfxEnabled(),   (v) => AudioSystem.setSfxEnabled(v));
 
     // Decorative split-screen preview lines
     this.add.rectangle(cx, cy, 3, H, 0x29b6f6, 0.4);
@@ -93,12 +93,12 @@ export class MenuScene extends Phaser.Scene {
   // Tappable On/Off pill button (rounded-rect background + centered label, doubled size)
   // anchored at top-left corner (left, top). Toggles and recolors itself.
   _audioToggle(left, top, label, getEnabled, setEnabled) {
-    const h = 46;
+    const h = 23;
     // Measure the widest state ("Off") so the pill width never jumps as it toggles.
     const txt = this.add.text(0, 0, label + 'Off', {
-      fontSize: '26px', fontFamily: '"Arial Black", Arial',
+      fontSize: '13px', fontFamily: '"Arial Black", Arial',
     }).setOrigin(0.5).setDepth(10);
-    const w = Math.ceil(txt.width) + 32;
+    const w = Math.ceil(txt.width) + 16;
     const cx = left + w / 2, cy = top + h / 2;
     txt.setPosition(cx, cy);
 

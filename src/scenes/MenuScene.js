@@ -23,9 +23,9 @@ export class MenuScene extends Phaser.Scene {
     this.add.rectangle(cx, cy, W, H, 0x0d0d1a);
     this.add.rectangle(cx, cy * 0.5, W, cy, 0x1a1a3e, 0.6);
 
-    // Audio toggles (top-left). Persisted; apply game-wide.
-    this._audioToggle(10, 8,  'Music: ', () => AudioSystem.isMusicEnabled(), (v) => AudioSystem.setMusicEnabled(v));
-    this._audioToggle(10, 30, 'Sound: ', () => AudioSystem.isSfxEnabled(),   (v) => AudioSystem.setSfxEnabled(v));
+    // Audio toggle pills (top-left). Persisted; apply game-wide.
+    this._audioToggle(10, 31, 'Music: ', () => AudioSystem.isMusicEnabled(), (v) => AudioSystem.setMusicEnabled(v));
+    this._audioToggle(10, 85, 'Sound: ', () => AudioSystem.isSfxEnabled(),   (v) => AudioSystem.setSfxEnabled(v));
 
     // Decorative split-screen preview lines
     this.add.rectangle(cx, cy, 3, H, 0x29b6f6, 0.4);
@@ -90,17 +90,34 @@ export class MenuScene extends Phaser.Scene {
     }).setOrigin(1, 1);
   }
 
-  // Small tappable On/Off label that toggles and recolors itself.
-  _audioToggle(x, y, label, getEnabled, setEnabled) {
-    const color = () => (getEnabled() ? '#9fe7ff' : '#667');
-    const txt = this.add.text(x, y, label + (getEnabled() ? 'On' : 'Off'), {
-      fontSize: '13px', fontFamily: 'Arial', color: color(),
-    }).setDepth(10).setInteractive({ useHandCursor: true });
-    txt.on('pointerup', () => {
-      const v = !getEnabled();
-      setEnabled(v);
-      txt.setText(label + (v ? 'On' : 'Off')).setColor(color());
-    });
-    return txt;
+  // Tappable On/Off pill button (rounded-rect background + centered label, doubled size)
+  // anchored at top-left corner (left, top). Toggles and recolors itself.
+  _audioToggle(left, top, label, getEnabled, setEnabled) {
+    const h = 46;
+    // Measure the widest state ("Off") so the pill width never jumps as it toggles.
+    const txt = this.add.text(0, 0, label + 'Off', {
+      fontSize: '26px', fontFamily: '"Arial Black", Arial',
+    }).setOrigin(0.5).setDepth(10);
+    const w = Math.ceil(txt.width) + 32;
+    const cx = left + w / 2, cy = top + h / 2;
+    txt.setPosition(cx, cy);
+
+    const g = this.add.graphics().setDepth(9);
+    const apply = () => {
+      const on = getEnabled();
+      txt.setText(label + (on ? 'On' : 'Off')).setColor(on ? '#e6fbff' : '#9aa3ad');
+      g.clear();
+      g.fillStyle(on ? 0x18617a : 0x2a2a3a, 1);
+      g.fillRoundedRect(left, top, w, h, h / 2);
+      g.lineStyle(2, on ? 0x4fc3f7 : 0x4a4a5a, 1);
+      g.strokeRoundedRect(left, top, w, h, h / 2);
+    };
+    apply();
+
+    // Transparent hit zone over the pill handles taps (kept above the label).
+    const zone = this.add.rectangle(cx, cy, w, h, 0x000000, 0)
+      .setInteractive({ useHandCursor: true }).setDepth(10);
+    zone.on('pointerup', () => { setEnabled(!getEnabled()); apply(); });
+    return zone;
   }
 }

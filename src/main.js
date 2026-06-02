@@ -121,6 +121,12 @@ game.events.on('ready', () => {
     document.addEventListener('fullscreenchange', forceRefresh);
     if (window.visualViewport) window.visualViewport.addEventListener('resize', forceRefresh);
     [120, 350, 700, 1200, 2000].forEach((t) => setTimeout(forceRefresh, t));
+    // Precise trigger: re-measure + resize the canvas the instant the container's box actually
+    // changes (rotation, address-bar collapse, etc.) — no timing guesses, no leftover dark bars.
+    if (typeof ResizeObserver !== 'undefined' && sm.parent) {
+      const ro = new ResizeObserver(() => forceRefresh());
+      ro.observe(sm.parent);
+    }
 
     // Trigger an immediate resize with corrected dimensions.
     if (sm.getParentBounds()) sm.refresh();

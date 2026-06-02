@@ -96,6 +96,27 @@ export class MenuScene extends Phaser.Scene {
     addHero(W * 0.20, topKey, 0);
     addHero(W * 0.80, sideKey, 1100);
 
+    // Animated gesture hints in the lower area of each panel: a hand that slides left/right in
+    // the left (top-down steer) and one that taps up/down in the right (side-view rise).
+    const drawHand = (tilt) => {
+      const g = this.add.graphics().setDepth(4);
+      const w = Math.round(26 * s), h = Math.round(52 * s);
+      g.fillStyle(0xeaf2ff, 0.92);
+      g.fillRoundedRect(-w / 2, -h, w, h, w / 2);                                  // thumb (tip up)
+      g.fillEllipse(0, Math.round(w * 0.5), Math.round(w * 2.3), Math.round(w * 1.6)); // fist
+      g.lineStyle(Math.max(1, Math.round(2 * s)), 0x0a0a18, 0.45);
+      g.strokeRoundedRect(-w / 2, -h, w, h, w / 2);
+      g.setRotation(tilt);
+      return g;
+    };
+    const handY = H - si.bottom - Math.round(54 * s);
+    const slideAmp = Math.round(W * 0.06);
+    const tapAmp = Math.round(28 * s);
+    const leftHand = drawHand(-0.12).setPosition(W * 0.25 - slideAmp, handY);
+    this.tweens.add({ targets: leftHand, x: W * 0.25 + slideAmp, duration: 1100, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    const rightHand = drawHand(0.12).setPosition(W * 0.75, handY - tapAmp);
+    this.tweens.add({ targets: rightHand, y: handY, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeIn' });
+
     // ── Center column (Title → SURVIVE → PLAY → Customize), measured & centered in the band ──
     const title = this.add.text(cx, 0, GT.gameTitle, {
       fontSize: fpx(138), fontFamily: '"Arial Black", Arial, sans-serif',

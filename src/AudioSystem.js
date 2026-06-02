@@ -138,6 +138,7 @@ export const AudioSystem = {
   _noise: null,
   _gameOverVoices: null,
   _musicVoices: null, // voices of the current loop, so a stop/toggle can hard-cut them
+  _musicSuppressed: false, // true on the game-over screen: incidental taps must not start music
 
   init() {
     if (this._inited) return;
@@ -223,6 +224,11 @@ export const AudioSystem = {
   // track — used by unlock/resume so they don't change which theme is playing.
   startMusic(which) {
     this.init();
+    // An explicit track request (Play Again / Main Menu / scene change) clears game-over
+    // suppression and plays. An incidental call — unlock() on a stray tap, or a background
+    // resume — must NOT start music while the game-over screen is up; leave the sad tune be.
+    if (which) this._musicSuppressed = false;
+    else if (this._musicSuppressed) return;
     this.stopGameOver(); // any restart hard-cuts the game-over tune
     const track = which || this._trackName || 'menu';
     if (!this.ctx || !this.musicEnabled) { this._trackName = track; return; }
@@ -404,6 +410,7 @@ export const AudioSystem = {
   // first so they don't overlap. Gated on the music toggle (it's a tune, not an SFX).
   playGameOver() {
     this.init();
+    this._musicSuppressed = true; // block incidental music starts until Play Again / Main Menu
     if (!this.ctx || !this.musicEnabled) return;
     this.stopMusic();
     this.stopGameOver();        // clear any previous tune

@@ -70,10 +70,10 @@ export class MenuScene extends Phaser.Scene {
     // SURVIVE tip — the whole "LABEL: desc" line centered, just below the buttons.
     const survY = cy + 96;
     const survLabel = this.add.text(0, survY, GT.tipSurviveLabel + ': ', {
-      fontSize: '12px', fontFamily: '"Arial Black", Arial', color: '#29b6f6',
+      fontSize: '15px', fontFamily: '"Arial Black", Arial', color: '#29b6f6',
     }).setOrigin(0, 0.5);
     const survDesc = this.add.text(0, survY, GT.tipSurviveDesc, {
-      fontSize: '12px', fontFamily: 'Arial', color: '#cfd8dc',
+      fontSize: '15px', fontFamily: 'Arial', color: '#cfd8dc',
     }).setOrigin(0, 0.5);
     const survLeft = cx - (survLabel.width + survDesc.width) / 2;
     survLabel.setX(survLeft);
@@ -82,21 +82,20 @@ export class MenuScene extends Phaser.Scene {
     // LEFT / RIGHT panel tips sit at the bottom of their own half of the screen
     // (label stacked above description so each fits within its half).
     const panelTip = (centerX, label, desc) => {
-      this.add.text(centerX, H - 34, label, {
-        fontSize: '12px', fontFamily: '"Arial Black", Arial', color: '#29b6f6',
+      this.add.text(centerX, H - 36, label, {
+        fontSize: '15px', fontFamily: '"Arial Black", Arial', color: '#29b6f6',
       }).setOrigin(0.5);
       this.add.text(centerX, H - 16, desc, {
-        fontSize: '11px', fontFamily: 'Arial', color: '#cfd8dc', align: 'center',
+        fontSize: '14px', fontFamily: 'Arial', color: '#cfd8dc', align: 'center',
       }).setOrigin(0.5);
     };
     panelTip(W * 0.25, GT.tipLeftLabel,  GT.tipLeftDesc);
     panelTip(W * 0.75, GT.tipRightLabel, GT.tipRightDesc);
 
-    // Version — big & bright top-center so it's an unmistakable "which build am I on?" stamp.
-    this.add.text(cx, 6, GT.gameVersion, {
-      fontSize: '24px', fontFamily: '"Arial Black", Arial',
-      color: '#ffeb3b', stroke: '#000000', strokeThickness: 4,
-    }).setOrigin(0.5, 0).setDepth(20);
+    // Version
+    this.add.text(W - 8, H - 6, GT.gameVersion, {
+      fontSize: '10px', fontFamily: 'Arial', color: '#546e7a',
+    }).setOrigin(1, 1);
   }
 
   // Tappable On/Off pill button (rounded-rect background + centered label, doubled size)

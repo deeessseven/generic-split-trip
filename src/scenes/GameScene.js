@@ -127,11 +127,19 @@ export class GameScene extends Phaser.Scene {
     // Debug collision outline — only created when DEBUG_OUTLINE is enabled
     this.debugGfx = DEBUG_OUTLINE ? this.add.graphics().setDepth(20) : null;
 
-    // Character sprites (on top of obstacles and gap indicator)
+    // Character sprites (on top of obstacles and gap indicator).
+    // ctKey/csKey are the 100px gameplay textures used for COLLISION (1 texel = 1 world px).
+    // For DISPLAY we use the high-res (400px) title textures scaled down to the same 100px
+    // footprint, so the hero is crisp on high-DPI screens (the GPU down-samples a big texture
+    // instead of up-sampling a 100px one). Collision is unaffected — it reads the 100px bounds.
     const ctKey = SpriteManager.resolveKey(this, SPRITE_KEYS.CHAR_TOP);
     const csKey = SpriteManager.resolveKey(this, SPRITE_KEYS.CHAR_SIDE);
-    this.charTopSprite  = this.add.image(this.charXPx, this.charTopY,  ctKey).setDepth(3);
-    this.charSideSprite = this.add.image(this.charSideX, this.charYPx, csKey).setDepth(3);
+    const ctDispKey = SpriteManager.resolveTitleKey(this, SPRITE_KEYS.CHAR_TOP);
+    const csDispKey = SpriteManager.resolveTitleKey(this, SPRITE_KEYS.CHAR_SIDE);
+    const ctDisplay = this.textures.exists(ctDispKey) ? ctDispKey : ctKey; // fall back if no title texture
+    const csDisplay = this.textures.exists(csDispKey) ? csDispKey : csKey;
+    this.charTopSprite  = this.add.image(this.charXPx, this.charTopY,  ctDisplay).setDepth(3);
+    this.charSideSprite = this.add.image(this.charSideX, this.charYPx, csDisplay).setDepth(3);
 
     // Flap puff emitters (emit on demand from _onDown). angle is the emission direction
     // in degrees: 0=right, 90=down, 180=left, 270=up.
@@ -162,6 +170,13 @@ export class GameScene extends Phaser.Scene {
     this.hitboxScale    = 0.85;
     this.charTopBounds  = this._spriteBounds(ctKey);
     this.charSideBounds = this._spriteBounds(csKey);
+    // Factor that renders each (possibly higher-res) display texture at the 100px logical
+    // footprint: gameplay-texture-width / display-texture-width (= 0.25 for 100px vs 400px,
+    // or 1 if it fell back to the gameplay texture). All visual scaling multiplies by this.
+    this.topDisplayScale  = this.charTopBounds.w  / this.textures.getFrame(ctDisplay).realWidth;
+    this.sideDisplayScale = this.charSideBounds.w / this.textures.getFrame(csDisplay).realWidth;
+    this.charTopSprite.setScale(this.topDisplayScale);
+    this.charSideSprite.setScale(this.sideDisplayScale);
 
     // Static center divider — drawn once, never needs to be redrawn
     this.add.rectangle(W / 2, H / 2, 3, H, 0x546e7a, 0.9).setDepth(5);
@@ -250,7 +265,7 @@ export class GameScene extends Phaser.Scene {
     // untilted (ignores the flap tilt). Tracks the ±15% visual scale.
     if (this.flapFX) {
       const sb = this.charSideBounds;
-      const sc = this.charSideSprite.scaleX;
+      const sc = this.charSideSprite.scaleX / this.sideDisplayScale; // logical (100px→world) scale, minus the display-texture factor
       const cx = sb.w / 2, cy = sb.h / 2;
       const px = (2 * sb.leftEdge + sb.rightEdge) / 3;
       const py = sb.botEdge - (sb.botEdge - sb.topEdge) / 5; // up 1/5 of the opaque height
@@ -727,12 +742,12 @@ export class GameScene extends Phaser.Scene {
     }
     const topTarget = this.topTiltState === 'left' ? -20 : this.topTiltState === 'right' ? 20 : 0;
     this.topAngle = smooth(this.topAngle, topTarget, 0.30, dt);
-    this.charTopSprite.setPosition(this.charXPx, this.charTopY).setAngle(this.topAngle).setScale(this.topVisScale);
+    this.charTopSprite.setPosition(this.charXPx, this.charTopY).setAngle(this.topAngle).setScale(this.topVisScale * this.topDisplayScale);
     // Visual-only: scale the side hero ±15% with the top hero's horizontal position
     // (right = bigger, left = smaller). Collision uses charSideBounds × hitboxScale and is
     // never read from the sprite's display scale, so the hitbox is unaffected.
     const sideVisScale = Phaser.Math.Clamp(1 + (this.charXPx / this.lW - 0.5) * 0.30, 0.85, 1.15);
-    this.charSideSprite.setPosition(this.charSideX, this.charYPx).setAngle(this.sideAngle).setScale(sideVisScale);
+    this.charSideSprite.setPosition(this.charSideX, this.charYPx).setAngle(this.sideAngle).setScale(sideVisScale * this.sideDisplayScale);
     this.scoreWallsTxt.setText(`${this.wallsPassed} ${GT.scoreUnit}`);
     this.scoreTimeTxt.setText(`${Math.floor(this.elapsedTime)}s`);
 

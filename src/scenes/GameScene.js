@@ -167,7 +167,7 @@ export class GameScene extends Phaser.Scene {
     }).setDepth(2.6);
 
     // Scan sprite pixels to build per-row/per-col silhouette profiles for shaped collision
-    this.hitboxScale    = 0.85;
+    this.hitboxScale    = 0.95;
     this.charTopBounds  = this._spriteBounds(ctKey);
     this.charSideBounds = this._spriteBounds(csKey);
     // Factor that renders each (possibly higher-res) display texture at the 100px logical

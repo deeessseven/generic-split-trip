@@ -137,8 +137,8 @@ export class GameScene extends Phaser.Scene {
     // Side: ONE larger soft puff near the bottom of the hero's opaque pixels (shifted left),
     // shooting down-left (135°). Depth 3.5 (above the hero) so it's clearly visible.
     this.flapFX = this.add.particles(0, 0, 'st_particle', {
-      lifespan: 400,
-      speed: { min: 20, max: 60 },
+      lifespan: 450,
+      speed: { min: 30, max: 85 }, // enough to clearly shoot out
       angle: { min: 120, max: 150 }, // down-left (135°)
       scale: { start: 4.2, end: 0 }, // 3x larger
       alpha: { start: 0.65, end: 0 },
@@ -236,7 +236,7 @@ export class GameScene extends Phaser.Scene {
       const sb = this.charSideBounds;
       const sc = this.charSideSprite.scaleX;
       const cx = sb.w / 2, cy = sb.h / 2;
-      const px = (3 * sb.leftEdge + sb.rightEdge) / 4; // center shifted left by 25% of opaque width
+      const px = (4 * sb.leftEdge + sb.rightEdge) / 5; // point 1/5 (20%) from the left of the opaque width
       const th = this.sideAngle * Math.PI / 180;
       const cos = Math.cos(th), sin = Math.sin(th);
       const ex = this.charSideX + ((px - cx) * cos - (sb.botEdge - cy) * sin) * sc;

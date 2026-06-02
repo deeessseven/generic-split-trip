@@ -119,20 +119,23 @@ export class MenuScene extends Phaser.Scene {
       x.fill();
       x.shadowColor = 'transparent'; x.shadowBlur = 0; x.shadowOffsetX = 0;
       x.lineWidth = 5; x.strokeStyle = 'rgba(150,95,20,0.5)'; x.stroke();
-      // fingernail: an upside-down U (arch) closed by a base line — rounded top, flat bottom.
-      const nr = 56, nTop = 36, nBot = 124;
+      // fingernail: larger, its top arch CONCENTRIC with the thumb tip (matching curvature, a
+      // 16px skin margin inside), closed by a base line. Subtle gradient fill.
+      const nr = 84, ncy = top + r, nBot = 166; // ncy = thumb-tip center → matching curvature
       x.beginPath();
       x.moveTo(mx - nr, nBot);
-      x.lineTo(mx - nr, nTop + nr);
-      x.arc(mx, nTop + nr, nr, Math.PI, 0, false);
+      x.lineTo(mx - nr, ncy);
+      x.arc(mx, ncy, nr, Math.PI, 0, false);
       x.lineTo(mx + nr, nBot);
       x.closePath();
-      x.fillStyle = 'rgba(255,247,220,0.92)'; x.fill();
+      const ng = x.createLinearGradient(mx - nr, 0, mx + nr, 0);
+      ng.addColorStop(0, '#fffdf2'); ng.addColorStop(0.55, '#fff0c8'); ng.addColorStop(1, '#f3d79a');
+      x.fillStyle = ng; x.fill();
       x.lineWidth = 3; x.strokeStyle = 'rgba(150,100,30,0.55)'; x.stroke();
-      // knuckle creases across the body
+      // knuckle creases across the body (below the nail)
       x.lineWidth = 4; x.strokeStyle = 'rgba(150,100,30,0.38)';
-      x.beginPath(); x.moveTo(mx - 78, 162); x.quadraticCurveTo(mx, 178, mx + 78, 162); x.stroke();
-      x.beginPath(); x.moveTo(mx - 80, 200); x.quadraticCurveTo(mx, 216, mx + 80, 200); x.stroke();
+      x.beginPath(); x.moveTo(mx - 80, 188); x.quadraticCurveTo(mx, 204, mx + 80, 188); x.stroke();
+      x.beginPath(); x.moveTo(mx - 78, 210); x.quadraticCurveTo(mx, 224, mx + 78, 210); x.stroke();
       this.textures.addCanvas(thumbKey, c);
     }
     const thumbW = Math.round(88 * s), thumbH = Math.round(86 * s);

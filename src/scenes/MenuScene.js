@@ -3,6 +3,7 @@ import { SPRITE_KEYS } from '../constants.js';
 import { SpriteManager } from '../SpriteManager.js';
 import { GT } from '../data/GameText.js';
 import { AudioSystem } from '../AudioSystem.js';
+import { safeInsets } from '../safeArea.js';
 
 export class MenuScene extends Phaser.Scene {
   constructor() { super('MenuScene'); }
@@ -23,9 +24,14 @@ export class MenuScene extends Phaser.Scene {
     this.add.rectangle(cx, cy, W, H, 0x0d0d1a);
     this.add.rectangle(cx, cy * 0.5, W, cy, 0x1a1a3e, 0.6);
 
-    // Audio toggle pills (top-left), pushed to the top edge. Persisted; apply game-wide.
-    this._audioToggle(8, 3,  'Music: ', () => AudioSystem.isMusicEnabled(), (v) => AudioSystem.setMusicEnabled(v));
-    this._audioToggle(8, 29, 'Sound: ', () => AudioSystem.isSfxEnabled(),   (v) => AudioSystem.setSfxEnabled(v));
+    // Audio toggle pills (top-left). Inset from rounded corners / notch like the HUD labels:
+    // a small dynamic corner clearance plus any device safe-area inset.
+    const si = safeInsets();
+    const corner = Math.round(Math.min(W, H) * 0.04);
+    const pillX = corner + si.left;
+    const pillTop = corner + si.top;
+    this._audioToggle(pillX, pillTop,      'Music: ', () => AudioSystem.isMusicEnabled(), (v) => AudioSystem.setMusicEnabled(v));
+    this._audioToggle(pillX, pillTop + 26, 'Sound: ', () => AudioSystem.isSfxEnabled(),   (v) => AudioSystem.setSfxEnabled(v));
 
     // Decorative split-screen preview lines
     this.add.rectangle(cx, cy, 3, H, 0x29b6f6, 0.4);

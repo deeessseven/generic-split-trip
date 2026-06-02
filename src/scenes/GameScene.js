@@ -170,14 +170,20 @@ export class GameScene extends Phaser.Scene {
     // Transparent center means HUD readability near the middle is unaffected.
     this.add.image(W / 2, H / 2, 'st_vignette').setDisplaySize(W, H).setDepth(8);
 
-    // Score text
-    this.scoreTxt = this.add.text(W / 2, 6, `0s  |  0 ${GT.scoreUnit}`, {
+    // Score HUD: "<walls> walls  |  <seconds>s", with the | sitting exactly on the divider.
+    // Three anchored pieces (walls right-aligned, centered pipe, seconds left-aligned) so the
+    // pipe lands on the vertical divider line regardless of how wide each side gets.
+    const scoreStyle = {
       fontSize: '18px',
       fontFamily: '"Arial Black", Arial',
       color: '#ffffff',
       stroke: '#000000',
       strokeThickness: 4,
-    }).setOrigin(0.5, 0).setDepth(6);
+    };
+    const scoreDivX = W / 2;
+    this.scoreWallsTxt = this.add.text(scoreDivX - 12, 6, `0 ${GT.scoreUnit}`, scoreStyle).setOrigin(1, 0).setDepth(6);
+    this.add.text(scoreDivX, 6, '|', scoreStyle).setOrigin(0.5, 0).setDepth(6);
+    this.scoreTimeTxt = this.add.text(scoreDivX + 12, 6, '0s', scoreStyle).setOrigin(0, 0).setDepth(6);
 
     // Panel labels. The screen may have rounded corners and/or a notch/cutout that clips the
     // very corners, so inset each label diagonally inward by a small dynamic clearance (a
@@ -725,7 +731,8 @@ export class GameScene extends Phaser.Scene {
     // never read from the sprite's display scale, so the hitbox is unaffected.
     const sideVisScale = Phaser.Math.Clamp(1 + (this.charXPx / this.lW - 0.5) * 0.30, 0.85, 1.15);
     this.charSideSprite.setPosition(this.charSideX, this.charYPx).setAngle(this.sideAngle).setScale(sideVisScale);
-    this.scoreTxt.setText(`${Math.floor(this.elapsedTime)}s  |  ${this.wallsPassed} ${GT.scoreUnit}`);
+    this.scoreWallsTxt.setText(`${this.wallsPassed} ${GT.scoreUnit}`);
+    this.scoreTimeTxt.setText(`${Math.floor(this.elapsedTime)}s`);
 
     // ── Debug collision outlines ─────────────────────────────────────────────
     // Draws the pixel-accurate silhouette used for collision detection.

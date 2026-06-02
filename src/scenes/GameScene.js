@@ -131,12 +131,11 @@ export class GameScene extends Phaser.Scene {
 
     // Flap puff emitters (emit on demand from _onDown). angle is the emission direction
     // in degrees: 0=right, 90=down, 180=left, 270=up.
-    // Side: ONE larger soft puff near the bottom of the hero's opaque pixels (shifted left),
-    // shooting down-left (135°). Depth 3.5 (above the hero) so it's clearly visible.
+    // Side: ONE soft puff (wide and short) near the bottom of the hero's opaque pixels
+    // (shifted left). No motion — it just appears and fades. Depth 3.5 (above the hero).
     this.flapFX = this.add.particles(0, 0, 'st_particle', {
       lifespan: 450,
-      speed: { min: 30, max: 85 }, // enough to clearly shoot out
-      angle: { min: 120, max: 150 }, // down-left (135°)
+      speed: 0, // stationary — just shows up and disappears, no shooting
       scaleX: { start: 8.4, end: 0 }, // double the length (was 4.2)
       scaleY: { start: 2.1, end: 0 }, // half the height (was 4.2)
       alpha: { start: 0.65, end: 0 },

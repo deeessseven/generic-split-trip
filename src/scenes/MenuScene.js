@@ -68,7 +68,7 @@ export class MenuScene extends Phaser.Scene {
     this._audioToggle(cx, musicCY, 'Music: ', () => AudioSystem.isMusicEnabled(), (v) => AudioSystem.setMusicEnabled(v), pillUi);
     this._audioToggle(cx, soundCY, 'Sound: ', () => AudioSystem.isSfxEnabled(),   (v) => AudioSystem.setSfxEnabled(v), pillUi);
     this.add.text(cx, copyrightY, GT.copyright, {
-      fontSize: px(30), fontFamily: 'Arial', color: '#607089',
+      fontSize: px(15), fontFamily: 'Arial', color: '#607089',
     }).setOrigin(0.5, 1);
 
     // ── Center column fit-scale: shrink the doubled column to the free band if needed ──

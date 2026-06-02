@@ -47,10 +47,10 @@ export class MenuScene extends Phaser.Scene {
     let tipsBottom = topTipY;
     const panelTip = (centerX, label, desc) => {
       const l = this.add.text(centerX, topTipY, label, {
-        fontSize: px(45), fontFamily: '"Arial Black", Arial', color: '#29b6f6',
+        fontSize: px(22), fontFamily: '"Arial Black", Arial', color: '#29b6f6',
       }).setOrigin(0.5, 0);
       const d = this.add.text(centerX, topTipY + l.height + Math.round(3 * s), desc, {
-        fontSize: px(39), fontFamily: 'Arial', color: '#cfd8dc',
+        fontSize: px(20), fontFamily: 'Arial', color: '#cfd8dc',
         align: 'center', wordWrap: { width: W * 0.46 },
       }).setOrigin(0.5, 0);
       tipsBottom = Math.max(tipsBottom, d.y + d.height);
@@ -73,14 +73,14 @@ export class MenuScene extends Phaser.Scene {
 
     // ── Center column fit-scale: shrink the doubled column to the free band if needed ──
     const band = pillsTop - tipsBottom;
-    const colEst = 138 * s * 1.15 + 2 * Math.round(16 * s)  // title (+padding, ×1.5)
-                 + 45 * s * 1.35 * 2                        // SURVIVE 2 lines (×1.5)
-                 + (96 + 46) * s                            // PLAY + Customize heights
+    const colEst = 138 * s * 1.45 + 2 * Math.round(16 * s)  // title (generous: stroke+shadow+pad)
+                 + 45 * s * 1.4 * 2                         // SURVIVE 2 lines
+                 + (192 + 46) * s                           // PLAY (doubled) + Customize heights
                  + (14 + 21 + 14) * s;                      // gaps
     const fit = Phaser.Math.Clamp((band - 12 * s) / colEst, 0.5, 1);
     const f = s * fit;                                      // column scale
     const fpx = (n) => `${Math.round(n * f)}px`;
-    const playW = Math.round(380 * f), playH = Math.round(96 * f);
+    const playW = Math.min(Math.round(760 * f), Math.round(W * 0.7)), playH = Math.round(192 * f);
     const setW  = Math.round(250 * f), setH  = Math.round(46 * f);
 
     // ── Hero previews flanking the center column; soft shadow + slow idle bob ──
@@ -141,7 +141,7 @@ export class MenuScene extends Phaser.Scene {
     };
     drawPlay(0x29b6f6);
     this.add.text(cx, playY, 'PLAY', {
-      fontSize: fpx(54), fontFamily: '"Arial Black", Arial', color: '#ffffff',
+      fontSize: fpx(108), fontFamily: '"Arial Black", Arial', color: '#ffffff',
     }).setOrigin(0.5);
     this.add.rectangle(cx, playY, playW, playH, 0x000000, 0).setInteractive({ useHandCursor: true })
       .on('pointerover', () => drawPlay(0x0288d1))

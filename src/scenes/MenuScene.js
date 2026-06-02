@@ -92,10 +92,11 @@ export class MenuScene extends Phaser.Scene {
     panelTip(W * 0.25, GT.tipLeftLabel,  GT.tipLeftDesc);
     panelTip(W * 0.75, GT.tipRightLabel, GT.tipRightDesc);
 
-    // Version
-    this.add.text(W - 8, H - 6, GT.gameVersion, {
-      fontSize: '10px', fontFamily: 'Arial', color: '#546e7a',
-    }).setOrigin(1, 1);
+    // Version — big & bright top-center so it's an unmistakable "which build am I on?" stamp.
+    this.add.text(cx, 6, GT.gameVersion, {
+      fontSize: '24px', fontFamily: '"Arial Black", Arial',
+      color: '#ffeb3b', stroke: '#000000', strokeThickness: 4,
+    }).setOrigin(0.5, 0).setDepth(20);
   }
 
   // Tappable On/Off pill button (rounded-rect background + centered label, doubled size)

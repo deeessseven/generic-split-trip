@@ -2,7 +2,7 @@ export const GT = {
   // ── Identity ──────────────────────────────────────────────────────────────
   gameTitle:        'SPLIT TRIP',
   gameSubtitle:     'Control two dimensions — survive both views',
-  gameVersion:      'v1.0',
+  gameVersion:      'BUILD-A7',
 
   // ── Menu tips ─────────────────────────────────────────────────────────────
   tipLeftLabel:     'LEFT PANEL',

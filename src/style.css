@@ -25,4 +25,12 @@ html, body {
     transform: translate(-50%, -50%) rotate(90deg);
   }
 }
+/* The canvas element must always fill its container, even during the brief first-load window
+   before Phaser's RESIZE syncs the backing buffer — otherwise the dark body background shows
+   as bars at the edges. The container itself is the full (dynamic) viewport, so 100% = full
+   screen. Once Phaser sizes the buffer to the container, this is a 1:1 mapping (no blur). */
 canvas { display: block; }
+#game-container canvas {
+  width: 100% !important;
+  height: 100% !important;
+}

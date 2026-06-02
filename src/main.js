@@ -116,9 +116,11 @@ game.events.on('ready', () => {
     // that a plain window 'resize' can miss).
     const forceRefresh = () => { try { sm.getParentBounds(); sm.refresh(); } catch (e) { /* */ } };
     window.addEventListener('orientationchange', () => setTimeout(forceRefresh, 60));
+    window.addEventListener('load', forceRefresh);
+    window.addEventListener('resize', forceRefresh);
     document.addEventListener('fullscreenchange', forceRefresh);
     if (window.visualViewport) window.visualViewport.addEventListener('resize', forceRefresh);
-    [120, 350, 700, 1200].forEach((t) => setTimeout(forceRefresh, t));
+    [120, 350, 700, 1200, 2000].forEach((t) => setTimeout(forceRefresh, t));
 
     // Trigger an immediate resize with corrected dimensions.
     if (sm.getParentBounds()) sm.refresh();

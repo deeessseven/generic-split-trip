@@ -13,9 +13,12 @@ export const MAX_SPEED = 1500;     // cap so a fast frame can't skip a wall's co
 export const SPAWN_DIST = 680;     // world units between obstacle spawns
 export const VISIBLE_DIST = 920;   // world units of lookahead shown in each panel
 
-// Obstacle gaps (fractions of panel dimension) — starting values, shrink 1% per 5 s elapsed
-export const GAP_X_WIDTH  = 0.57;  // horizontal gap as fraction of left-panel width
-export const GAP_Y_HEIGHT = 0.63;  // vertical gap as fraction of panel height
+// Obstacle gaps are sized dynamically from the hero's measured opaque pixels, per axis (see
+// GameScene._spawnObstacle): gap = hero hitbox size × GAP_MULT_INITIAL, shrinking 1% per 5 s
+// elapsed down to a floor of hero × GAP_MULT_MIN. This auto-scales with the 128px hero or any
+// uploaded sprite — no fixed panel-fraction tuning.
+export const GAP_MULT_INITIAL = 3.0;  // starting gap = 3× the hero's opaque size (per axis)
+export const GAP_MULT_MIN     = 1.4;  // floor: gap never tightens below 1.4× the hero (always passable)
 
 // Obstacle appearance
 export const WALL_THICKNESS = 26;  // px — top-down horizontal wall height

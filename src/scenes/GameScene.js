@@ -2,7 +2,7 @@ import {
   GRAVITY, FLAP_VELOCITY,
   BASE_SPEED, SPEED_RAMP, MAX_SPEED,
   SPAWN_DIST, VISIBLE_DIST,
-  GAP_X_WIDTH, GAP_Y_HEIGHT,
+  GAP_MULT_INITIAL, GAP_MULT_MIN,
   WALL_THICKNESS, WALL_WIDTH,
   CHAR_TOPDOWN_Y_FRAC, CHAR_SIDE_X_FRAC,
   SPRITE_KEYS, GROUND_MARGIN,
@@ -293,19 +293,24 @@ export class GameScene extends Phaser.Scene {
 
   _spawnObstacle() {
     const steps = Math.floor(this.elapsedTime / 5);
-    const decay = Math.pow(0.99, steps);
+    const decay = Math.pow(0.99, steps); // gaps slowly tighten over time
 
-    // Minimum gap that guarantees the hero sprite can physically fit through
+    // Gaps are derived dynamically from the hero's measured opaque pixel size (per axis),
+    // so they scale automatically with the 128px hero or any uploaded sprite:
+    //   horizontal gap ← top-view hero's opaque WIDTH (it steers left/right there)
+    //   vertical gap   ← side-view hero's opaque HEIGHT (it rises/falls there)
+    // Gap = hero hitbox size × GAP_MULT_INITIAL, shrinking with `decay` toward a floor of
+    // hero × GAP_MULT_MIN so it always remains passable.
     const S = this.hitboxScale;
-    const minGapX = this.charTopBounds.maxHalfW  * 2 * S / this.lW + 0.04;
-    const minGapY = this.charSideBounds.maxHalfH * 2 * S / this.pH + 0.04;
+    const heroFracX = this.charTopBounds.maxHalfW  * 2 * S / this.lW; // hero hitbox width  as left-panel fraction
+    const heroFracY = this.charSideBounds.maxHalfH * 2 * S / this.pH; // hero hitbox height as panel-height fraction
 
     this.obstacles.push({
       dist:   VISIBLE_DIST,
       gapX:   this.rng.realInRange(0.18, 0.82),
-      gapXW:  Math.max(GAP_X_WIDTH  * decay, minGapX),
+      gapXW:  Math.max(heroFracX * GAP_MULT_INITIAL * decay, heroFracX * GAP_MULT_MIN),
       gapY:   this.rng.realInRange(0.18, 0.82),
-      gapYH:  Math.max(GAP_Y_HEIGHT * decay, minGapY),
+      gapYH:  Math.max(heroFracY * GAP_MULT_INITIAL * decay, heroFracY * GAP_MULT_MIN),
       passed: false,
     });
   }

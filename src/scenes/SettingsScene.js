@@ -163,11 +163,11 @@ export class SettingsScene extends Phaser.Scene {
     reader.readAsDataURL(file);
   }
 
-  // Hero sprites: resize to 100px (gameplay/collision) and 400px (title display).
-  // One Image decode, two canvas draws — no duplicate file reads.
+  // Hero sprites: 128px (gameplay/collision), 512px (pre-filtered display), and the original
+  // full-res (display, if it fits storage). One Image decode, a few canvas draws.
   _saveCharSprite(img, key) {
     // Hero sprites use the selected resampler (Lanczos-3 / Bicubic Sharper); see imageResample.js.
-    const gameplay = resampleToCanvas(img, 100).toDataURL('image/png');
+    const gameplay = resampleToCanvas(img, 128).toDataURL('image/png');
     const title    = resampleToCanvas(img, 512).toDataURL('image/png');
 
     SpriteManager.save(key, gameplay);

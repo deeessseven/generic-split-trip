@@ -115,11 +115,10 @@ export class BootScene extends Phaser.Scene {
   }
 
   // Bundled hero PNGs in public/sprites/ can be any resolution (e.g. 555×555, 840×840).
-  // GameScene's collision scan reads every pixel, so a large texture is slow. Here we
-  // replace the gameplay texture (char_top / char_side) with a 100px square, and add a
-  // separate 400px square (char_top_title / char_side_title) for the crisp title screen.
-  // This mirrors how user uploads are resized in SettingsScene, so both paths behave the
-  // same. Procedural fallbacks (48px) are skipped — they're already small.
+  // We keep the original under key + '_full' (display), build a 512px pre-filtered display
+  // texture (key + '_title'), and replace the gameplay/collision texture (char_top/char_side)
+  // with a 128px square (1 texel = 1 world px — the hero's logical footprint). This mirrors
+  // how user uploads are resized in SettingsScene. Procedural fallbacks (48px) are skipped.
   _normalizeCharSprites() {
     for (const key of [SPRITE_KEYS.CHAR_TOP, SPRITE_KEYS.CHAR_SIDE]) {
       // Skip sprites that fell back to procedural generation (already small/fast)
@@ -147,8 +146,9 @@ export class BootScene extends Phaser.Scene {
       try { if (this.textures.exists(titleKey)) this.textures.remove(titleKey); } catch {}
       this.textures.addCanvas(titleKey, resampleToCanvas(src, 512));
 
-      // 100px gameplay texture — replaces the native-resolution default key in place
-      const small = resampleToCanvas(src, 100);
+      // 128px gameplay texture — replaces the native-resolution default key in place.
+      // This is the hero's logical/collision footprint (1 texel = 1 world px).
+      const small = resampleToCanvas(src, 128);
       this.textures.remove(key);
       this.textures.addCanvas(key, small);
     }

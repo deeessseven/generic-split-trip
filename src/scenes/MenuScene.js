@@ -102,40 +102,51 @@ export class MenuScene extends Phaser.Scene {
     const thumbKey = 'thumb_hint';
     if (this.textures.exists(thumbKey)) this.textures.remove(thumbKey);
     {
-      const CW = 224, CH = 216;
+      const CW = 224, CH = 224;
       const c = document.createElement('canvas'); c.width = CW; c.height = CH;
       const x = c.getContext('2d');
-      const mx = 112, w = 200, r = w / 2, top = 4, bottom = 204; // wide + short, semicircle tip
+      const mx = 112, w = 200, r = w / 2, top = 18, bottom = CH; // wide+short; tip up, flat bottom at edge
       x.beginPath();
       x.moveTo(mx - r, bottom);
       x.lineTo(mx - r, top + r);
       x.arc(mx, top + r, r, Math.PI, 0, false); // round tip
       x.lineTo(mx + r, bottom);
-      x.closePath();                            // flat bottom
+      x.closePath();
       const g = x.createLinearGradient(mx - r, 0, mx + r, 0); // emoji-yellow skin
       g.addColorStop(0, '#ffe082'); g.addColorStop(0.55, '#ffcb4d'); g.addColorStop(1, '#f2a93b');
       x.fillStyle = g;
-      x.shadowColor = 'rgba(0,0,0,0.35)'; x.shadowBlur = 6; x.shadowOffsetY = 4;
+      x.shadowColor = 'rgba(0,0,0,0.3)'; x.shadowBlur = 6; x.shadowOffsetX = 3;
       x.fill();
-      x.shadowColor = 'transparent'; x.shadowBlur = 0; x.shadowOffsetY = 0;
+      x.shadowColor = 'transparent'; x.shadowBlur = 0; x.shadowOffsetX = 0;
       x.lineWidth = 5; x.strokeStyle = 'rgba(150,95,20,0.5)'; x.stroke();
-      x.beginPath(); x.ellipse(mx, top + 52, 26, 32, 0, 0, Math.PI * 2);    // fingernail near tip
-      x.fillStyle = 'rgba(255,246,214,0.9)'; x.fill();
-      x.lineWidth = 2; x.strokeStyle = 'rgba(150,100,30,0.4)'; x.stroke();
-      x.beginPath(); x.ellipse(mx - 40, top + 120, 14, 46, 0, 0, Math.PI * 2); // soft highlight
-      x.fillStyle = 'rgba(255,248,220,0.25)'; x.fill();
+      // fingernail: an upside-down U (arch) closed by a base line — rounded top, flat bottom.
+      const nr = 56, nTop = 36, nBot = 124;
+      x.beginPath();
+      x.moveTo(mx - nr, nBot);
+      x.lineTo(mx - nr, nTop + nr);
+      x.arc(mx, nTop + nr, nr, Math.PI, 0, false);
+      x.lineTo(mx + nr, nBot);
+      x.closePath();
+      x.fillStyle = 'rgba(255,247,220,0.92)'; x.fill();
+      x.lineWidth = 3; x.strokeStyle = 'rgba(150,100,30,0.55)'; x.stroke();
+      // knuckle creases across the body
+      x.lineWidth = 4; x.strokeStyle = 'rgba(150,100,30,0.38)';
+      x.beginPath(); x.moveTo(mx - 78, 162); x.quadraticCurveTo(mx, 178, mx + 78, 162); x.stroke();
+      x.beginPath(); x.moveTo(mx - 80, 200); x.quadraticCurveTo(mx, 216, mx + 80, 200); x.stroke();
       this.textures.addCanvas(thumbKey, c);
     }
     const thumbW = Math.round(88 * s), thumbH = Math.round(86 * s);
-    const handY = H - si.bottom - Math.round(58 * s);
+    const baseY = H - thumbH / 2;             // image bottom flush with the screen's bottom edge
     const slideAmp = Math.round(W * 0.06);
     const tapAmp = Math.round(28 * s);
-    const leftHand = this.add.image(W * 0.25 - slideAmp, handY, thumbKey)
-      .setDepth(4).setDisplaySize(thumbW, thumbH).setFlipX(true); // left hand (mirrored)
+    // Left hand (mirrored): slides L/R; bottom stays on the screen edge.
+    const leftHand = this.add.image(W * 0.25 - slideAmp, baseY, thumbKey)
+      .setDepth(4).setDisplaySize(thumbW, thumbH).setFlipX(true);
     this.tweens.add({ targets: leftHand, x: W * 0.25 + slideAmp, duration: 1100, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-    const rightHand = this.add.image(W * 0.75, handY - tapAmp, thumbKey)
+    // Right hand: taps DOWNWARD from the edge and back, so its bottom never lifts off the edge.
+    const rightHand = this.add.image(W * 0.75, baseY, thumbKey)
       .setDepth(4).setDisplaySize(thumbW, thumbH);
-    this.tweens.add({ targets: rightHand, y: handY, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeIn' });
+    this.tweens.add({ targets: rightHand, y: baseY + tapAmp, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
 
     // ── Center column (Title → SURVIVE → PLAY → Customize), measured & centered in the band ──
     const title = this.add.text(cx, 0, GT.gameTitle, {

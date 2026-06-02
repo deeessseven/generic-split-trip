@@ -120,9 +120,6 @@ export class GameScene extends Phaser.Scene {
     );
     this._obstacleTileIdx = 0;
 
-    // Gap indicator graphics — drawn each frame on top of wall tiles, below characters
-    this.gapGfx = this.add.graphics().setDepth(2.5);
-
     // Debug collision outline — only created when DEBUG_OUTLINE is enabled
     this.debugGfx = DEBUG_OUTLINE ? this.add.graphics().setDepth(20) : null;
 
@@ -387,7 +384,6 @@ export class GameScene extends Phaser.Scene {
   _renderObstacles() {
     this._obstacleTileIdx = 0;
     for (const t of this._obstacleTiles) t.setVisible(false);
-    this.gapGfx.clear();
     for (const obs of this.obstacles) {
       this._drawTopDownObstacle(obs);
       this._drawSideObstacle(obs);
@@ -408,13 +404,6 @@ export class GameScene extends Phaser.Scene {
     const rightStart = gapCX + gapHW;
     const rightW = this.lW - rightStart;
     if (rightW > 0) this._placeTile(rightStart, wallY, rightW, WALL_THICKNESS);
-
-    // Gap aim guide (top-down): a line across the opening with ticks marking each edge.
-    this.gapGfx.lineStyle(2, 0x9fe7ff, 0.25);
-    this.gapGfx.lineBetween(gapCX - gapHW, screenY, gapCX + gapHW, screenY);
-    this.gapGfx.lineStyle(2, 0x9fe7ff, 0.5);
-    this.gapGfx.lineBetween(gapCX - gapHW, screenY - 6, gapCX - gapHW, screenY + 6);
-    this.gapGfx.lineBetween(gapCX + gapHW, screenY - 6, gapCX + gapHW, screenY + 6);
   }
 
   _drawSideObstacle(obs) {
@@ -434,15 +423,6 @@ export class GameScene extends Phaser.Scene {
 
     if (gapTop > 0)          this._placeTile(drawX, 0,         drawW, gapTop,              clipOffset);
     if (gapBottom < this.pH) this._placeTile(drawX, gapBottom, drawW, this.pH - gapBottom, clipOffset);
-
-    // Gap aim guide (side): a vertical line down the opening with ticks at each edge,
-    // clamped to stay inside the right panel.
-    const mx = Phaser.Math.Clamp(screenX, this.rX + 2, this.rX + this.rW - 2);
-    this.gapGfx.lineStyle(2, 0x9fe7ff, 0.25);
-    this.gapGfx.lineBetween(mx, gapTop, mx, gapBottom);
-    this.gapGfx.lineStyle(2, 0x9fe7ff, 0.5);
-    this.gapGfx.lineBetween(mx - 6, gapTop, mx + 6, gapTop);
-    this.gapGfx.lineBetween(mx - 6, gapBottom, mx + 6, gapBottom);
   }
 
   // ── Touch hint overlay ─────────────────────────────────────────────────────

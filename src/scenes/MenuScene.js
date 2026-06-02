@@ -62,7 +62,7 @@ export class MenuScene extends Phaser.Scene {
     const pillUi = 1.5 * s;
     const pillH = Math.round(23 * pillUi);
     const copyrightY = H - si.bottom - Math.round(6 * s);
-    const soundCY = copyrightY - Math.round(26 * s) - pillH / 2;
+    const soundCY = copyrightY - Math.round(26 * s) - pillH / 2 - Math.round(10 * s); // nudged up 10px
     const musicCY = soundCY - (pillH + Math.round(6 * s));
     const pillsTop = musicCY - pillH / 2;
     this._audioToggle(cx, musicCY, 'Music: ', () => AudioSystem.isMusicEnabled(), (v) => AudioSystem.setMusicEnabled(v), pillUi);
@@ -147,8 +147,8 @@ export class MenuScene extends Phaser.Scene {
     survDesc.setY(yy + survLabel.height);
     yy += survH + Math.round(gap * 1.5);
 
-    // PLAY — rounded (matching the glow pill) with a soft pulsing glow; nudged up 10px.
-    const playY = yy + playH / 2 - Math.round(10 * s);
+    // PLAY — rounded (matching the glow pill) with a soft pulsing glow.
+    const playY = yy + playH / 2;
     const playRound = Math.round(16 * f);
     const playGlow = this.add.graphics();
     playGlow.fillStyle(0x29b6f6, 1).fillRoundedRect(
@@ -156,9 +156,11 @@ export class MenuScene extends Phaser.Scene {
     playGlow.setAlpha(0.18);
     this.tweens.add({ targets: playGlow, alpha: 0.42, duration: 1500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     const playFill = this.add.graphics();
+    const inset = Math.round(8 * f); // shrink the solid blue rect a little inside the hit area / glow
     const drawPlay = (color) => {
       playFill.clear();
-      playFill.fillStyle(color, 1).fillRoundedRect(cx - playW / 2, playY - playH / 2, playW, playH, playRound);
+      playFill.fillStyle(color, 1).fillRoundedRect(
+        cx - playW / 2 + inset / 2, playY - playH / 2 + inset / 2, playW - inset, playH - inset, playRound);
     };
     drawPlay(0x29b6f6);
     this.add.text(cx, playY, 'PLAY', {
@@ -171,7 +173,7 @@ export class MenuScene extends Phaser.Scene {
       .on('pointerup',   () => { AudioSystem.startMusic('game'); this.scene.start('GameScene'); });
     yy += playH + gap;
 
-    const setY = yy + setH / 2 - Math.round(10 * s); // nudged up 10px
+    const setY = yy + setH / 2;
     makeButton(this, cx, setY, setW, setH, GT.settingsTitle, 0x37474f, 0x263238, () => {
       this.scene.start('SettingsScene');
     }, fpx(44));

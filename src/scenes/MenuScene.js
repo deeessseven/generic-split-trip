@@ -58,8 +58,8 @@ export class MenuScene extends Phaser.Scene {
     panelTip(W * 0.25, GT.tipLeftLabel,  GT.tipLeftDesc);
     panelTip(W * 0.75, GT.tipRightLabel, GT.tipRightDesc);
 
-    // ── Audio toggle pills (doubled) + copyright, anchored to the bottom ──
-    const pillUi = 2 * s;
+    // ── Audio toggle pills (compact) + copyright, anchored to the bottom ──
+    const pillUi = s;
     const pillH = Math.round(23 * pillUi);
     const copyrightY = H - si.bottom - Math.round(6 * s);
     const soundCY = copyrightY - Math.round(26 * s) - pillH / 2;
@@ -74,13 +74,13 @@ export class MenuScene extends Phaser.Scene {
     // ── Center column fit-scale: shrink the doubled column to the free band if needed ──
     const band = pillsTop - tipsBottom;
     const colEst = 92 * s * 1.15 + 2 * Math.round(16 * s)   // title (+padding)
-                 + 30 * s * 1.35                            // SURVIVE line
-                 + (74 + 46) * s                            // PLAY + Customize heights
+                 + 30 * s * 1.35 * 2                        // SURVIVE (2 lines)
+                 + (96 + 46) * s                            // PLAY (larger) + Customize heights
                  + (14 + 21 + 14) * s;                      // gaps
     const fit = Phaser.Math.Clamp((band - 12 * s) / colEst, 0.5, 1);
     const f = s * fit;                                      // column scale
     const fpx = (n) => `${Math.round(n * f)}px`;
-    const playW = Math.round(300 * f), playH = Math.round(74 * f);
+    const playW = Math.round(380 * f), playH = Math.round(96 * f);
     const setW  = Math.round(250 * f), setH  = Math.round(46 * f);
 
     // ── Hero previews flanking the center column; soft shadow + slow idle bob ──
@@ -103,15 +103,17 @@ export class MenuScene extends Phaser.Scene {
     }).setOrigin(0.5).setPadding(Math.round(16 * f));
     title.setShadow(0, 0, '#29b6f6', Math.round(18 * f), true, true);
 
-    const survLabel = this.add.text(0, 0, GT.tipSurviveLabel + ': ', {
+    // SURVIVE tip as two centered lines: "SURVIVE:" over the description.
+    const survLabel = this.add.text(cx, 0, GT.tipSurviveLabel + ':', {
       fontSize: fpx(30), fontFamily: '"Arial Black", Arial', color: '#29b6f6',
-    }).setOrigin(0, 0.5);
-    const survDesc = this.add.text(0, 0, GT.tipSurviveDesc, {
-      fontSize: fpx(30), fontFamily: 'Arial', color: '#cfd8dc',
-    }).setOrigin(0, 0.5);
+    }).setOrigin(0.5, 0);
+    const survDesc = this.add.text(cx, 0, GT.tipSurviveDesc, {
+      fontSize: fpx(30), fontFamily: 'Arial', color: '#cfd8dc', align: 'center',
+    }).setOrigin(0.5, 0);
 
     const gap = Math.round(14 * f);
-    const titleH = title.height, survH = survDesc.height;
+    const titleH = title.height;
+    const survH = survLabel.height + survDesc.height;
     const colTotal = titleH + gap + survH + Math.round(gap * 1.5) + playH + gap + setH;
     let yy = Math.max(tipsBottom + Math.round(6 * s), (tipsBottom + pillsTop) / 2 - colTotal / 2);
 
@@ -119,22 +121,32 @@ export class MenuScene extends Phaser.Scene {
     this.tweens.add({ targets: title, scale: 1.025, duration: 2600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     yy += titleH + gap;
 
-    const survY = yy + survH / 2;
-    const survLeft = cx - (survLabel.width + survDesc.width) / 2;
-    survLabel.setPosition(survLeft, survY);
-    survDesc.setPosition(survLeft + survLabel.width, survY);
+    survLabel.setY(yy);
+    survDesc.setY(yy + survLabel.height);
     yy += survH + Math.round(gap * 1.5);
 
+    // PLAY — larger, with ROUNDED corners (matching the glow pill) and a soft pulsing glow.
     const playY = yy + playH / 2;
+    const playRound = Math.round(16 * f);
     const playGlow = this.add.graphics();
     playGlow.fillStyle(0x29b6f6, 1).fillRoundedRect(
-      cx - playW / 2 - 14 * f, playY - playH / 2 - 7 * f, playW + 28 * f, playH + 14 * f, 16 * f);
+      cx - playW / 2 - 14 * f, playY - playH / 2 - 7 * f, playW + 28 * f, playH + 14 * f, playRound + Math.round(4 * f));
     playGlow.setAlpha(0.18);
     this.tweens.add({ targets: playGlow, alpha: 0.42, duration: 1500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-    makeButton(this, cx, playY, playW, playH, 'PLAY', 0x29b6f6, 0x0288d1, () => {
-      AudioSystem.startMusic('game'); // hard-cut the menu theme the instant Play is tapped
-      this.scene.start('GameScene');
-    }, fpx(40));
+    const playFill = this.add.graphics();
+    const drawPlay = (color) => {
+      playFill.clear();
+      playFill.fillStyle(color, 1).fillRoundedRect(cx - playW / 2, playY - playH / 2, playW, playH, playRound);
+    };
+    drawPlay(0x29b6f6);
+    this.add.text(cx, playY, 'PLAY', {
+      fontSize: fpx(54), fontFamily: '"Arial Black", Arial', color: '#ffffff',
+    }).setOrigin(0.5);
+    this.add.rectangle(cx, playY, playW, playH, 0x000000, 0).setInteractive({ useHandCursor: true })
+      .on('pointerover', () => drawPlay(0x0288d1))
+      .on('pointerout',  () => drawPlay(0x29b6f6))
+      .on('pointerdown', () => drawPlay(0x0288d1))
+      .on('pointerup',   () => { AudioSystem.startMusic('game'); this.scene.start('GameScene'); });
     yy += playH + gap;
 
     const setY = yy + setH / 2;

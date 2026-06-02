@@ -134,8 +134,8 @@ export class GameScene extends Phaser.Scene {
     // instead of up-sampling a 100px one). Collision is unaffected — it reads the 100px bounds.
     const ctKey = SpriteManager.resolveKey(this, SPRITE_KEYS.CHAR_TOP);
     const csKey = SpriteManager.resolveKey(this, SPRITE_KEYS.CHAR_SIDE);
-    const ctDispKey = SpriteManager.resolveTitleKey(this, SPRITE_KEYS.CHAR_TOP);
-    const csDispKey = SpriteManager.resolveTitleKey(this, SPRITE_KEYS.CHAR_SIDE);
+    const ctDispKey = SpriteManager.resolveDisplayKey(this, SPRITE_KEYS.CHAR_TOP);
+    const csDispKey = SpriteManager.resolveDisplayKey(this, SPRITE_KEYS.CHAR_SIDE);
     const ctDisplay = this.textures.exists(ctDispKey) ? ctDispKey : ctKey; // fall back if no title texture
     const csDisplay = this.textures.exists(csDispKey) ? csDispKey : csKey;
     this.charTopSprite  = this.add.image(this.charXPx, this.charTopY,  ctDisplay).setDepth(3);

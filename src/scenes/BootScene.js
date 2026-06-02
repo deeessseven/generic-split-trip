@@ -128,6 +128,19 @@ export class BootScene extends Phaser.Scene {
 
       const src = this.textures.get(key).getSourceImage();
 
+      // Preserve the ORIGINAL full-resolution image under key + '_full' for crisp DISPLAY:
+      // GameScene downscales this on the GPU instead of up-scaling the 100px texture. Stored
+      // as an independent canvas copy so removing the original key (below) can't affect it.
+      const fullKey = key + '_full';
+      try { if (this.textures.exists(fullKey)) this.textures.remove(fullKey); } catch {}
+      const fw = src.naturalWidth || src.width, fh = src.naturalHeight || src.height;
+      if (fw && fh) {
+        const fc = document.createElement('canvas');
+        fc.width = fw; fc.height = fh;
+        fc.getContext('2d').drawImage(src, 0, 0);
+        this.textures.addCanvas(fullKey, fc);
+      }
+
       // 400px title texture, added under key + '_title'
       const titleKey = key + '_title';
       try { if (this.textures.exists(titleKey)) this.textures.remove(titleKey); } catch {}

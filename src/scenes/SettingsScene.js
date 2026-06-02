@@ -107,6 +107,9 @@ export class SettingsScene extends Phaser.Scene {
         SpriteManager.removeTitle(key);
         const titleKey = key + '_title_custom';
         try { if (this.textures.exists(titleKey)) this.textures.remove(titleKey); } catch {}
+        SpriteManager.removeFull(key);
+        const fullKey = key + '_full_custom';
+        try { if (this.textures.exists(fullKey)) this.textures.remove(fullKey); } catch {}
       }
       preview.setTexture(key);
     });
@@ -169,6 +172,23 @@ export class SettingsScene extends Phaser.Scene {
 
     SpriteManager.save(key, gameplay);
     SpriteManager.saveTitle(key, title);
+
+    // Also keep the ORIGINAL full-resolution image for crisp in-game display (GameScene
+    // downscales it directly). Stored only if it fits localStorage; otherwise display falls
+    // back to the 400px title. Re-encode the source pixels losslessly to PNG.
+    const fullKey = key + '_full_custom';
+    SpriteManager.removeFull(key); // drop any stale original; only re-saved below if it fits
+    let haveFull = false;
+    try {
+      const fw = img.naturalWidth || img.width, fh = img.naturalHeight || img.height;
+      const fc = document.createElement('canvas');
+      fc.width = fw; fc.height = fh;
+      fc.getContext('2d').drawImage(img, 0, 0);
+      const fullData = fc.toDataURL('image/png');
+      haveFull = SpriteManager.saveFull(key, fullData);
+      try { if (this.textures.exists(fullKey)) this.textures.remove(fullKey); } catch {}
+      if (haveFull) this.textures.addBase64(fullKey, fullData);
+    } catch { haveFull = false; }
 
     const customKey = key + '_custom';
     const titleKey  = key + '_title_custom';

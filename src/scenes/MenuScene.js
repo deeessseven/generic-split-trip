@@ -11,6 +11,7 @@ export class MenuScene extends Phaser.Scene {
   preload() {
     SpriteManager.preloadCustom(this);
     SpriteManager.preloadCustomTitle(this);
+    SpriteManager.preloadCustomFull(this);
   }
 
   create() {

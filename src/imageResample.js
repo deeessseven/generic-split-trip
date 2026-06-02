@@ -14,13 +14,14 @@
 //   'mitchell'        — Mitchell-Netravali: best-balanced sharp/smooth, minimal halos.
 //   'box'             — area average: no ringing at all, soft (good for big reductions).
 //   'triangle'        — bilinear (widened): soft.
+//   'magic-kernel-sharp' — Magic Kernel (quadratic B-spline) + Sharp correction pass; the
+//                       Facebook/Instagram downscaler: sharp and clean with no ringing halos.
 //   'browser'         — canvas imageSmoothingQuality 'high' (the previous default).
-// (Magic Kernel Sharp is also available on request — it needs an extra sharpen pass.)
 //
 // NOTE: bundled sprites in public/sprites/ are resampled at every boot, so a mode change
 // takes effect on reload. UPLOADED heroes are baked at upload time, so re-upload to compare
 // modes on those.
-export const RESAMPLE_MODE = 'mitchell';
+export const RESAMPLE_MODE = 'magic-kernel-sharp';
 
 // ── Kernels ──────────────────────────────────────────────────────────────────
 function lanczosA(x, a) {
@@ -55,6 +56,43 @@ function catmullRom(x) { return cubicBC(x, 0, 0.5); }
 function triangle(x)   { x = Math.abs(x); return x < 1 ? 1 - x : 0; }
 function box(x)        { return Math.abs(x) < 0.5 ? 1 : 0; }
 
+// Magic Kernel (Costella) = the centered quadratic B-spline; support 3/2. On its own it's
+// soft, so "Magic Kernel Sharp" follows the resample with the Sharp correction pass below.
+function magicKernel(x) {
+  x = Math.abs(x);
+  if (x < 0.5) return 0.75 - x * x;
+  if (x < 1.5) { const t = 1.5 - x; return 0.5 * t * t; }
+  return 0;
+}
+
+// Sharp 2013 correction: separable 3-tap [-1/4, 3/2, -1/4] (sums to 1) applied to the
+// resampled image to undo the Magic Kernel's blur. Operates in-place-style on a premult
+// RGBA float buffer with edge clamping; returns a new buffer.
+function sharpenMKS(buf, w, h) {
+  const a = -0.25, b = 1.5;
+  const tmp = new Float32Array(buf.length);
+  for (let y = 0; y < h; y++) {            // horizontal
+    const row = y * w * 4;
+    for (let x = 0; x < w; x++) {
+      const oL = row + (x > 0 ? x - 1 : 0) * 4;
+      const oC = row + x * 4;
+      const oR = row + (x < w - 1 ? x + 1 : w - 1) * 4;
+      for (let c = 0; c < 4; c++) tmp[oC + c] = a * buf[oL + c] + b * buf[oC + c] + a * buf[oR + c];
+    }
+  }
+  const out = new Float32Array(buf.length);
+  for (let y = 0; y < h; y++) {            // vertical
+    const oU = (y > 0 ? y - 1 : 0) * w * 4;
+    const oCrow = y * w * 4;
+    const oD = (y < h - 1 ? y + 1 : h - 1) * w * 4;
+    for (let x = 0; x < w; x++) {
+      const cx4 = x * 4;
+      for (let c = 0; c < 4; c++) out[oCrow + cx4 + c] = a * tmp[oU + cx4 + c] + b * tmp[oCrow + cx4 + c] + a * tmp[oD + cx4 + c];
+    }
+  }
+  return out;
+}
+
 // Map the active mode to its kernel function + support radius (in source pixels).
 function pickKernel() {
   switch (RESAMPLE_MODE) {
@@ -64,6 +102,7 @@ function pickKernel() {
     case 'mitchell':    return { kernel: mitchell,      support: 2 };
     case 'box':         return { kernel: box,           support: 0.5 };
     case 'triangle':    return { kernel: triangle,      support: 1 };
+    case 'magic-kernel-sharp': return { kernel: magicKernel, support: 1.5, sharpen: true };
     case 'bicubic-sharper':
     default:            return { kernel: bicubicSharper, support: 2 };
   }
@@ -173,11 +212,12 @@ export function resampleToCanvas(src, size) {
     fsrc[o + 3] = data[o + 3];
   }
 
-  const { kernel, support } = pickKernel();
+  const { kernel, support, sharpen } = pickKernel();
   const cx = contributions(sw, size, kernel, support);
   const cy = contributions(sh, size, kernel, support);
   const mid = passX(fsrc, sw, sh, size, cx);
-  const fin = passY(mid, size, sh, size, cy);
+  let fin = passY(mid, size, sh, size, cy);
+  if (sharpen) fin = sharpenMKS(fin, size, size); // Magic Kernel Sharp: undo the resample blur
 
   // Unpremultiply + clamp back to 8-bit.
   const canvas = document.createElement('canvas');

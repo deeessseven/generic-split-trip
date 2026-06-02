@@ -14,7 +14,7 @@ export const SPAWN_DIST = 1020;    // world units between obstacle spawns (+50% 
 export const VISIBLE_DIST = 920;   // world units of lookahead shown in each panel
 
 // Obstacle gaps are sized dynamically from the hero's measured opaque pixels, per axis (see
-// GameScene._spawnObstacle): gap = hero hitbox size × GAP_MULT_INITIAL, shrinking 1% per 5 s
+// GameScene._spawnObstacle): gap = hero hitbox size × GAP_MULT_INITIAL, shrinking 1% per 1 s
 // elapsed down to a floor of hero × GAP_MULT_MIN. This auto-scales with the 128px hero or any
 // uploaded sprite — no fixed panel-fraction tuning.
 export const GAP_MULT_INITIAL = 3.0;  // starting gap = 3× the hero's opaque size (per axis)

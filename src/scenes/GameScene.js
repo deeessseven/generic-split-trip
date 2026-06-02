@@ -292,8 +292,8 @@ export class GameScene extends Phaser.Scene {
   // ── Obstacle management ────────────────────────────────────────────────────
 
   _spawnObstacle() {
-    const steps = Math.floor(this.elapsedTime / 5);
-    const decay = Math.pow(0.99, steps); // gaps slowly tighten over time
+    const steps = Math.floor(this.elapsedTime);   // tighten gaps every 1 second (was every 5 s)
+    const decay = Math.pow(0.99, steps);           // −1% per second, floored at the dynamic minimum
 
     // Gaps are derived dynamically from the hero's measured opaque pixel size (per axis),
     // so they scale automatically with the 128px hero or any uploaded sprite:

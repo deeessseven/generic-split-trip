@@ -1,5 +1,6 @@
 import { makeButton } from '../Button.js';
 import { GT } from '../data/GameText.js';
+import { AudioSystem } from '../AudioSystem.js';
 
 export class GameOverScene extends Phaser.Scene {
   constructor() { super('GameOverScene'); }
@@ -9,6 +10,9 @@ export class GameOverScene extends Phaser.Scene {
     const cx = W / 2, cy = H / 2;
     const score = data?.score ?? 0;
     const time  = data?.time  ?? 0;
+
+    // Short, one-time sad tune (stops the looping theme).
+    AudioSystem.playGameOver();
 
     // Dim overlay
     this.add.rectangle(cx, cy, W, H, 0x000000, 0.72);

@@ -340,6 +340,29 @@ export const AudioSystem = {
     o.start(t); o.stop(t + 0.4);
   },
 
+  // Short, non-repeating "sad" melody for the game-over screen. Stops the looping theme
+  // first so they don't overlap. Gated on the music toggle (it's a tune, not an SFX).
+  playGameOver() {
+    this.init();
+    if (!this.ctx || !this.musicEnabled) return;
+    this.stopMusic();
+    if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
+    const t = this.ctx.currentTime + 0.05;
+
+    // Descending A-minor lament (lead).
+    const lead = [
+      [0.0, 0.5, 'A4'], [0.5, 0.5, 'G4'], [1.0, 0.5, 'F4'], [1.5, 1.0, 'E4'],
+      [2.5, 0.5, 'D4'], [3.0, 0.5, 'C4'], [3.5, 0.5, 'D4'], [4.0, 1.6, 'C4'],
+    ];
+    for (const [bt, d, f] of lead) this._voice(N[f], t + bt, d, 'triangle', 0.13, 0.03, 0.22);
+
+    // Sustained minor pad (Am → F) + low bass underneath.
+    const pad = [[0.0, 2.5, ['C4', 'E4', 'A4']], [2.5, 3.1, ['C4', 'F4', 'A4']]];
+    for (const [bt, d, notes] of pad) for (const f of notes) this._voice(N[f], t + bt, d, 'triangle', 0.04, 0.2, 0.5);
+    this._voice(N.A2, t,       2.5, 'sine', 0.11, 0.02, 0.4);
+    this._voice(N.F2, t + 2.5, 3.1, 'sine', 0.11, 0.02, 0.4);
+  },
+
   _noiseBuffer() {
     if (this._noise) return this._noise;
     const len = Math.floor(this.ctx.sampleRate * 0.2);

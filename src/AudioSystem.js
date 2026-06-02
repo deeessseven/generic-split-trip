@@ -370,18 +370,15 @@ export const AudioSystem = {
     add(N.F2, t + 2.5, 3.1, 'sine', 0.11, 0.02, 0.4);
   },
 
-  // Hard-cut the game-over tune (called on restart / background). Quick 30ms fade to
-  // avoid a click, then stop each oscillator.
+  // Hard-cut the game-over tune (called on restart / background). Disconnecting each voice
+  // from the bus gives instant, total silence — including notes scheduled to start LATER in
+  // the tune, which a gain-ramp/stop alone doesn't reliably mute on a running context.
   stopGameOver() {
-    if (!this._gameOverVoices || !this.ctx) { this._gameOverVoices = null; return; }
-    const now = this.ctx.currentTime;
+    if (!this._gameOverVoices) { this._gameOverVoices = null; return; }
     for (const v of this._gameOverVoices) {
-      try {
-        v.g.gain.cancelScheduledValues(now);
-        v.g.gain.setValueAtTime(v.g.gain.value, now);
-        v.g.gain.linearRampToValueAtTime(0.0001, now + 0.03);
-        v.o.stop(now + 0.04);
-      } catch { /* already stopped */ }
+      try { v.g.gain.cancelScheduledValues(0); v.g.gain.value = 0; } catch { /* */ }
+      try { v.g.disconnect(); } catch { /* */ } // sever from the music bus → silent now
+      try { v.o.stop(); } catch { /* not started yet */ }
     }
     this._gameOverVoices = null;
   },

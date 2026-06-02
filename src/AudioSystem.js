@@ -137,6 +137,7 @@ export const AudioSystem = {
   _musicLP: null,
   _noise: null,
   _gameOverVoices: null,
+  _musicVoices: null, // voices of the current loop, so a stop/toggle can hard-cut them
 
   init() {
     if (this._inited) return;
@@ -246,6 +247,17 @@ export const AudioSystem = {
   stopMusic() {
     this._musicOn = false;
     if (this._timer) { clearInterval(this._timer); this._timer = null; }
+    // Hard-cut every note currently sounding/scheduled. Long menu pads ring for ~2s, so
+    // just stopping the scheduler isn't enough — disconnect each voice from the bus so the
+    // music goes silent the instant it's toggled off (and cleanly between track switches).
+    if (this._musicVoices) {
+      for (const v of this._musicVoices) {
+        try { v.g.gain.cancelScheduledValues(0); v.g.gain.value = 0; } catch { /* */ }
+        try { v.g.disconnect(); } catch { /* */ }
+        try { v.o.stop(); } catch { /* not started yet */ }
+      }
+      this._musicVoices = null;
+    }
   },
 
   // Schedule any events due within the lookahead window, looping at LOOP_BEATS.
@@ -271,10 +283,18 @@ export const AudioSystem = {
     const freq = N[ev.f];
     if (!freq) return;
     const d = ev.d * this._beat;
-    if (ev.v === 'pad')         this._voice(freq, t, d, 'triangle', 0.045, 0.12, 0.45);
-    else if (ev.v === 'bass')   this._voice(freq, t, d, 'sine',     0.12,  0.01, 0.12);
-    else if (ev.v === 'bounce') this._voice(freq, t, d, 'triangle', 0.06,  0.01, 0.08);
-    else                        this._voice(freq, t, d, 'triangle', 0.12,  0.02, 0.14);
+    let v;
+    if (ev.v === 'pad')         v = this._voice(freq, t, d, 'triangle', 0.045, 0.12, 0.45);
+    else if (ev.v === 'bass')   v = this._voice(freq, t, d, 'sine',     0.12,  0.01, 0.12);
+    else if (ev.v === 'bounce') v = this._voice(freq, t, d, 'triangle', 0.06,  0.01, 0.08);
+    else                        v = this._voice(freq, t, d, 'triangle', 0.12,  0.02, 0.14);
+    // Track so a toggle/stop can hard-cut it; prune finished notes so the list stays small.
+    if (!this._musicVoices) this._musicVoices = [];
+    this._musicVoices.push(v);
+    if (this._musicVoices.length > 80) {
+      const now = this.ctx.currentTime;
+      this._musicVoices = this._musicVoices.filter((x) => (x.endAt || 0) > now);
+    }
   },
 
   // One enveloped note (attack / hold / release) into the music bus.
@@ -293,7 +313,7 @@ export const AudioSystem = {
     g.connect(this._musicGain);
     o.start(t);
     o.stop(t + dur + 0.03);
-    return { o, g };
+    return { o, g, endAt: t + dur + 0.03 };
   },
 
   // ── SFX (routed past the music bus so the music toggle doesn't affect them) ──

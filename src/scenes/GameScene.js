@@ -137,7 +137,8 @@ export class GameScene extends Phaser.Scene {
       lifespan: 450,
       speed: { min: 30, max: 85 }, // enough to clearly shoot out
       angle: { min: 120, max: 150 }, // down-left (135°)
-      scale: { start: 4.2, end: 0 }, // 3x larger
+      scaleX: { start: 8.4, end: 0 }, // double the length (was 4.2)
+      scaleY: { start: 2.1, end: 0 }, // half the height (was 4.2)
       alpha: { start: 0.65, end: 0 },
       emitting: false,
     }).setDepth(3.5);

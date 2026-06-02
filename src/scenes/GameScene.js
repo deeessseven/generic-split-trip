@@ -178,12 +178,12 @@ export class GameScene extends Phaser.Scene {
       strokeThickness: 4,
     }).setOrigin(0.5, 0).setDepth(6);
 
-    // Panel labels — nudged W/20 toward the horizontal center (left moves right, right moves left)
-    this.add.text(6 + W / 20, 6, `${GT.labelTopView}\n${GT.labelTopHint}`, {
+    // Panel labels — nudged W/25 toward the horizontal center (left moves right, right moves left)
+    this.add.text(6 + W / 25, 6, `${GT.labelTopView}\n${GT.labelTopHint}`, {
       fontSize: '11px', fontFamily: 'Arial', color: '#eceff1',
       alpha: 0.7,
     }).setDepth(6);
-    this.add.text(W - 6 - W / 20, 6, `${GT.labelSideView}\n${GT.labelSideHint}`, {
+    this.add.text(W - 6 - W / 25, 6, `${GT.labelSideView}\n${GT.labelSideHint}`, {
       fontSize: '11px', fontFamily: 'Arial', color: '#eceff1', align: 'right',
       alpha: 0.7,
     }).setOrigin(1, 0).setDepth(6);

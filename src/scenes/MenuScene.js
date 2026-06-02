@@ -16,8 +16,8 @@ export class MenuScene extends Phaser.Scene {
     const { width: W, height: H } = this.scale;
     const cx = W / 2, cy = H / 2;
 
-    // Start the looping theme (defers until the audio context is unlocked by a tap).
-    AudioSystem.startMusic();
+    // Start the slow/happy menu theme (defers until the audio context is unlocked by a tap).
+    AudioSystem.startMusic('menu');
 
     // Background gradient via two rects
     this.add.rectangle(cx, cy, W, H, 0x0d0d1a);

@@ -14,11 +14,8 @@ const N = {
   C5: 523.25, D5: 587.33, E5: 659.25, F5: 698.46,
 };
 
-const BPM = 200;
-const BEAT = 60 / BPM;
-const LOOP_BEATS = 96;   // 24 bars of 4/4 (Sections A + B + C)
-
-// Build the song as a flat, beat-sorted event list: { b: startBeat, d: durBeats, f, v }.
+// Build a song as a flat, beat-sorted event list: { b: startBeat, d: durBeats, f, v }.
+// Tempo (bpm) and loop length (beats) live per-track in TRACKS below; songs are in beats.
 function buildSong() {
   const ev = [];
 
@@ -95,7 +92,32 @@ function buildSong() {
   ev.sort((a, b) => a.b - b.b);
   return ev;
 }
-const SONG = buildSong();
+
+// Menu theme — slow and happy: gentle major progression (C F C G | C F G C), longer notes,
+// no off-beat drive. Written in beats; plays at the menu tempo defined in TRACKS.
+function buildMenuSong() {
+  const ev = [];
+  const chords = [
+    [0,  ['C4', 'E4', 'G4']], [4,  ['C4', 'F4', 'A4']], [8,  ['C4', 'E4', 'G4']], [12, ['D4', 'G4', 'B4']],
+    [16, ['C4', 'E4', 'G4']], [20, ['C4', 'F4', 'A4']], [24, ['D4', 'G4', 'B4']], [28, ['C4', 'E4', 'G4']],
+  ];
+  for (const [b, notes] of chords) for (const f of notes) ev.push({ b, d: 3.9, f, v: 'pad' });
+  ['C2', 'F2', 'C2', 'G2', 'C2', 'F2', 'G2', 'C2'].forEach((f, i) => ev.push({ b: i * 4, d: 3.6, f, v: 'bass' }));
+  const lead = [
+    [0, 2, 'G4'], [2, 2, 'E4'], [4, 2, 'A4'], [6, 2, 'F4'], [8, 2, 'G4'], [10, 2, 'C5'],
+    [12, 2, 'B4'], [14, 2, 'D5'], [16, 2, 'C5'], [18, 2, 'G4'], [20, 2, 'A4'], [22, 2, 'F4'],
+    [24, 2, 'G4'], [26, 2, 'B4'], [28, 4, 'C5'],
+  ];
+  for (const [b, d, f] of lead) ev.push({ b, d, f, v: 'lead' });
+  ev.sort((a, b) => a.b - b.b);
+  return ev;
+}
+
+// Per-track tempo (bpm) and loop length (beats). Songs themselves are written in beats.
+const TRACKS = {
+  game: { song: buildSong(),     bpm: 200, loopBeats: 96 }, // upbeat A+B+C gameplay theme
+  menu: { song: buildMenuSong(), bpm: 96,  loopBeats: 32 }, // slow, happy menu theme
+};
 
 export const AudioSystem = {
   ctx: null,
@@ -106,6 +128,10 @@ export const AudioSystem = {
   _timer: null,
   _evIdx: 0,
   _loopStart: 0,
+  _trackName: null, // 'game' | 'menu' — the currently selected track
+  _song: null,
+  _beat: 0.3,
+  _loopBeats: 96,
   _master: null,
   _musicGain: null,
   _musicLP: null,
@@ -192,12 +218,22 @@ export const AudioSystem = {
   },
 
   // ── Music loop ──────────────────────────────────────────────────────────────
-  startMusic() {
+  // Start (or switch to) a track: 'game' or 'menu'. Omit `which` to (re)start the current
+  // track — used by unlock/resume so they don't change which theme is playing.
+  startMusic(which) {
     this.init();
-    this.stopGameOver(); // restarting the theme (Play Again / Menu) hard-cuts the sad tune
-    if (!this.ctx || !this.musicEnabled || this._musicOn) return;
+    this.stopGameOver(); // any restart hard-cuts the game-over tune
+    const track = which || this._trackName || 'menu';
+    if (!this.ctx || !this.musicEnabled) { this._trackName = track; return; }
+    if (this._musicOn && this._trackName === track) return; // already playing this track
+    this.stopMusic();
+    this._trackName = track;
+    const cfg = TRACKS[track] || TRACKS.game;
+    this._song = cfg.song;
+    this._beat = 60 / cfg.bpm;
+    this._loopBeats = cfg.loopBeats;
     const begin = () => {
-      if (this._musicOn || !this.musicEnabled) return;
+      if (!this.musicEnabled || this._trackName !== track) return; // switched while resuming
       this._musicOn = true;
       this._evIdx = 0;
       this._loopStart = this.ctx.currentTime + 0.15;
@@ -214,19 +250,19 @@ export const AudioSystem = {
 
   // Schedule any events due within the lookahead window, looping at LOOP_BEATS.
   _tick() {
-    if (!this.ctx || !this._musicOn) return;
+    if (!this.ctx || !this._musicOn || !this._song) return;
     if (typeof document !== 'undefined' && document.hidden) return; // never schedule while hidden
     const ahead = 0.2;
     let guard = 0;
     while (guard++ < 256) {
-      const ev = SONG[this._evIdx];
-      const evTime = this._loopStart + ev.b * BEAT;
+      const ev = this._song[this._evIdx];
+      const evTime = this._loopStart + ev.b * this._beat;
       if (evTime >= this.ctx.currentTime + ahead) break;
       this._playEvent(ev, evTime);
       this._evIdx++;
-      if (this._evIdx >= SONG.length) {
+      if (this._evIdx >= this._song.length) {
         this._evIdx = 0;
-        this._loopStart += LOOP_BEATS * BEAT;
+        this._loopStart += this._loopBeats * this._beat;
       }
     }
   },
@@ -234,7 +270,7 @@ export const AudioSystem = {
   _playEvent(ev, t) {
     const freq = N[ev.f];
     if (!freq) return;
-    const d = ev.d * BEAT;
+    const d = ev.d * this._beat;
     if (ev.v === 'pad')         this._voice(freq, t, d, 'triangle', 0.045, 0.12, 0.45);
     else if (ev.v === 'bass')   this._voice(freq, t, d, 'sine',     0.12,  0.01, 0.12);
     else if (ev.v === 'bounce') this._voice(freq, t, d, 'triangle', 0.06,  0.01, 0.08);

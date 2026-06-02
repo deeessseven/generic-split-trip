@@ -38,12 +38,12 @@ export class MenuScene extends Phaser.Scene {
     // Subtle center seam between the two preview halves
     this.add.rectangle(cx, cy, 2, H, 0x4fc3f7, 0.12);
 
-    // Audio toggle pills (top-left). Inset from rounded corners / notch like the HUD labels.
-    const corner = Math.round(Math.min(W, H) * 0.02);
-    const pillX = corner + si.left;
-    const pillTop = corner + si.top;
-    this._audioToggle(pillX, pillTop,      'Music: ', () => AudioSystem.isMusicEnabled(), (v) => AudioSystem.setMusicEnabled(v));
-    this._audioToggle(pillX, pillTop + 26, 'Sound: ', () => AudioSystem.isSfxEnabled(),   (v) => AudioSystem.setSfxEnabled(v));
+    // Audio toggle pills — bottom-center, stacked just above the copyright notice.
+    const pillH = 23;
+    const soundCY = H - si.bottom - 40;
+    const musicCY = soundCY - (pillH + 4);
+    this._audioToggle(cx, musicCY, 'Music: ', () => AudioSystem.isMusicEnabled(), (v) => AudioSystem.setMusicEnabled(v));
+    this._audioToggle(cx, soundCY, 'Sound: ', () => AudioSystem.isSfxEnabled(),   (v) => AudioSystem.setSfxEnabled(v));
 
     // Hero previews — top-view left, side-view right. Crisp 512px display textures, sized to
     // fit between the PLAY button and the screen edges. Each gets a soft ground shadow and a
@@ -97,16 +97,16 @@ export class MenuScene extends Phaser.Scene {
     survLabel.setX(survLeft);
     survDesc.setX(survLeft + survLabel.width);
 
-    // LEFT / RIGHT panel tips at the bottom of each half (label stacked above description).
-    // Anchored above the bottom edge by a 0.03 corner clearance plus the device safe-area bottom.
-    const tipMargin = Math.round(Math.min(W, H) * 0.04) + si.bottom;
+    // LEFT / RIGHT panel tips at the TOP of each half (label on top, description below).
+    // Inset from the top edge by a 0.04 corner clearance plus the device safe-area top.
+    const topTipY = Math.round(Math.min(W, H) * 0.04) + si.top;
     const panelTip = (centerX, label, desc) => {
-      const d = this.add.text(centerX, H - tipMargin, desc, {
-        fontSize: '14px', fontFamily: 'Arial', color: '#cfd8dc', align: 'center',
-      }).setOrigin(0.5, 1);
-      this.add.text(centerX, H - tipMargin - d.height - 3, label, {
+      const l = this.add.text(centerX, topTipY, label, {
         fontSize: '15px', fontFamily: '"Arial Black", Arial', color: '#29b6f6',
-      }).setOrigin(0.5, 1);
+      }).setOrigin(0.5, 0);
+      this.add.text(centerX, topTipY + l.height + 3, desc, {
+        fontSize: '14px', fontFamily: 'Arial', color: '#cfd8dc', align: 'center',
+      }).setOrigin(0.5, 0);
     };
     panelTip(W * 0.25, GT.tipLeftLabel,  GT.tipLeftDesc);
     panelTip(W * 0.75, GT.tipRightLabel, GT.tipRightDesc);
@@ -120,15 +120,16 @@ export class MenuScene extends Phaser.Scene {
     this.cameras.main.fadeIn(350, 9, 9, 18);
   }
 
-  // Tappable On/Off pill button (rounded-rect background + centered label, doubled size)
-  // anchored at top-left corner (left, top). Toggles and recolors itself.
-  _audioToggle(left, top, label, getEnabled, setEnabled) {
+  // Tappable On/Off pill button (rounded-rect background + centered label), anchored by its
+  // CENTER (centerX, centerY). Toggles and recolors itself.
+  _audioToggle(centerX, centerY, label, getEnabled, setEnabled) {
     const h = 23;
     // Measure the widest state ("Off") so the pill width never jumps as it toggles.
     const txt = this.add.text(0, 0, label + 'Off', {
       fontSize: '13px', fontFamily: '"Arial Black", Arial',
     }).setOrigin(0.5).setDepth(10);
     const w = Math.ceil(txt.width) + 16;
+    const left = Math.round(centerX - w / 2), top = Math.round(centerY - h / 2);
     const cx = left + w / 2, cy = top + h / 2;
     txt.setPosition(cx, cy);
 

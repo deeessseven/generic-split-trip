@@ -67,16 +67,17 @@ export class MenuScene extends Phaser.Scene {
       this.scene.start('SettingsScene');
     }, '18px');
 
-    // SURVIVE tip — centered, just below the buttons (was the cut-off last line, moved up).
+    // SURVIVE tip — the whole "LABEL: desc" line centered, just below the buttons.
     const survY = cy + 96;
-    this.add.text(cx - 6, survY, GT.tipSurviveLabel + ':', {
-      fontSize: '12px', fontFamily: '"Arial Black", Arial',
-      color: '#29b6f6', align: 'right',
-    }).setOrigin(1, 0.5);
-    this.add.text(cx + 6, survY, GT.tipSurviveDesc, {
-      fontSize: '12px', fontFamily: 'Arial',
-      color: '#cfd8dc', align: 'left',
+    const survLabel = this.add.text(0, survY, GT.tipSurviveLabel + ': ', {
+      fontSize: '12px', fontFamily: '"Arial Black", Arial', color: '#29b6f6',
     }).setOrigin(0, 0.5);
+    const survDesc = this.add.text(0, survY, GT.tipSurviveDesc, {
+      fontSize: '12px', fontFamily: 'Arial', color: '#cfd8dc',
+    }).setOrigin(0, 0.5);
+    const survLeft = cx - (survLabel.width + survDesc.width) / 2;
+    survLabel.setX(survLeft);
+    survDesc.setX(survLeft + survLabel.width);
 
     // LEFT / RIGHT panel tips sit at the bottom of their own half of the screen
     // (label stacked above description so each fits within its half).

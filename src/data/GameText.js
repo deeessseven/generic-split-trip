@@ -6,11 +6,11 @@ export const GT = {
 
   // ── Menu tips ─────────────────────────────────────────────────────────────
   tipLeftLabel:     'LEFT PANEL',
-  tipLeftDesc:      '← Drag finger left/right to steer → (top-down view)',
+  tipLeftDesc:      '←→ Drag finger left/right to steer → (top-down view)',
   tipRightLabel:    'RIGHT PANEL',
   tipRightDesc:     'Tap to fly up — release and you fall (side view)',
   tipSurviveLabel:  'SURVIVE',
-  tipSurviveDesc:   'Align both axes to pass through each gap!',
+  tipSurviveDesc:   'Go through the gaps in both panels',
 
   // ── In-game labels ────────────────────────────────────────────────────────
   labelTopView:     'TOP VIEW',

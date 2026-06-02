@@ -551,7 +551,7 @@ export class GameScene extends Phaser.Scene {
     // display → +15%, at the bottom → −15%. Visual only — the wall-hit collision
     // (charTopBounds × hitboxScale) is unaffected; the opaque-pixel clamp below multiplies
     // by this scale so the (now larger/smaller) visible pixels still respect the bounds.
-    this.topVisScale = Phaser.Math.Clamp(1 + (0.5 - this.charYPx / this.pH) * 0.30, 0.85, 1.15);
+    this.topVisScale = Phaser.Math.Clamp(1 + (0.5 - this.charYPx / this.pH) * 0.20, 0.90, 1.10);
 
     // ── Horizontal position (top-down, smooth follow finger) ────────────────
     this.charXPx = smooth(this.charXPx, this.targetCharXPx, 0.22, dt);
@@ -751,7 +751,7 @@ export class GameScene extends Phaser.Scene {
     // Visual-only: scale the side hero ±15% with the top hero's horizontal position
     // (right = bigger, left = smaller). Collision uses charSideBounds × hitboxScale and is
     // never read from the sprite's display scale, so the hitbox is unaffected.
-    const sideVisScale = Phaser.Math.Clamp(1 + (this.charXPx / this.lW - 0.5) * 0.30, 0.85, 1.15);
+    const sideVisScale = Phaser.Math.Clamp(1 + (this.charXPx / this.lW - 0.5) * 0.20, 0.90, 1.10);
     this.charSideSprite.setPosition(this.charSideX, this.charYPx).setAngle(this.sideAngle).setScale(sideVisScale * this.sideDisplayScale);
     this.scoreWallsTxt.setText(`${this.wallsPassed} ${GT.scoreUnit}`);
     this.scoreTimeTxt.setText(`${Math.floor(this.elapsedTime)}s`);

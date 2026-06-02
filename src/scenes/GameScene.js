@@ -227,17 +227,19 @@ export class GameScene extends Phaser.Scene {
 
   // Flap thrust: one puff per view, fired together.
   _emitFlapPuffs() {
-    // Side: one larger soft puff near the bottom of the opaque silhouette, shifted left by
-    // 25% of the opaque horizontal length, shooting down-left. Tracks tilt + visual scale.
+    // Side: one soft puff, centered at the hero's visible bottom edge, 1/5 from the left of
+    // the opaque width. botEdge is nudged up ~20px because the sprite art has faint
+    // (low-alpha) pixels below the solid body. Tracks tilt + visual scale.
     if (this.flapFX) {
       const sb = this.charSideBounds;
       const sc = this.charSideSprite.scaleX;
       const cx = sb.w / 2, cy = sb.h / 2;
       const px = (4 * sb.leftEdge + sb.rightEdge) / 5; // point 1/5 (20%) from the left of the opaque width
+      const py = sb.botEdge - 20;                       // visible bottom edge (above the faint pixels)
       const th = this.sideAngle * Math.PI / 180;
       const cos = Math.cos(th), sin = Math.sin(th);
-      const ex = this.charSideX + ((px - cx) * cos - (sb.botEdge - cy) * sin) * sc;
-      const ey = this.charYPx   + ((px - cx) * sin + (sb.botEdge - cy) * cos) * sc;
+      const ex = this.charSideX + ((px - cx) * cos - (py - cy) * sin) * sc;
+      const ey = this.charYPx   + ((px - cx) * sin + (py - cy) * cos) * sc;
       this.flapFX.emitParticleAt(ex, ey, 1);
     }
     // Top: one extra-large soft poof from the middle of the bottom 1/3 of the opaque pixels.

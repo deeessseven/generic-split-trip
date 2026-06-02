@@ -236,7 +236,7 @@ export class GameScene extends Phaser.Scene {
       const sb = this.charSideBounds;
       const sc = this.charSideSprite.scaleX;
       const cx = sb.w / 2, cy = sb.h / 2;
-      const px = (sb.leftEdge + sb.rightEdge) / 2 - 0.25 * (sb.rightEdge - sb.leftEdge);
+      const px = (3 * sb.leftEdge + sb.rightEdge) / 4; // center shifted left by 25% of opaque width
       const th = this.sideAngle * Math.PI / 180;
       const cos = Math.cos(th), sin = Math.sin(th);
       const ex = this.charSideX + ((px - cx) * cos - (sb.botEdge - cy) * sin) * sc;

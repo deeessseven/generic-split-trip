@@ -230,16 +230,17 @@ export class GameScene extends Phaser.Scene {
 
   // Flap thrust: one puff per view, fired together.
   _emitFlapPuffs() {
-    // Side: one soft puff, vertically centered on the sprite's bottom-most opaque pixel
-    // (adaptive per sprite — no fixed offset), 1/3 from the left of the opaque width.
-    // Untilted: ignores the flap tilt. Tracks the ±15% visual scale.
+    // Side: one soft puff, 1/3 from the left of the opaque width, and raised from the
+    // bottom-most opaque pixel by 1/5 of the (untilted) opaque height. Adaptive per sprite,
+    // untilted (ignores the flap tilt). Tracks the ±15% visual scale.
     if (this.flapFX) {
       const sb = this.charSideBounds;
       const sc = this.charSideSprite.scaleX;
       const cx = sb.w / 2, cy = sb.h / 2;
       const px = (2 * sb.leftEdge + sb.rightEdge) / 3;
+      const py = sb.botEdge - (sb.botEdge - sb.topEdge) / 5; // up 1/5 of the opaque height
       const ex = this.charSideX + (px - cx) * sc;
-      const ey = this.charYPx   + (sb.botEdge - cy) * sc;
+      const ey = this.charYPx   + (py - cy) * sc;
       this.flapFX.emitParticleAt(ex, ey, 1);
     }
     // Top: one extra-large soft poof from the middle of the bottom 1/3 of the opaque pixels.

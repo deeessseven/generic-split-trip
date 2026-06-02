@@ -100,32 +100,33 @@ export class MenuScene extends Phaser.Scene {
     // drawn once to a texture. Left thumb (mirrored) slides L/R = top-down steer; right thumb
     // taps up/down = side-view rise.
     const thumbKey = 'thumb_hint';
-    if (!this.textures.exists(thumbKey)) {
-      const CW = 120, CH = 330;
+    if (this.textures.exists(thumbKey)) this.textures.remove(thumbKey);
+    {
+      const CW = 224, CH = 216;
       const c = document.createElement('canvas'); c.width = CW; c.height = CH;
       const x = c.getContext('2d');
-      const mx = 60, w = 80, r = w / 2, top = 26, bottom = 300; // long rect, semicircle tip
+      const mx = 112, w = 200, r = w / 2, top = 4, bottom = 204; // wide + short, semicircle tip
       x.beginPath();
       x.moveTo(mx - r, bottom);
       x.lineTo(mx - r, top + r);
       x.arc(mx, top + r, r, Math.PI, 0, false); // round tip
       x.lineTo(mx + r, bottom);
       x.closePath();                            // flat bottom
-      const g = x.createLinearGradient(mx - r, 0, mx + r, 0); // skin shading, light from the left
-      g.addColorStop(0, '#ffe0c4'); g.addColorStop(0.55, '#eaa97c'); g.addColorStop(1, '#cf8659');
+      const g = x.createLinearGradient(mx - r, 0, mx + r, 0); // emoji-yellow skin
+      g.addColorStop(0, '#ffe082'); g.addColorStop(0.55, '#ffcb4d'); g.addColorStop(1, '#f2a93b');
       x.fillStyle = g;
-      x.shadowColor = 'rgba(0,0,0,0.35)'; x.shadowBlur = 12; x.shadowOffsetY = 5;
+      x.shadowColor = 'rgba(0,0,0,0.35)'; x.shadowBlur = 6; x.shadowOffsetY = 4;
       x.fill();
       x.shadowColor = 'transparent'; x.shadowBlur = 0; x.shadowOffsetY = 0;
-      x.lineWidth = 4; x.strokeStyle = 'rgba(85,48,26,0.55)'; x.stroke();
-      x.beginPath(); x.ellipse(mx, top + 40, 15, 22, 0, 0, Math.PI * 2);    // fingernail near tip
-      x.fillStyle = 'rgba(255,245,238,0.9)'; x.fill();
-      x.lineWidth = 2; x.strokeStyle = 'rgba(120,80,55,0.4)'; x.stroke();
-      x.beginPath(); x.ellipse(mx - 16, top + 130, 9, 55, 0, 0, Math.PI * 2); // soft highlight
-      x.fillStyle = 'rgba(255,240,225,0.22)'; x.fill();
+      x.lineWidth = 5; x.strokeStyle = 'rgba(150,95,20,0.5)'; x.stroke();
+      x.beginPath(); x.ellipse(mx, top + 52, 26, 32, 0, 0, Math.PI * 2);    // fingernail near tip
+      x.fillStyle = 'rgba(255,246,214,0.9)'; x.fill();
+      x.lineWidth = 2; x.strokeStyle = 'rgba(150,100,30,0.4)'; x.stroke();
+      x.beginPath(); x.ellipse(mx - 40, top + 120, 14, 46, 0, 0, Math.PI * 2); // soft highlight
+      x.fillStyle = 'rgba(255,248,220,0.25)'; x.fill();
       this.textures.addCanvas(thumbKey, c);
     }
-    const thumbH = Math.round(110 * s), thumbW = Math.round(110 * s * 120 / 330);
+    const thumbW = Math.round(88 * s), thumbH = Math.round(86 * s);
     const handY = H - si.bottom - Math.round(58 * s);
     const slideAmp = Math.round(W * 0.06);
     const tapAmp = Math.round(28 * s);

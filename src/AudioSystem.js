@@ -14,9 +14,9 @@ const N = {
   C5: 523.25, D5: 587.33, E5: 659.25, F5: 698.46,
 };
 
-const BPM = 152;
+const BPM = 200;
 const BEAT = 60 / BPM;
-const LOOP_BEATS = 64;   // 16 bars of 4/4 → ~25s loop (Section A + a brighter Section B)
+const LOOP_BEATS = 96;   // 24 bars of 4/4 (Sections A + B + C)
 
 // Build the song as a flat, beat-sorted event list: { b: startBeat, d: durBeats, f, v }.
 function buildSong() {
@@ -33,12 +33,18 @@ function buildSong() {
     [40, ['C4', 'E4', 'G4']], [44, ['D4', 'G4', 'B4']],
     [48, ['C4', 'E4', 'A4']], [52, ['C4', 'F4', 'A4']],
     [56, ['D4', 'G4', 'B4']], [60, ['D4', 'G4', 'B4']],
+    // Section C (bars 17-24): F G Am G | F G C G
+    [64, ['C4', 'F4', 'A4']], [68, ['D4', 'G4', 'B4']],
+    [72, ['C4', 'E4', 'A4']], [76, ['D4', 'G4', 'B4']],
+    [80, ['C4', 'F4', 'A4']], [84, ['D4', 'G4', 'B4']],
+    [88, ['C4', 'E4', 'G4']], [92, ['D4', 'G4', 'B4']],
   ];
   for (const [b, notes] of chords) for (const f of notes) ev.push({ b, d: 3.8, f, v: 'pad' });
 
   // Bass — root on beats 1 and 3 of each bar.
   const roots = ['C2', 'G2', 'A2', 'F2', 'C2', 'G2', 'F2', 'G2',
-                 'A2', 'F2', 'C2', 'G2', 'A2', 'F2', 'G2', 'G2'];
+                 'A2', 'F2', 'C2', 'G2', 'A2', 'F2', 'G2', 'G2',
+                 'F2', 'G2', 'A2', 'G2', 'F2', 'G2', 'C2', 'G2'];
   roots.forEach((f, i) => {
     ev.push({ b: i * 4,     d: 1.6, f, v: 'bass' });
     ev.push({ b: i * 4 + 2, d: 1.6, f, v: 'bass' });
@@ -46,7 +52,8 @@ function buildSong() {
 
   // Light off-beat "bounce" (the fifth of each root) on beats 2 and 4 — adds upbeat lift.
   const fifths = ['G2', 'D3', 'E3', 'C3', 'G2', 'D3', 'C3', 'D3',
-                  'E3', 'C3', 'G2', 'D3', 'E3', 'C3', 'D3', 'D3'];
+                  'E3', 'C3', 'G2', 'D3', 'E3', 'C3', 'D3', 'D3',
+                  'C3', 'D3', 'E3', 'D3', 'C3', 'D3', 'G2', 'D3'];
   fifths.forEach((f, i) => {
     ev.push({ b: i * 4 + 1, d: 0.6, f, v: 'bounce' });
     ev.push({ b: i * 4 + 3, d: 0.6, f, v: 'bounce' });
@@ -73,6 +80,15 @@ function buildSong() {
     [52, 1.5, 'F5'], [53.5, 0.5, 'E5'], [54, 2, 'C5'],
     [56, 1, 'D5'], [57, 1, 'B4'], [58, 2, 'G4'],
     [60, 2, 'D5'], [62, 2, 'G4'],
+    // Section C — descending-then-rising contrast (new)
+    [64, 1, 'C5'], [65, 1, 'A4'], [66, 2, 'F4'],
+    [68, 1, 'D5'], [69, 1, 'B4'], [70, 2, 'G4'],
+    [72, 1.5, 'E5'], [73.5, 0.5, 'C5'], [74, 2, 'A4'],
+    [76, 2, 'D5'], [78, 2, 'B4'],
+    [80, 1, 'C5'], [81, 1, 'F5'], [82, 2, 'A4'],
+    [84, 1, 'B4'], [85, 1, 'D5'], [86, 2, 'G4'],
+    [88, 1, 'C5'], [89, 1, 'E5'], [90, 2, 'G4'],
+    [92, 2, 'D5'], [94, 2, 'G4'],
   ];
   for (const [b, d, f] of lead) ev.push({ b, d, f, v: 'lead' });
 

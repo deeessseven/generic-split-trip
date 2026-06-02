@@ -62,6 +62,20 @@ const config = {
   scene: [BootScene, MenuScene, GameScene, GameOverScene, SettingsScene],
 };
 
+// Sharpen ALL text game-wide: render every Text object's internal canvas at the device pixel
+// ratio (capped) so glyphs stay crisp on high-DPI screens. Patched on the factory so it applies
+// to every this.add.text(...) without editing each call. Text-only — it doesn't touch the
+// canvas/camera/input (unlike full-DPI rendering, which broke).
+{
+  const textDpr = Math.min(Math.max(window.devicePixelRatio || 1, 1), 3);
+  const _text = Phaser.GameObjects.GameObjectFactory.prototype.text;
+  Phaser.GameObjects.GameObjectFactory.prototype.text = function (x, y, text, style) {
+    style = style || {};
+    if (style.resolution === undefined) style.resolution = textDpr;
+    return _text.call(this, x, y, text, style);
+  };
+}
+
 const game = new Phaser.Game(config);
 
 // When the container is CSS-rotated 90°CW (portrait mode), Phaser's built-in

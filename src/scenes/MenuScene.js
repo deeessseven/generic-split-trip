@@ -47,10 +47,10 @@ export class MenuScene extends Phaser.Scene {
     let tipsBottom = topTipY;
     const panelTip = (centerX, label, desc) => {
       const l = this.add.text(centerX, topTipY, label, {
-        fontSize: px(30), fontFamily: '"Arial Black", Arial', color: '#29b6f6',
+        fontSize: px(45), fontFamily: '"Arial Black", Arial', color: '#29b6f6',
       }).setOrigin(0.5, 0);
       const d = this.add.text(centerX, topTipY + l.height + Math.round(3 * s), desc, {
-        fontSize: px(26), fontFamily: 'Arial', color: '#cfd8dc',
+        fontSize: px(39), fontFamily: 'Arial', color: '#cfd8dc',
         align: 'center', wordWrap: { width: W * 0.46 },
       }).setOrigin(0.5, 0);
       tipsBottom = Math.max(tipsBottom, d.y + d.height);
@@ -59,7 +59,7 @@ export class MenuScene extends Phaser.Scene {
     panelTip(W * 0.75, GT.tipRightLabel, GT.tipRightDesc);
 
     // ── Audio toggle pills (compact) + copyright, anchored to the bottom ──
-    const pillUi = s;
+    const pillUi = 1.5 * s;
     const pillH = Math.round(23 * pillUi);
     const copyrightY = H - si.bottom - Math.round(6 * s);
     const soundCY = copyrightY - Math.round(26 * s) - pillH / 2;
@@ -68,14 +68,14 @@ export class MenuScene extends Phaser.Scene {
     this._audioToggle(cx, musicCY, 'Music: ', () => AudioSystem.isMusicEnabled(), (v) => AudioSystem.setMusicEnabled(v), pillUi);
     this._audioToggle(cx, soundCY, 'Sound: ', () => AudioSystem.isSfxEnabled(),   (v) => AudioSystem.setSfxEnabled(v), pillUi);
     this.add.text(cx, copyrightY, GT.copyright, {
-      fontSize: px(20), fontFamily: 'Arial', color: '#607089',
+      fontSize: px(30), fontFamily: 'Arial', color: '#607089',
     }).setOrigin(0.5, 1);
 
     // ── Center column fit-scale: shrink the doubled column to the free band if needed ──
     const band = pillsTop - tipsBottom;
-    const colEst = 92 * s * 1.15 + 2 * Math.round(16 * s)   // title (+padding)
-                 + 30 * s * 1.35 * 2                        // SURVIVE (2 lines)
-                 + (96 + 46) * s                            // PLAY (larger) + Customize heights
+    const colEst = 138 * s * 1.15 + 2 * Math.round(16 * s)  // title (+padding, ×1.5)
+                 + 45 * s * 1.35 * 2                        // SURVIVE 2 lines (×1.5)
+                 + (96 + 46) * s                            // PLAY + Customize heights
                  + (14 + 21 + 14) * s;                      // gaps
     const fit = Phaser.Math.Clamp((band - 12 * s) / colEst, 0.5, 1);
     const f = s * fit;                                      // column scale
@@ -98,24 +98,25 @@ export class MenuScene extends Phaser.Scene {
 
     // ── Center column (Title → SURVIVE → PLAY → Customize), measured & centered in the band ──
     const title = this.add.text(cx, 0, GT.gameTitle, {
-      fontSize: fpx(92), fontFamily: '"Arial Black", Arial, sans-serif',
+      fontSize: fpx(138), fontFamily: '"Arial Black", Arial, sans-serif',
       color: '#ffffff', stroke: '#29b6f6', strokeThickness: Math.max(3, Math.round(8 * f)),
     }).setOrigin(0.5).setPadding(Math.round(16 * f));
     title.setShadow(0, 0, '#29b6f6', Math.round(18 * f), true, true);
 
     // SURVIVE tip as two centered lines: "SURVIVE:" over the description.
     const survLabel = this.add.text(cx, 0, GT.tipSurviveLabel + ':', {
-      fontSize: fpx(30), fontFamily: '"Arial Black", Arial', color: '#29b6f6',
+      fontSize: fpx(45), fontFamily: '"Arial Black", Arial', color: '#29b6f6',
     }).setOrigin(0.5, 0);
     const survDesc = this.add.text(cx, 0, GT.tipSurviveDesc, {
-      fontSize: fpx(30), fontFamily: 'Arial', color: '#cfd8dc', align: 'center',
+      fontSize: fpx(45), fontFamily: 'Arial', color: '#cfd8dc', align: 'center',
     }).setOrigin(0.5, 0);
 
     const gap = Math.round(14 * f);
     const titleH = title.height;
     const survH = survLabel.height + survDesc.height;
     const colTotal = titleH + gap + survH + Math.round(gap * 1.5) + playH + gap + setH;
-    let yy = Math.max(tipsBottom + Math.round(6 * s), (tipsBottom + pillsTop) / 2 - colTotal / 2);
+    // Centered in the band, then nudged up ~20px (dynamic) so the title/SURVIVE sit higher.
+    let yy = Math.max(tipsBottom + Math.round(6 * s), (tipsBottom + pillsTop) / 2 - colTotal / 2 - Math.round(20 * s));
 
     title.setY(yy + titleH / 2);
     this.tweens.add({ targets: title, scale: 1.025, duration: 2600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });

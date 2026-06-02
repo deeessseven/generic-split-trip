@@ -75,13 +75,13 @@ export class MenuScene extends Phaser.Scene {
     const band = pillsTop - tipsBottom;
     const colEst = 138 * s * 1.45 + 2 * Math.round(16 * s)  // title (generous: stroke+shadow+pad)
                  + 45 * s * 1.4 * 2                         // SURVIVE 2 lines
-                 + (192 + 46) * s                           // PLAY (doubled) + Customize heights
+                 + (144 + 92) * s                           // PLAY (75%) + Customize (doubled) heights
                  + (14 + 21 + 14) * s;                      // gaps
     const fit = Phaser.Math.Clamp((band - 12 * s) / colEst, 0.5, 1);
     const f = s * fit;                                      // column scale
     const fpx = (n) => `${Math.round(n * f)}px`;
-    const playW = Math.min(Math.round(760 * f), Math.round(W * 0.7)), playH = Math.round(192 * f);
-    const setW  = Math.round(250 * f), setH  = Math.round(46 * f);
+    const playW = Math.min(Math.round(570 * f), Math.round(W * 0.7)), playH = Math.round(144 * f);
+    const setW  = Math.min(Math.round(500 * f), Math.round(W * 0.7)), setH  = Math.round(92 * f);
 
     // ── Hero previews flanking the center column; soft shadow + slow idle bob ──
     const topKey  = SpriteManager.resolveTitleKey(this, SPRITE_KEYS.CHAR_TOP);
@@ -126,8 +126,8 @@ export class MenuScene extends Phaser.Scene {
     survDesc.setY(yy + survLabel.height);
     yy += survH + Math.round(gap * 1.5);
 
-    // PLAY — larger, with ROUNDED corners (matching the glow pill) and a soft pulsing glow.
-    const playY = yy + playH / 2;
+    // PLAY — rounded (matching the glow pill) with a soft pulsing glow; nudged up 10px.
+    const playY = yy + playH / 2 - Math.round(10 * s);
     const playRound = Math.round(16 * f);
     const playGlow = this.add.graphics();
     playGlow.fillStyle(0x29b6f6, 1).fillRoundedRect(
@@ -141,7 +141,7 @@ export class MenuScene extends Phaser.Scene {
     };
     drawPlay(0x29b6f6);
     this.add.text(cx, playY, 'PLAY', {
-      fontSize: fpx(108), fontFamily: '"Arial Black", Arial', color: '#ffffff',
+      fontSize: fpx(81), fontFamily: '"Arial Black", Arial', color: '#ffffff',
     }).setOrigin(0.5);
     this.add.rectangle(cx, playY, playW, playH, 0x000000, 0).setInteractive({ useHandCursor: true })
       .on('pointerover', () => drawPlay(0x0288d1))
@@ -150,10 +150,10 @@ export class MenuScene extends Phaser.Scene {
       .on('pointerup',   () => { AudioSystem.startMusic('game'); this.scene.start('GameScene'); });
     yy += playH + gap;
 
-    const setY = yy + setH / 2;
+    const setY = yy + setH / 2 - Math.round(10 * s); // nudged up 10px
     makeButton(this, cx, setY, setW, setH, GT.settingsTitle, 0x37474f, 0x263238, () => {
       this.scene.start('SettingsScene');
-    }, fpx(22));
+    }, fpx(44));
 
     // Classy entrance: a quick fade from the dark background.
     this.cameras.main.fadeIn(350, 9, 9, 18);

@@ -14,7 +14,7 @@
 // NOTE: bundled sprites in public/sprites/ are resampled at every boot, so a mode change
 // takes effect on reload. UPLOADED heroes are baked at upload time, so re-upload to compare
 // modes on those.
-export const RESAMPLE_MODE = 'lanczos';
+export const RESAMPLE_MODE = 'bicubic-sharper';
 
 // ── Kernels ──────────────────────────────────────────────────────────────────
 function lanczos3(x) {

@@ -109,6 +109,17 @@ game.events.on('ready', () => {
       style.marginTop = oy + 'px';
     };
 
+    // First load / mobile address-bar collapse / fullscreen transition can leave the canvas
+    // sized to a stale (smaller) viewport, showing dark bars at the edges. Re-measure the
+    // container and resize on every event that changes the viewport, plus a few delayed
+    // passes to catch the initial settle (the visualViewport API fires on address-bar moves
+    // that a plain window 'resize' can miss).
+    const forceRefresh = () => { try { sm.getParentBounds(); sm.refresh(); } catch (e) { /* */ } };
+    window.addEventListener('orientationchange', () => setTimeout(forceRefresh, 60));
+    document.addEventListener('fullscreenchange', forceRefresh);
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', forceRefresh);
+    [120, 350, 700, 1200].forEach((t) => setTimeout(forceRefresh, t));
+
     // Trigger an immediate resize with corrected dimensions.
     if (sm.getParentBounds()) sm.refresh();
   }

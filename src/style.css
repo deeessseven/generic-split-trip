@@ -11,14 +11,15 @@ html, body {
 #game-container {
   position: fixed;
   top: 0; left: 0;
-  width: 100%; height: 100%;
+  width: 100vw; height: 100vh;     /* fallback for older browsers */
+  width: 100dvw; height: 100dvh;   /* dynamic viewport: tracks mobile address-bar collapse */
 }
 /* Always render in landscape. When the phone is portrait the container is rotated
    90°CW so all game pixels appear horizontal — player tilts head clockwise to read. */
 @media (orientation: portrait) {
   #game-container {
-    width: 100vh;
-    height: 100vw;
+    width: 100vh; height: 100vw;     /* fallback */
+    width: 100dvh; height: 100dvw;   /* dynamic viewport (swapped for the 90° rotation) */
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%) rotate(90deg);

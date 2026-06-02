@@ -340,14 +340,28 @@ export class GameScene extends Phaser.Scene {
     const heroFracX = this.charTopBounds.maxHalfW  * 2 * S / this.lW * GAP_X_SCALE; // hero hitbox width (×1.2) as left-panel fraction
     const heroFracY = this.charSideBounds.maxHalfH * 2 * S / this.pH; // hero hitbox height as panel-height fraction
 
-    this.obstacles.push({
-      dist:   VISIBLE_DIST,
-      gapX:   this.rng.realInRange(0.18, 0.82),
-      gapXW:  Math.max(heroFracX * GAP_MULT_INITIAL * decay, heroFracX * GAP_MULT_MIN),
-      gapY:   this.rng.realInRange(0.18, 0.82),
-      gapYH:  Math.max(heroFracY * GAP_MULT_INITIAL * decay, heroFracY * GAP_MULT_MIN),
-      passed: false,
-    });
+    // Every wall keeps at least MIN_SEG px of solid wall on EACH side of the gap. Cap the gap
+    // so 2×MIN_SEG fits, then clamp its center so neither segment drops below MIN_SEG. Clamping
+    // the STORED values means draw + collision stay consistent (no mismatch). rng order (gapX
+    // then gapY) is preserved so the seeded layout is unchanged.
+    const MIN_SEG = 10;
+    const gapXraw = this.rng.realInRange(0.18, 0.82); // rng #1
+    const gapXW = Math.min(
+      Math.max(heroFracX * GAP_MULT_INITIAL * decay, heroFracX * GAP_MULT_MIN),
+      1 - (2 * MIN_SEG) / this.lW,
+    );
+    const hX = gapXW / 2, loX = hX + MIN_SEG / this.lW, hiX = 1 - hX - MIN_SEG / this.lW;
+    const gapX = loX <= hiX ? Phaser.Math.Clamp(gapXraw, loX, hiX) : 0.5;
+
+    const gapYraw = this.rng.realInRange(0.18, 0.82); // rng #2
+    const gapYH = Math.min(
+      Math.max(heroFracY * GAP_MULT_INITIAL * decay, heroFracY * GAP_MULT_MIN),
+      1 - (2 * MIN_SEG) / this.pH,
+    );
+    const hY = gapYH / 2, loY = hY + MIN_SEG / this.pH, hiY = 1 - hY - MIN_SEG / this.pH;
+    const gapY = loY <= hiY ? Phaser.Math.Clamp(gapYraw, loY, hiY) : 0.5;
+
+    this.obstacles.push({ dist: VISIBLE_DIST, gapX, gapXW, gapY, gapYH, passed: false });
   }
 
   // Returns per-row X extents of non-transparent pixels (the only profile collision uses).

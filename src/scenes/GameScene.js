@@ -510,24 +510,26 @@ export class GameScene extends Phaser.Scene {
     const rotHalfW = (sb.maxHalfW * cosA + sb.maxHalfH * sinA) * S; // kept for broad-phase
     const cx = sb.w / 2, cy = sb.h / 2;
 
-    let minWY = Infinity, maxWY = -Infinity;
+    let minWY = Infinity, maxWY = -Infinity, minWYx = this.charSideX, maxWYx = this.charSideX;
     for (let row = 0; row < sb.h; row++) {
       if (!isFinite(sb.rowMinX[row])) continue;
-      const wyL = this.charYPx + ((sb.rowMinX[row] - cx) * sinθ + (row - cy) * cosθ) * S;
-      const wyR = this.charYPx + ((sb.rowMaxX[row] - cx) * sinθ + (row - cy) * cosθ) * S;
-      if (wyL < minWY) minWY = wyL;
-      if (wyL > maxWY) maxWY = wyL;
-      if (wyR < minWY) minWY = wyR;
-      if (wyR > maxWY) maxWY = wyR;
+      const wxL = this.charSideX + ((sb.rowMinX[row] - cx) * cosθ - (row - cy) * sinθ) * S;
+      const wyL = this.charYPx   + ((sb.rowMinX[row] - cx) * sinθ + (row - cy) * cosθ) * S;
+      const wxR = this.charSideX + ((sb.rowMaxX[row] - cx) * cosθ - (row - cy) * sinθ) * S;
+      const wyR = this.charYPx   + ((sb.rowMaxX[row] - cx) * sinθ + (row - cy) * cosθ) * S;
+      if (wyL < minWY) { minWY = wyL; minWYx = wxL; }
+      if (wyL > maxWY) { maxWY = wyL; maxWYx = wxL; }
+      if (wyR < minWY) { minWY = wyR; minWYx = wxR; }
+      if (wyR > maxWY) { maxWY = wyR; maxWYx = wxR; }
     }
     if (minWY < 0) {
       this.charYPx -= minWY;
-      this._triggerGameOver(this.charSideX, 0);
+      this._triggerGameOver(minWYx, 0); // hero's topmost pixel, at the ceiling
       return;
     }
     if (maxWY >= this.pH - GROUND_MARGIN) {
       this.charYPx -= maxWY - (this.pH - GROUND_MARGIN);
-      this._triggerGameOver(this.charSideX, this.pH - GROUND_MARGIN);
+      this._triggerGameOver(maxWYx, this.pH - GROUND_MARGIN); // bottommost pixel, at the floor
       return;
     }
 
@@ -605,21 +607,29 @@ export class GameScene extends Phaser.Scene {
           const rowMinWY = Math.min(wyL, wyR);
           const rowMaxWY = Math.max(wyL, wyR);
           if (rowMaxWY < wallTop || rowMinWY > wallBot) continue;
-          // Clamp row X span to the portion overlapping the wall band in Y
+          // Clamp row X span to the portion overlapping the wall band in Y (track Y too)
           const dWY = wyR - wyL;
-          let cwxL, cwxR;
+          let cwxL, cwxR, cwyL, cwyR;
           if (Math.abs(dWY) < 0.5) {
-            cwxL = wxL; cwxR = wxR;
+            cwxL = wxL; cwxR = wxR; cwyL = wyL; cwyR = wyR;
           } else {
             const tT = Math.max(0, (wallTop - wyL) / dWY);
             const tB = Math.min(1, (wallBot - wyL) / dWY);
             if (tT > tB) continue;
-            cwxL = wxL + tT * (wxR - wxL); cwxR = wxL + tB * (wxR - wxL);
+            cwxL = wxL + tT * (wxR - wxL); cwyL = wyL + tT * dWY;
+            cwxR = wxL + tB * (wxR - wxL); cwyR = wyL + tB * dWY;
           }
           const rowMinWX = Math.min(cwxL, cwxR);
           const rowMaxWX = Math.max(cwxL, cwxR);
           if (rowMinWX < gapLeft || rowMaxWX > gapRight) {
-            this._triggerGameOver(rowMinWX < gapLeft ? gapLeft : gapRight, wallSY);
+            // Mark the hero-outline endpoint that crossed the gap edge.
+            let hx, hy;
+            if (rowMinWX < gapLeft) {
+              if (cwxL <= cwxR) { hx = cwxL; hy = cwyL; } else { hx = cwxR; hy = cwyR; }
+            } else {
+              if (cwxL >= cwxR) { hx = cwxL; hy = cwyL; } else { hx = cwxR; hy = cwyR; }
+            }
+            this._triggerGameOver(hx, hy);
             return;
           }
         }
@@ -656,9 +666,14 @@ export class GameScene extends Phaser.Scene {
           const rowMinWY = Math.min(cyL, cyR);
           const rowMaxWY = Math.max(cyL, cyR);
           if (rowMinWY < gapTop || rowMaxWY > gapBottom) {
-            // Hit point: midpoint of where the silhouette row overlaps the wall band (X),
-            // at the gap edge that was violated (Y) — stays close to the sprite outline
-            this._triggerGameOver((cxL + cxR) / 2, rowMinWY < gapTop ? gapTop : gapBottom);
+            // Mark the hero-outline endpoint that crossed the gap edge.
+            let hx, hy;
+            if (rowMinWY < gapTop) {
+              if (cyL <= cyR) { hx = cxL; hy = cyL; } else { hx = cxR; hy = cyR; }
+            } else {
+              if (cyL >= cyR) { hx = cxL; hy = cyL; } else { hx = cxR; hy = cyR; }
+            }
+            this._triggerGameOver(hx, hy);
             return;
           }
         }

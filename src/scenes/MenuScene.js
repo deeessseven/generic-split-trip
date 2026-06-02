@@ -66,23 +66,29 @@ export class MenuScene extends Phaser.Scene {
       this.scene.start('SettingsScene');
     }, '18px');
 
-    // How to play
-    const tips = [
-      [GT.tipLeftLabel,    GT.tipLeftDesc],
-      [GT.tipRightLabel,   GT.tipRightDesc],
-      [GT.tipSurviveLabel, GT.tipSurviveDesc],
-    ];
-    tips.forEach(([label, desc], i) => {
-      const y = cy + 115 + i * 34;
-      this.add.text(cx - 10, y, label + ':', {
-        fontSize: '12px', fontFamily: '"Arial Black", Arial',
-        color: '#29b6f6', align: 'right',
-      }).setOrigin(1, 0.5);
-      this.add.text(cx + 6, y, desc, {
-        fontSize: '12px', fontFamily: 'Arial',
-        color: '#cfd8dc', align: 'left',
-      }).setOrigin(0, 0.5);
-    });
+    // SURVIVE tip — centered, just below the buttons (was the cut-off last line, moved up).
+    const survY = cy + 96;
+    this.add.text(cx - 6, survY, GT.tipSurviveLabel + ':', {
+      fontSize: '12px', fontFamily: '"Arial Black", Arial',
+      color: '#29b6f6', align: 'right',
+    }).setOrigin(1, 0.5);
+    this.add.text(cx + 6, survY, GT.tipSurviveDesc, {
+      fontSize: '12px', fontFamily: 'Arial',
+      color: '#cfd8dc', align: 'left',
+    }).setOrigin(0, 0.5);
+
+    // LEFT / RIGHT panel tips sit at the bottom of their own half of the screen
+    // (label stacked above description so each fits within its half).
+    const panelTip = (centerX, label, desc) => {
+      this.add.text(centerX, H - 34, label, {
+        fontSize: '12px', fontFamily: '"Arial Black", Arial', color: '#29b6f6',
+      }).setOrigin(0.5);
+      this.add.text(centerX, H - 16, desc, {
+        fontSize: '11px', fontFamily: 'Arial', color: '#cfd8dc', align: 'center',
+      }).setOrigin(0.5);
+    };
+    panelTip(W * 0.25, GT.tipLeftLabel,  GT.tipLeftDesc);
+    panelTip(W * 0.75, GT.tipRightLabel, GT.tipRightDesc);
 
     // Version
     this.add.text(W - 8, H - 6, GT.gameVersion, {

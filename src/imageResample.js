@@ -6,10 +6,16 @@
 //   2) The per-frame GPU bilinear sampler that draws those textures on screen (your ±15%
 //      scaling, device pixel ratio, etc.) — fixed by WebGL, can't be swapped.
 //
-// Flip RESAMPLE_MODE to A/B the stage-1 algorithm:
-//   'lanczos'         — Lanczos-3 (windowed sinc, 6-tap): sharp, detail-preserving downscale.
-//   'bicubic-sharper' — Keys cubic with a sharpening coefficient (Photoshop "Bicubic Sharper").
+// Flip RESAMPLE_MODE to A/B the stage-1 algorithm (sharpest → smoothest):
+//   'bicubic-sharper' — Keys cubic, sharpening coefficient (Photoshop "Bicubic Sharper").
+//   'lanczos'         — Lanczos-3 (windowed sinc, 6-tap): sharp, detail-preserving.
+//   'lanczos2'        — Lanczos-2 (4-tap): a bit softer, fewer halos than Lanczos-3.
+//   'catmull-rom'     — interpolating cubic: sharp-ish, mild ringing.
+//   'mitchell'        — Mitchell-Netravali: best-balanced sharp/smooth, minimal halos.
+//   'box'             — area average: no ringing at all, soft (good for big reductions).
+//   'triangle'        — bilinear (widened): soft.
 //   'browser'         — canvas imageSmoothingQuality 'high' (the previous default).
+// (Magic Kernel Sharp is also available on request — it needs an extra sharpen pass.)
 //
 // NOTE: bundled sprites in public/sprites/ are resampled at every boot, so a mode change
 // takes effect on reload. UPLOADED heroes are baked at upload time, so re-upload to compare
@@ -17,12 +23,14 @@
 export const RESAMPLE_MODE = 'bicubic-sharper';
 
 // ── Kernels ──────────────────────────────────────────────────────────────────
-function lanczos3(x) {
+function lanczosA(x, a) {
   if (x === 0) return 1;
-  if (x <= -3 || x >= 3) return 0;
+  if (x <= -a || x >= a) return 0;
   const px = Math.PI * x;
-  return (3 * Math.sin(px) * Math.sin(px / 3)) / (px * px);
+  return (a * Math.sin(px) * Math.sin(px / a)) / (px * px);
 }
+function lanczos3(x) { return lanczosA(x, 3); }
+function lanczos2(x) { return lanczosA(x, 2); }
 
 function bicubicSharper(x) {
   // Keys cubic convolution. a = -1.0 gives stronger negative lobes (edge overshoot) than the
@@ -32,6 +40,33 @@ function bicubicSharper(x) {
   if (x < 1) return (a + 2) * x * x * x - (a + 3) * x * x + 1;
   if (x < 2) return a * x * x * x - 5 * a * x * x + 8 * a * x - 4 * a;
   return 0;
+}
+
+// General cubic with Mitchell-Netravali B,C parameters. Catmull-Rom = (0, 0.5);
+// Mitchell = (1/3, 1/3); B-spline = (1, 0).
+function cubicBC(x, B, C) {
+  x = Math.abs(x); const x2 = x * x, x3 = x2 * x;
+  if (x < 1) return ((12 - 9 * B - 6 * C) * x3 + (-18 + 12 * B + 6 * C) * x2 + (6 - 2 * B)) / 6;
+  if (x < 2) return ((-B - 6 * C) * x3 + (6 * B + 30 * C) * x2 + (-12 * B - 48 * C) * x + (8 * B + 24 * C)) / 6;
+  return 0;
+}
+function mitchell(x)   { return cubicBC(x, 1 / 3, 1 / 3); }
+function catmullRom(x) { return cubicBC(x, 0, 0.5); }
+function triangle(x)   { x = Math.abs(x); return x < 1 ? 1 - x : 0; }
+function box(x)        { return Math.abs(x) < 0.5 ? 1 : 0; }
+
+// Map the active mode to its kernel function + support radius (in source pixels).
+function pickKernel() {
+  switch (RESAMPLE_MODE) {
+    case 'lanczos':     return { kernel: lanczos3,      support: 3 };
+    case 'lanczos2':    return { kernel: lanczos2,      support: 2 };
+    case 'catmull-rom': return { kernel: catmullRom,    support: 2 };
+    case 'mitchell':    return { kernel: mitchell,      support: 2 };
+    case 'box':         return { kernel: box,           support: 0.5 };
+    case 'triangle':    return { kernel: triangle,      support: 1 };
+    case 'bicubic-sharper':
+    default:            return { kernel: bicubicSharper, support: 2 };
+  }
 }
 
 // For each destination index, precompute which source samples contribute and their
@@ -138,8 +173,7 @@ export function resampleToCanvas(src, size) {
     fsrc[o + 3] = data[o + 3];
   }
 
-  const kernel  = RESAMPLE_MODE === 'bicubic-sharper' ? bicubicSharper : lanczos3;
-  const support = RESAMPLE_MODE === 'bicubic-sharper' ? 2 : 3;
+  const { kernel, support } = pickKernel();
   const cx = contributions(sw, size, kernel, support);
   const cy = contributions(sh, size, kernel, support);
   const mid = passX(fsrc, sw, sh, size, cx);

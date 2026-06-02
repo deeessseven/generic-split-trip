@@ -7,6 +7,7 @@ import { GameOverScene } from './scenes/GameOverScene.js';
 import { SettingsScene } from './scenes/SettingsScene.js';
 import { GAME_W, GAME_H } from './constants.js';
 import { AudioSystem } from './AudioSystem.js';
+import { renderDpr } from './renderScale.js';
 
 // Audio contexts start suspended until a user gesture — unlock (and start music) on tap.
 document.addEventListener('pointerdown', () => AudioSystem.unlock(), { capture: true });
@@ -108,6 +109,42 @@ game.events.on('ready', () => {
       style.marginLeft = ox + 'px';
       style.marginTop = oy + 'px';
     };
+
+    // Hi-DPI rendering: render the canvas backing buffer at the device pixel ratio so sprites
+    // and text are crisp on high-density phone screens. We keep gameSize (world/layout coords)
+    // in CSS px so NO gameplay tuning or layout math changes; only baseSize (the canvas buffer
+    // + GL projection + camera viewport) is scaled to physical px. Each scene's main camera is
+    // then zoomed by DPR (below) so the CSS-sized world fills the physical buffer. Input stays
+    // correct: displayScale becomes DPR and the camera's inverse-zoom cancels it out.
+    sm.updateScale = function () {
+      const style = this.canvas.style;
+      const dpr = renderDpr();
+      this.displaySize.setSize(this.parentSize.width, this.parentSize.height);   // CSS px
+      this.gameSize.setSize(this.displaySize.width, this.displaySize.height);     // world coords (CSS px)
+      this.baseSize.setSize(                                                      // backing buffer (physical px)
+        Math.floor(this.displaySize.width * dpr),
+        Math.floor(this.displaySize.height * dpr),
+      );
+      this.canvas.width = this.baseSize.width;
+      this.canvas.height = this.baseSize.height;
+      style.width = this.displaySize.width + 'px';   // display the physical buffer at CSS size
+      style.height = this.displaySize.height + 'px';
+    };
+
+    // Size each scene's camera to the physical buffer and zoom it by DPR so the CSS-sized
+    // world fills the buffer at native resolution. Applied on scene create (covers restarts /
+    // newly started scenes) and on every resize (orientation change).
+    const applyDpr = (scene) => {
+      const cam = scene.cameras && scene.cameras.main;
+      if (!cam) return;
+      cam.setSize(sm.baseSize.width, sm.baseSize.height);
+      cam.setZoom(renderDpr());
+    };
+    game.scene.scenes.forEach((scene) => {
+      scene.events.on(Phaser.Scenes.Events.CREATE, () => applyDpr(scene));
+      if (scene.sys.settings.active) applyDpr(scene);
+    });
+    sm.on(Phaser.Scale.Events.RESIZE, () => game.scene.getScenes(true).forEach(applyDpr));
 
     // Trigger an immediate resize with corrected dimensions.
     if (sm.getParentBounds()) sm.refresh();

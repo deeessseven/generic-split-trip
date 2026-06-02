@@ -110,6 +110,7 @@ export const AudioSystem = {
   _musicGain: null,
   _musicLP: null,
   _noise: null,
+  _gameOverVoices: null,
 
   init() {
     if (this._inited) return;
@@ -163,6 +164,7 @@ export const AudioSystem = {
   // and suspend the whole context so nothing plays in the background.
   pauseForBackground() {
     this.stopMusic();
+    this.stopGameOver();
     if (this._master) this._master.gain.value = 0; // hard-mute even if suspend is ignored
     if (this.ctx && this.ctx.state === 'running') this.ctx.suspend().catch(() => {});
   },
@@ -192,6 +194,7 @@ export const AudioSystem = {
   // ── Music loop ──────────────────────────────────────────────────────────────
   startMusic() {
     this.init();
+    this.stopGameOver(); // restarting the theme (Play Again / Menu) hard-cuts the sad tune
     if (!this.ctx || !this.musicEnabled || this._musicOn) return;
     const begin = () => {
       if (this._musicOn || !this.musicEnabled) return;
@@ -254,6 +257,7 @@ export const AudioSystem = {
     g.connect(this._musicGain);
     o.start(t);
     o.stop(t + dur + 0.03);
+    return { o, g };
   },
 
   // ── SFX (routed past the music bus so the music toggle doesn't affect them) ──
@@ -346,21 +350,40 @@ export const AudioSystem = {
     this.init();
     if (!this.ctx || !this.musicEnabled) return;
     this.stopMusic();
+    this.stopGameOver();        // clear any previous tune
+    this._gameOverVoices = [];  // collect this tune's voices so a restart can hard-cut them
     if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
     const t = this.ctx.currentTime + 0.05;
+    const add = (...args) => this._gameOverVoices.push(this._voice(...args));
 
     // Descending A-minor lament (lead).
     const lead = [
       [0.0, 0.5, 'A4'], [0.5, 0.5, 'G4'], [1.0, 0.5, 'F4'], [1.5, 1.0, 'E4'],
       [2.5, 0.5, 'D4'], [3.0, 0.5, 'C4'], [3.5, 0.5, 'D4'], [4.0, 1.6, 'C4'],
     ];
-    for (const [bt, d, f] of lead) this._voice(N[f], t + bt, d, 'triangle', 0.13, 0.03, 0.22);
+    for (const [bt, d, f] of lead) add(N[f], t + bt, d, 'triangle', 0.13, 0.03, 0.22);
 
     // Sustained minor pad (Am → F) + low bass underneath.
     const pad = [[0.0, 2.5, ['C4', 'E4', 'A4']], [2.5, 3.1, ['C4', 'F4', 'A4']]];
-    for (const [bt, d, notes] of pad) for (const f of notes) this._voice(N[f], t + bt, d, 'triangle', 0.04, 0.2, 0.5);
-    this._voice(N.A2, t,       2.5, 'sine', 0.11, 0.02, 0.4);
-    this._voice(N.F2, t + 2.5, 3.1, 'sine', 0.11, 0.02, 0.4);
+    for (const [bt, d, notes] of pad) for (const f of notes) add(N[f], t + bt, d, 'triangle', 0.04, 0.2, 0.5);
+    add(N.A2, t,       2.5, 'sine', 0.11, 0.02, 0.4);
+    add(N.F2, t + 2.5, 3.1, 'sine', 0.11, 0.02, 0.4);
+  },
+
+  // Hard-cut the game-over tune (called on restart / background). Quick 30ms fade to
+  // avoid a click, then stop each oscillator.
+  stopGameOver() {
+    if (!this._gameOverVoices || !this.ctx) { this._gameOverVoices = null; return; }
+    const now = this.ctx.currentTime;
+    for (const v of this._gameOverVoices) {
+      try {
+        v.g.gain.cancelScheduledValues(now);
+        v.g.gain.setValueAtTime(v.g.gain.value, now);
+        v.g.gain.linearRampToValueAtTime(0.0001, now + 0.03);
+        v.o.stop(now + 0.04);
+      } catch { /* already stopped */ }
+    }
+    this._gameOverVoices = null;
   },
 
   _noiseBuffer() {

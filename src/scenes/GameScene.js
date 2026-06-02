@@ -2,7 +2,7 @@ import {
   GRAVITY, FLAP_VELOCITY,
   BASE_SPEED, SPEED_RAMP, MAX_SPEED,
   SPAWN_DIST, VISIBLE_DIST,
-  GAP_MULT_INITIAL, GAP_MULT_MIN,
+  GAP_MULT_INITIAL, GAP_MULT_MIN, GAP_X_SCALE,
   WALL_THICKNESS, WALL_WIDTH,
   CHAR_TOPDOWN_Y_FRAC, CHAR_SIDE_X_FRAC,
   SPRITE_KEYS, GROUND_MARGIN,
@@ -302,7 +302,7 @@ export class GameScene extends Phaser.Scene {
     // Gap = hero hitbox size × GAP_MULT_INITIAL, shrinking with `decay` toward a floor of
     // hero × GAP_MULT_MIN so it always remains passable.
     const S = this.hitboxScale;
-    const heroFracX = this.charTopBounds.maxHalfW  * 2 * S / this.lW; // hero hitbox width  as left-panel fraction
+    const heroFracX = this.charTopBounds.maxHalfW  * 2 * S / this.lW * GAP_X_SCALE; // hero hitbox width (×1.2) as left-panel fraction
     const heroFracY = this.charSideBounds.maxHalfH * 2 * S / this.pH; // hero hitbox height as panel-height fraction
 
     this.obstacles.push({

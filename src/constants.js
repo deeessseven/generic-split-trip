@@ -10,7 +10,7 @@ export const FLAP_VELOCITY = -350; // px/s upward on tap
 export const BASE_SPEED = 219;     // world units/s (starts here)
 export const SPEED_RAMP = 5;       // additional world units/s per second elapsed
 export const MAX_SPEED = 1500;     // cap so a fast frame can't skip a wall's collision band (anti-tunneling)
-export const SPAWN_DIST = 680;     // world units between obstacle spawns
+export const SPAWN_DIST = 850;     // world units between obstacle spawns (+25% more breathing room)
 export const VISIBLE_DIST = 920;   // world units of lookahead shown in each panel
 
 // Obstacle gaps are sized dynamically from the hero's measured opaque pixels, per axis (see
@@ -19,6 +19,7 @@ export const VISIBLE_DIST = 920;   // world units of lookahead shown in each pan
 // uploaded sprite — no fixed panel-fraction tuning.
 export const GAP_MULT_INITIAL = 3.0;  // starting gap = 3× the hero's opaque size (per axis)
 export const GAP_MULT_MIN     = 1.4;  // floor: gap never tightens below 1.4× the hero (always passable)
+export const GAP_X_SCALE      = 1.2;  // extra widening for the horizontal gap only (+20%)
 
 // Obstacle appearance
 export const WALL_THICKNESS = 26;  // px — top-down horizontal wall height

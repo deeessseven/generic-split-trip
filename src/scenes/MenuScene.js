@@ -22,9 +22,10 @@ export class MenuScene extends Phaser.Scene {
     AudioSystem.startMusic('menu');
 
     const si = safeInsets();
-    // Everything below is laid out RELATIVE to the screen: a single UI scale `s` (vs the 540
-    // design height) drives all font/button sizes and vertical offsets, and X positions are
-    // fractions of W. So the menu scales and stays balanced on any screen size.
+    // RELATIVE layout: a UI scale `s` (vs the 540 design height) drives sizes; X positions are
+    // fractions of W. Font TARGETS below are doubled from the old design; the center column is
+    // then fit-scaled to the free band between the top tips and the bottom pills so the doubled
+    // text gets as large as the screen allows without overlapping.
     const s = Phaser.Math.Clamp(H / 540, 0.7, 1.4);
     const px = (n) => `${Math.round(n * s)}px`;
 
@@ -39,29 +40,53 @@ export class MenuScene extends Phaser.Scene {
     if (this.textures.exists('st_vignette')) {
       this.add.image(cx, cy, 'st_vignette').setDisplaySize(W, H).setAlpha(0.7).setDepth(-1);
     }
+    this.add.rectangle(cx, cy, Math.max(2, Math.round(2 * s)), H, 0x4fc3f7, 0.12); // center seam
 
-    // Subtle center seam between the two preview halves
-    this.add.rectangle(cx, cy, Math.max(2, Math.round(2 * s)), H, 0x4fc3f7, 0.12);
-
-    // ── LEFT / RIGHT panel tips at the TOP of each half (label over description) ──
+    // ── LEFT / RIGHT panel tips at the TOP of each half (doubled) ──
     const topTipY = Math.round(Math.min(W, H) * 0.04) + si.top;
+    let tipsBottom = topTipY;
     const panelTip = (centerX, label, desc) => {
       const l = this.add.text(centerX, topTipY, label, {
-        fontSize: px(15), fontFamily: '"Arial Black", Arial', color: '#29b6f6',
+        fontSize: px(30), fontFamily: '"Arial Black", Arial', color: '#29b6f6',
       }).setOrigin(0.5, 0);
-      this.add.text(centerX, topTipY + l.height + Math.round(3 * s), desc, {
-        fontSize: px(13), fontFamily: 'Arial', color: '#cfd8dc',
-        align: 'center', wordWrap: { width: W * 0.47 },
+      const d = this.add.text(centerX, topTipY + l.height + Math.round(3 * s), desc, {
+        fontSize: px(26), fontFamily: 'Arial', color: '#cfd8dc',
+        align: 'center', wordWrap: { width: W * 0.46 },
       }).setOrigin(0.5, 0);
+      tipsBottom = Math.max(tipsBottom, d.y + d.height);
     };
     panelTip(W * 0.25, GT.tipLeftLabel,  GT.tipLeftDesc);
     panelTip(W * 0.75, GT.tipRightLabel, GT.tipRightDesc);
 
+    // ── Audio toggle pills (doubled) + copyright, anchored to the bottom ──
+    const pillUi = 2 * s;
+    const pillH = Math.round(23 * pillUi);
+    const copyrightY = H - si.bottom - Math.round(6 * s);
+    const soundCY = copyrightY - Math.round(26 * s) - pillH / 2;
+    const musicCY = soundCY - (pillH + Math.round(6 * s));
+    const pillsTop = musicCY - pillH / 2;
+    this._audioToggle(cx, musicCY, 'Music: ', () => AudioSystem.isMusicEnabled(), (v) => AudioSystem.setMusicEnabled(v), pillUi);
+    this._audioToggle(cx, soundCY, 'Sound: ', () => AudioSystem.isSfxEnabled(),   (v) => AudioSystem.setSfxEnabled(v), pillUi);
+    this.add.text(cx, copyrightY, GT.copyright, {
+      fontSize: px(20), fontFamily: 'Arial', color: '#607089',
+    }).setOrigin(0.5, 1);
+
+    // ── Center column fit-scale: shrink the doubled column to the free band if needed ──
+    const band = pillsTop - tipsBottom;
+    const colEst = 92 * s * 1.15 + 2 * Math.round(16 * s)   // title (+padding)
+                 + 30 * s * 1.35                            // SURVIVE line
+                 + (74 + 46) * s                            // PLAY + Customize heights
+                 + (14 + 21 + 14) * s;                      // gaps
+    const fit = Phaser.Math.Clamp((band - 12 * s) / colEst, 0.5, 1);
+    const f = s * fit;                                      // column scale
+    const fpx = (n) => `${Math.round(n * f)}px`;
+    const playW = Math.round(300 * f), playH = Math.round(74 * f);
+    const setW  = Math.round(250 * f), setH  = Math.round(46 * f);
+
     // ── Hero previews flanking the center column; soft shadow + slow idle bob ──
     const topKey  = SpriteManager.resolveTitleKey(this, SPRITE_KEYS.CHAR_TOP);
     const sideKey = SpriteManager.resolveTitleKey(this, SPRITE_KEYS.CHAR_SIDE);
-    // Fit between the center button column and the screen edges, and within the height.
-    const heroSize = Math.max(80, Math.min(W * 0.6 - 220 * s, W * 0.4 - 24, H * 0.6, 400));
+    const heroSize = Math.max(80, Math.min(W * 0.6 - playW, W * 0.4 - 24, H * 0.6, 460));
     const bob = Math.round(7 * s);
     const addHero = (hx, key, delay) => {
       this.add.ellipse(hx, cy + heroSize * 0.40, heroSize * 0.52, heroSize * 0.13, 0x000000, 0.30);
@@ -71,54 +96,51 @@ export class MenuScene extends Phaser.Scene {
     addHero(W * 0.20, topKey, 0);
     addHero(W * 0.80, sideKey, 1100);
 
-    // ── Center column: Title → SURVIVE line → PLAY → Customize Sprites ──
-    // Title (nudged down ~20px from before), soft blue glow + a barely-there pulse.
-    const title = this.add.text(cx, cy - 110 * s, GT.gameTitle, {
-      fontSize: px(46), fontFamily: '"Arial Black", Arial, sans-serif',
-      color: '#ffffff', stroke: '#29b6f6', strokeThickness: Math.max(3, Math.round(6 * s)),
-    }).setOrigin(0.5).setPadding(18);
-    title.setShadow(0, 0, '#29b6f6', 18, true, true);
+    // ── Center column (Title → SURVIVE → PLAY → Customize), measured & centered in the band ──
+    const title = this.add.text(cx, 0, GT.gameTitle, {
+      fontSize: fpx(92), fontFamily: '"Arial Black", Arial, sans-serif',
+      color: '#ffffff', stroke: '#29b6f6', strokeThickness: Math.max(3, Math.round(8 * f)),
+    }).setOrigin(0.5).setPadding(Math.round(16 * f));
+    title.setShadow(0, 0, '#29b6f6', Math.round(18 * f), true, true);
+
+    const survLabel = this.add.text(0, 0, GT.tipSurviveLabel + ': ', {
+      fontSize: fpx(30), fontFamily: '"Arial Black", Arial', color: '#29b6f6',
+    }).setOrigin(0, 0.5);
+    const survDesc = this.add.text(0, 0, GT.tipSurviveDesc, {
+      fontSize: fpx(30), fontFamily: 'Arial', color: '#cfd8dc',
+    }).setOrigin(0, 0.5);
+
+    const gap = Math.round(14 * f);
+    const titleH = title.height, survH = survDesc.height;
+    const colTotal = titleH + gap + survH + Math.round(gap * 1.5) + playH + gap + setH;
+    let yy = Math.max(tipsBottom + Math.round(6 * s), (tipsBottom + pillsTop) / 2 - colTotal / 2);
+
+    title.setY(yy + titleH / 2);
     this.tweens.add({ targets: title, scale: 1.025, duration: 2600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    yy += titleH + gap;
 
-    // SURVIVE tip line (replaces the old subtitle), centered just under the title.
-    const survY = cy - 62 * s;
-    const survLabel = this.add.text(0, survY, GT.tipSurviveLabel + ': ', {
-      fontSize: px(15), fontFamily: '"Arial Black", Arial', color: '#29b6f6',
-    }).setOrigin(0, 0.5);
-    const survDesc = this.add.text(0, survY, GT.tipSurviveDesc, {
-      fontSize: px(15), fontFamily: 'Arial', color: '#cfd8dc',
-    }).setOrigin(0, 0.5);
+    const survY = yy + survH / 2;
     const survLeft = cx - (survLabel.width + survDesc.width) / 2;
-    survLabel.setX(survLeft);
-    survDesc.setX(survLeft + survLabel.width);
+    survLabel.setPosition(survLeft, survY);
+    survDesc.setPosition(survLeft + survLabel.width, survY);
+    yy += survH + Math.round(gap * 1.5);
 
-    // PLAY — the focal point: a soft pulsing glow behind a bold button.
-    const playY = cy - 6 * s;
-    const playW = Math.round(220 * s), playH = Math.round(50 * s);
+    const playY = yy + playH / 2;
     const playGlow = this.add.graphics();
     playGlow.fillStyle(0x29b6f6, 1).fillRoundedRect(
-      cx - playW / 2 - 14 * s, playY - playH / 2 - 7 * s, playW + 28 * s, playH + 14 * s, 16 * s);
+      cx - playW / 2 - 14 * f, playY - playH / 2 - 7 * f, playW + 28 * f, playH + 14 * f, 16 * f);
     playGlow.setAlpha(0.18);
     this.tweens.add({ targets: playGlow, alpha: 0.42, duration: 1500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     makeButton(this, cx, playY, playW, playH, 'PLAY', 0x29b6f6, 0x0288d1, () => {
       AudioSystem.startMusic('game'); // hard-cut the menu theme the instant Play is tapped
       this.scene.start('GameScene');
-    }, px(20));
-    // Customize Sprites — much smaller, secondary.
-    makeButton(this, cx, cy + 42 * s, Math.round(150 * s), Math.round(26 * s), GT.settingsTitle,
-      0x37474f, 0x263238, () => { this.scene.start('SettingsScene'); }, px(11));
+    }, fpx(40));
+    yy += playH + gap;
 
-    // ── Audio toggle pills — bottom-center, stacked just above the copyright ──
-    const pillH = Math.round(23 * s);
-    const soundCY = H - si.bottom - Math.round(36 * s);
-    const musicCY = soundCY - (pillH + Math.round(4 * s));
-    this._audioToggle(cx, musicCY, 'Music: ', () => AudioSystem.isMusicEnabled(), (v) => AudioSystem.setMusicEnabled(v), s);
-    this._audioToggle(cx, soundCY, 'Sound: ', () => AudioSystem.isSfxEnabled(),   (v) => AudioSystem.setSfxEnabled(v), s);
-
-    // ── Copyright — centered along the bottom, clear of the safe area ──
-    this.add.text(cx, H - si.bottom - Math.round(5 * s), GT.copyright, {
-      fontSize: px(10), fontFamily: 'Arial', color: '#607089',
-    }).setOrigin(0.5, 1);
+    const setY = yy + setH / 2;
+    makeButton(this, cx, setY, setW, setH, GT.settingsTitle, 0x37474f, 0x263238, () => {
+      this.scene.start('SettingsScene');
+    }, fpx(22));
 
     // Classy entrance: a quick fade from the dark background.
     this.cameras.main.fadeIn(350, 9, 9, 18);

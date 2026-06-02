@@ -1,6 +1,6 @@
 import {
   GRAVITY, FLAP_VELOCITY,
-  BASE_SPEED, SPEED_RAMP,
+  BASE_SPEED, SPEED_RAMP, MAX_SPEED,
   SPAWN_DIST, VISIBLE_DIST,
   GAP_X_WIDTH, GAP_Y_HEIGHT,
   WALL_THICKNESS, WALL_WIDTH,
@@ -83,6 +83,9 @@ export class GameScene extends Phaser.Scene {
     this.hasTapped  = false;
     this.wasRising  = false;
     this.apexTime   = 0;
+
+    // Top hero's ±15% visual scale (recomputed each frame from the side hero's height)
+    this.topVisScale = 1;
 
     // ── Input tracking ────────────────────────────────────────────────────────
     this.leftPointerId = -1;
@@ -227,19 +230,16 @@ export class GameScene extends Phaser.Scene {
 
   // Flap thrust: one puff per view, fired together.
   _emitFlapPuffs() {
-    // Side: one soft puff, centered at the hero's visible bottom edge, 1/5 from the left of
-    // the opaque width. botEdge is nudged up ~20px because the sprite art has faint
-    // (low-alpha) pixels below the solid body. Tracks tilt + visual scale.
+    // Side: one soft puff, vertically centered on the sprite's bottom-most opaque pixel
+    // (adaptive per sprite — no fixed offset), 1/3 from the left of the opaque width.
+    // Untilted: ignores the flap tilt. Tracks the ±15% visual scale.
     if (this.flapFX) {
       const sb = this.charSideBounds;
       const sc = this.charSideSprite.scaleX;
       const cx = sb.w / 2, cy = sb.h / 2;
-      const px = (2 * sb.leftEdge + sb.rightEdge) / 3; // point 1/3 from the left of the opaque width
-      const py = sb.botEdge - 20;                       // visible bottom edge (above the faint pixels)
-      const th = this.sideAngle * Math.PI / 180;
-      const cos = Math.cos(th), sin = Math.sin(th);
-      const ex = this.charSideX + ((px - cx) * cos - (py - cy) * sin) * sc;
-      const ey = this.charYPx   + ((px - cx) * sin + (py - cy) * cos) * sc;
+      const px = (2 * sb.leftEdge + sb.rightEdge) / 3;
+      const ex = this.charSideX + (px - cx) * sc;
+      const ey = this.charYPx   + (sb.botEdge - cy) * sc;
       this.flapFX.emitParticleAt(ex, ey, 1);
     }
     // Top: one extra-large soft poof from the middle of the bottom 1/3 of the opaque pixels.
@@ -461,7 +461,7 @@ export class GameScene extends Phaser.Scene {
     const dt = Math.min(delta / 1000, 1 / 30);
 
     this.elapsedTime += dt;
-    this.speed = BASE_SPEED + this.elapsedTime * SPEED_RAMP;
+    this.speed = Math.min(BASE_SPEED + this.elapsedTime * SPEED_RAMP, MAX_SPEED);
 
     this.distTraveled += this.speed * dt;
 
@@ -520,7 +520,7 @@ export class GameScene extends Phaser.Scene {
     // ── Horizontal position (top-down, smooth follow finger) ────────────────
     this.charXPx = smooth(this.charXPx, this.targetCharXPx, 0.22, dt);
 
-    // Constrain by the hero's ROTATED OPAQUE pixels (dynamic with tilt + the ±10% scale):
+    // Constrain by the hero's ROTATED OPAQUE pixels (dynamic with tilt + the ±15% scale):
     //  • rightmost opaque pixel must not pass the left side of the center divider
     //  • leftmost opaque pixel must not pass the left edge of the screen
     {

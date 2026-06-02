@@ -9,6 +9,7 @@ export const FLAP_VELOCITY = -350; // px/s upward on tap
 // Difficulty
 export const BASE_SPEED = 219;     // world units/s (starts here)
 export const SPEED_RAMP = 5;       // additional world units/s per second elapsed
+export const MAX_SPEED = 1500;     // cap so a fast frame can't skip a wall's collision band (anti-tunneling)
 export const SPAWN_DIST = 680;     // world units between obstacle spawns
 export const VISIBLE_DIST = 920;   // world units of lookahead shown in each panel
 

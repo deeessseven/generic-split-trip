@@ -15,7 +15,7 @@ export class SettingsScene extends Phaser.Scene {
       { key: SPRITE_KEYS.CHAR_SIDE, label: GT.slotCharSide, hint: 'any size' },
       { key: SPRITE_KEYS.BG_TOP,    label: GT.slotBgTop,    hint: '512×512 tileable' },
       { key: SPRITE_KEYS.BG_SIDE,   label: GT.slotBgSide,   hint: '512×512 tileable' },
-      { key: SPRITE_KEYS.OBSTACLE,  label: GT.slotObstacle, hint: '256×256 tileable' },
+      { key: SPRITE_KEYS.OBSTACLE,  label: GT.slotObstacle, hint: '26×26 tileable' },
       { key: SPRITE_KEYS.HIT_MARK,  label: GT.slotHitMark,  hint: '256×256' },
     ];
 
@@ -57,6 +57,11 @@ export class SettingsScene extends Phaser.Scene {
   _buildSlot(x, y, slotW, slotH, def) {
     const { key, label, hint } = def;
 
+    // Scale the slot's contents down when the slot is narrower than full width, so the
+    // preview and text don't overflow the box on cramped screens (e.g. 6 slots, small W).
+    const fs = Math.max(0.7, Math.min(1, slotW / 140));
+    const px = (n) => `${Math.round(n * fs)}px`;
+
     // Slot background
     const bg = this.add.rectangle(x, y, slotW, slotH, 0x1a2332)
       .setStrokeStyle(1, 0x37474f)
@@ -66,25 +71,25 @@ export class SettingsScene extends Phaser.Scene {
     const previewKey = SpriteManager.isCharKey(key)
       ? SpriteManager.resolveTitleKey(this, key)
       : SpriteManager.resolveKey(this, key);
-    const preview = this.add.image(x, y - 32, previewKey).setDisplaySize(72, 72);
+    const preview = this.add.image(x, y - 32, previewKey).setDisplaySize(72 * fs, 72 * fs);
     this._previews[key] = preview;
 
     // Labels
     this.add.text(x, y + 30, label, {
-      fontSize: '12px', fontFamily: 'Arial', color: '#cfd8dc', align: 'center',
+      fontSize: px(12), fontFamily: 'Arial', color: '#cfd8dc', align: 'center',
     }).setOrigin(0.5);
     this.add.text(x, y + 55, hint, {
-      fontSize: '10px', fontFamily: 'Arial', color: '#546e7a',
+      fontSize: px(10), fontFamily: 'Arial', color: '#546e7a',
     }).setOrigin(0.5);
 
     // Upload indicator
     this.add.text(x, y + 72, '[ tap to upload ]', {
-      fontSize: '10px', fontFamily: 'Arial', color: '#29b6f6',
+      fontSize: px(10), fontFamily: 'Arial', color: '#29b6f6',
     }).setOrigin(0.5);
 
     // Reset button
     const resetTxt = this.add.text(x, y + 89, '[ reset default ]', {
-      fontSize: '10px', fontFamily: 'Arial', color: '#ef9a9a',
+      fontSize: px(10), fontFamily: 'Arial', color: '#ef9a9a',
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
     // Slot upload on tap
@@ -185,12 +190,12 @@ export class SettingsScene extends Phaser.Scene {
     this.textures.addBase64(titleKey,  title);
   }
 
-  // Backgrounds and the wall/obstacle are tiled. Resize uploads to a power-of-two square
-  // (512 backgrounds, 256 wall) so they: (a) tile cleanly with REPEAT wrap in WebGL1,
-  // (b) can mipmap, and (c) don't bloat localStorage at raw camera resolution.
+  // Resize uploads to a fixed square so they store small and tile predictably:
+  //   backgrounds → 512 (fill a panel), wall → 26 (matches the wall thickness), hit mark → 256.
   _saveGenericSprite(img, key) {
-    // Backgrounds tile across a whole panel (512); the wall and hit mark are smaller (256).
-    const size = (key === SPRITE_KEYS.BG_TOP || key === SPRITE_KEYS.BG_SIDE) ? 512 : 256;
+    let size = 256; // hit mark
+    if (key === SPRITE_KEYS.BG_TOP || key === SPRITE_KEYS.BG_SIDE) size = 512;
+    else if (key === SPRITE_KEYS.OBSTACLE) size = 26;
     const dataURL = this._canvasResize(img, size);
     SpriteManager.save(key, dataURL);
     const customKey = key + '_custom';

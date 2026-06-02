@@ -81,13 +81,16 @@ export class MenuScene extends Phaser.Scene {
 
     // LEFT / RIGHT panel tips sit at the bottom of their own half of the screen
     // (label stacked above description so each fits within its half).
+    // Anchor each group a dynamic margin above the bottom edge (scales with screen height)
+    // so there's always room to spare; desc sits on the bottom, label stacked just above it.
+    const tipMargin = Math.round(Math.max(22, H * 0.06));
     const panelTip = (centerX, label, desc) => {
-      this.add.text(centerX, H - 36, label, {
-        fontSize: '15px', fontFamily: '"Arial Black", Arial', color: '#29b6f6',
-      }).setOrigin(0.5);
-      this.add.text(centerX, H - 16, desc, {
+      const d = this.add.text(centerX, H - tipMargin, desc, {
         fontSize: '14px', fontFamily: 'Arial', color: '#cfd8dc', align: 'center',
-      }).setOrigin(0.5);
+      }).setOrigin(0.5, 1);
+      this.add.text(centerX, H - tipMargin - d.height - 3, label, {
+        fontSize: '15px', fontFamily: '"Arial Black", Arial', color: '#29b6f6',
+      }).setOrigin(0.5, 1);
     };
     panelTip(W * 0.25, GT.tipLeftLabel,  GT.tipLeftDesc);
     panelTip(W * 0.75, GT.tipRightLabel, GT.tipRightDesc);

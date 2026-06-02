@@ -15,7 +15,7 @@ import { safeInsets } from '../safeArea.js';
 // ── Debug flag ────────────────────────────────────────────────────────────────
 // Set to true to draw the pixel-accurate collision silhouette over each sprite.
 // Keep false in production — the black outline is visible to players.
-const DEBUG_OUTLINE = false;
+const DEBUG_OUTLINE = true;
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Frame-rate-independent lerp. A raw Phaser.Math.Linear(a, b, rate) converges at a

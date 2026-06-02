@@ -534,6 +534,31 @@ export class GameScene extends Phaser.Scene {
     // ── Horizontal position (top-down, smooth follow finger) ────────────────
     this.charXPx = smooth(this.charXPx, this.targetCharXPx, 0.22, dt);
 
+    // Constrain by the hero's ROTATED OPAQUE pixels (dynamic with the tilt), not its center:
+    //  • rightmost opaque pixel must not pass the left side of the center divider
+    //  • leftmost opaque pixel must not pass the left edge of the screen
+    // The top sprite renders at scale 1, so silhouette texture px == screen px.
+    {
+      const tb = this.charTopBounds;
+      const tcx = tb.w / 2, tcy = tb.h / 2;
+      const a = this.topAngle * Math.PI / 180;
+      const ca = Math.cos(a), sa = Math.sin(a);
+      let minOff = Infinity, maxOff = -Infinity; // X offsets from the sprite center
+      for (let row = 0; row < tb.h; row++) {
+        if (!isFinite(tb.rowMinX[row])) continue;
+        const dySa = (row - tcy) * sa;
+        const offL = (tb.rowMinX[row] - tcx) * ca - dySa;
+        const offR = (tb.rowMaxX[row] - tcx) * ca - dySa;
+        if (offL < minOff) minOff = offL;
+        if (offR > maxOff) maxOff = offR;
+      }
+      if (isFinite(minOff)) {
+        const minC = -minOff;                  // leftmost opaque (charXPx+minOff) ≥ 0
+        const maxC = (this.lW - 1.5) - maxOff;  // rightmost opaque ≤ divider's left edge
+        this.charXPx = Phaser.Math.Clamp(this.charXPx, Math.min(minC, maxC), Math.max(minC, maxC));
+      }
+    }
+
     // Shuffle SFX: one tick per ~40px of top-view movement (footstep feel; ignores jitter)
     if (Math.abs(this.charXPx - this._lastShuffleX) > 40) {
       AudioSystem.playShuffle();

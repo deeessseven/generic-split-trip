@@ -178,30 +178,16 @@ export class GameScene extends Phaser.Scene {
     this.charTopSprite.setScale(this.topDisplayScale);
     this.charSideSprite.setScale(this.sideDisplayScale);
 
-    // Precompute a TILT-INDEPENDENT horizontal extent for the top-view panel-edge clamp:
-    // the farthest left/right opaque-pixel offset from center, taken as the MAX across the
-    // whole tilt range (±20°, matching topTarget). Using a constant here (instead of the live
-    // tilt angle each frame) keeps the clamp boundary stable, so holding the hero against an
-    // edge no longer rattles — while still preventing the tilted sprite from crossing the
-    // divider/edge. Movement-only; wall-gap collision is unaffected.
+    // Top-view panel-edge clamp extent = the hero's UNTILTED opaque-pixel reach (leftmost /
+    // rightmost opaque column offset from center), measured dynamically from the silhouette.
+    // Constant (computed once) so the clamp can't rattle, and using the untilted reach lets the
+    // opaque pixels touch the full left edge and right divider with no gap. Movement-only;
+    // wall-gap collision is unaffected.
     {
       const tb = this.charTopBounds;
-      const tcx = tb.w / 2, tcy = tb.h / 2;
-      let maxOff = -Infinity, minOff = Infinity;
-      for (let deg = -20; deg <= 20; deg += 4) {
-        const a = deg * Math.PI / 180;
-        const ca = Math.cos(a), sa = Math.sin(a);
-        for (let row = 0; row < tb.h; row++) {
-          if (!isFinite(tb.rowMinX[row])) continue;
-          const dySa = (row - tcy) * sa;
-          const offL = (tb.rowMinX[row] - tcx) * ca - dySa;
-          const offR = (tb.rowMaxX[row] - tcx) * ca - dySa;
-          if (offL < minOff) minOff = offL;
-          if (offR > maxOff) maxOff = offR;
-        }
-      }
-      this.topClampMinOff = isFinite(minOff) ? minOff : -tcx;
-      this.topClampMaxOff = isFinite(maxOff) ? maxOff : tcx;
+      const tcx = tb.w / 2;
+      this.topClampMinOff = (isFinite(tb.leftEdge)  ? tb.leftEdge  : 0)        - tcx;
+      this.topClampMaxOff = (isFinite(tb.rightEdge) ? tb.rightEdge : tb.w - 1) - tcx;
     }
 
     // Static center divider — drawn once, never needs to be redrawn
@@ -587,9 +573,9 @@ export class GameScene extends Phaser.Scene {
     // ── Horizontal position (top-down, smooth follow finger) ────────────────
     this.charXPx = smooth(this.charXPx, this.targetCharXPx, 0.22, dt);
 
-    // Constrain to the panel using the PRECOMPUTED, tilt-independent opaque-pixel extent
-    // (topClampMinOff/MaxOff — the max across the tilt range, computed in create). A constant
-    // boundary here means holding against an edge no longer rattles (no live-angle feedback).
+    // Constrain to the panel using the PRECOMPUTED untilted opaque reach (topClampMinOff/MaxOff,
+    // computed in create). A constant boundary means holding against an edge can't rattle (no
+    // live-angle feedback), and the untilted reach lets the opaque pixels touch the full edges.
     // Still scaled by the ±10% visual size.
     //  • rightmost opaque pixel must not pass the left side of the center divider
     //  • leftmost opaque pixel must not pass the left edge of the screen

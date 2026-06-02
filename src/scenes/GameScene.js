@@ -134,12 +134,12 @@ export class GameScene extends Phaser.Scene {
 
     // Flap puff emitters (emit on demand from _onDown). angle is the emission direction
     // in degrees: 0=right, 90=down, 180=left, 270=up.
-    // Side: ONE larger soft cloud from the hero's bottom-left opaque corner, shooting
-    // down-left (≈135°). Depth 3.5 (above the hero) so it's clearly visible.
+    // Side: ONE larger soft puff just below the bottom-center of the hero's opaque pixels,
+    // drifting left/back. Depth 3.5 (above the hero) so it's clearly visible.
     this.flapFX = this.add.particles(0, 0, 'st_particle', {
       lifespan: 400,
-      speed: { min: 10, max: 40 }, // low: the big puff blooms near the bottom, doesn't fly off
-      angle: { min: 120, max: 150 },
+      speed: { min: 5, max: 25 }, // very low: blooms right at the bottom, barely drifts
+      angle: { min: 150, max: 190 },
       scale: { start: 4.2, end: 0 }, // 3x larger
       alpha: { start: 0.65, end: 0 },
       emitting: false,
@@ -230,16 +230,17 @@ export class GameScene extends Phaser.Scene {
 
   // Flap thrust: one puff per view, fired together.
   _emitFlapPuffs() {
-    // Side: one larger soft cloud from the bottom-left corner of the opaque silhouette,
-    // shooting down-left. Tracks the flap tilt and the ±5% visual scale (sprite scaleX).
+    // Side: one larger soft puff at the bottom-center of the opaque silhouette (right below
+    // the bottom opaque pixels), drifting left/back. Tracks tilt + the ±5% visual scale.
     if (this.flapFX) {
       const sb = this.charSideBounds;
       const sc = this.charSideSprite.scaleX;
       const cx = sb.w / 2, cy = sb.h / 2;
+      const px = (sb.leftEdge + sb.rightEdge) / 2;
       const th = this.sideAngle * Math.PI / 180;
       const cos = Math.cos(th), sin = Math.sin(th);
-      const ex = this.charSideX + ((sb.leftEdge - cx) * cos - (sb.botEdge - cy) * sin) * sc;
-      const ey = this.charYPx   + ((sb.leftEdge - cx) * sin + (sb.botEdge - cy) * cos) * sc;
+      const ex = this.charSideX + ((px - cx) * cos - (sb.botEdge - cy) * sin) * sc;
+      const ey = this.charYPx   + ((px - cx) * sin + (sb.botEdge - cy) * cos) * sc;
       this.flapFX.emitParticleAt(ex, ey, 1);
     }
     // Top: one extra-large soft poof from the middle of the bottom 1/3 of the opaque pixels.

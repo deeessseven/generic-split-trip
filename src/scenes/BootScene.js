@@ -84,6 +84,7 @@ export class BootScene extends Phaser.Scene {
       const ctx = c.getContext('2d');
       const g = ctx.createRadialGradient(8, 8, 0, 8, 8, 8);
       g.addColorStop(0, 'rgba(255,255,255,1)');
+      g.addColorStop(0.5, 'rgba(255,255,255,1)'); // solid core to 50% radius = harder edge
       g.addColorStop(1, 'rgba(255,255,255,0)');
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, 16, 16);

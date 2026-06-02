@@ -14,7 +14,7 @@ const N = {
   C5: 523.25, D5: 587.33, E5: 659.25, F5: 698.46,
 };
 
-const BPM = 134;
+const BPM = 148;
 const BEAT = 60 / BPM;   // 0.5s
 const LOOP_BEATS = 32;   // 8 bars of 4/4 → 16s loop
 
@@ -96,7 +96,7 @@ export const AudioSystem = {
         this._musicGain.gain.value = 0.4;
         this._musicLP = this.ctx.createBiquadFilter();
         this._musicLP.type = 'lowpass';
-        this._musicLP.frequency.value = 3500;
+        this._musicLP.frequency.value = 4200;
         this._musicLP.Q.value = 0.6;
         this._musicGain.connect(this._musicLP);
         this._musicLP.connect(this._master);

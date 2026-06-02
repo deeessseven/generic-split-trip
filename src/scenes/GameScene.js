@@ -209,15 +209,16 @@ export class GameScene extends Phaser.Scene {
     const cornerY = Math.round(Math.min(W, H) * 0.02);
     const cornerX = Math.round(Math.min(W, H) * 0.04);
     const labelTopY = cornerY + si.top;
-    // TOP VIEW group nudged left by ~40px, dynamically (W × 0.04 — scales with screen width),
-    // clamped so it never runs off the left edge.
+    // Both labels nudged ~10px toward the horizontal center, dynamically (W × 0.01).
+    // TOP VIEW also keeps its ~40px left offset (W × 0.04), clamped to the left edge.
+    const centerNudge = Math.round(W * 0.01);
     const topViewShift = Math.round(W * 0.04);
-    const topViewX = Math.max(2, cornerX + si.left - topViewShift);
+    const topViewX = Math.max(2, cornerX + si.left - topViewShift + centerNudge);
     this.add.text(topViewX, labelTopY, `${GT.labelTopView}\n${GT.labelTopHint}`, {
       fontSize: '11px', fontFamily: 'Arial', color: '#eceff1',
       alpha: 0.7,
     }).setDepth(6);
-    this.add.text(W - cornerX - si.right, labelTopY, `${GT.labelSideView}\n${GT.labelSideHint}`, {
+    this.add.text(W - cornerX - si.right - centerNudge, labelTopY, `${GT.labelSideView}\n${GT.labelSideHint}`, {
       fontSize: '11px', fontFamily: 'Arial', color: '#eceff1', align: 'right',
       alpha: 0.7,
     }).setOrigin(1, 0).setDepth(6);

@@ -186,17 +186,19 @@ export class GameScene extends Phaser.Scene {
     this.scoreTimeTxt = this.add.text(scoreDivX + 12, 6, '0s', scoreStyle).setOrigin(0, 0).setDepth(6);
 
     // Panel labels. The screen may have rounded corners and/or a notch/cutout that clips the
-    // very corners, so inset each label diagonally inward by a small dynamic clearance (a
-    // fraction of the short side — this is what clears a rounded corner) PLUS any device
-    // safe-area inset (handles notches/cutouts; rounded-corner-only phones report 0 there).
+    // corners. Vertical inset is small (labels sit near the top edge); horizontal inset is
+    // larger so BOTH labels clear the rounded corners — otherwise the side WITHOUT a safe-area
+    // inset (the non-notch side) clips while the notch side stays clear. Per-side safe-area is
+    // added on top to also clear an actual notch/cutout.
     const si = safeInsets();
-    const corner = Math.round(Math.min(W, H) * 0.02);
-    const labelTopY = corner + si.top;
-    this.add.text(corner + si.left, labelTopY, `${GT.labelTopView}\n${GT.labelTopHint}`, {
+    const cornerY = Math.round(Math.min(W, H) * 0.02);
+    const cornerX = Math.round(Math.min(W, H) * 0.04);
+    const labelTopY = cornerY + si.top;
+    this.add.text(cornerX + si.left, labelTopY, `${GT.labelTopView}\n${GT.labelTopHint}`, {
       fontSize: '11px', fontFamily: 'Arial', color: '#eceff1',
       alpha: 0.7,
     }).setDepth(6);
-    this.add.text(W - corner - si.right, labelTopY, `${GT.labelSideView}\n${GT.labelSideHint}`, {
+    this.add.text(W - cornerX - si.right, labelTopY, `${GT.labelSideView}\n${GT.labelSideHint}`, {
       fontSize: '11px', fontFamily: 'Arial', color: '#eceff1', align: 'right',
       alpha: 0.7,
     }).setOrigin(1, 0).setDepth(6);

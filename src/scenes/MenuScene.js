@@ -87,9 +87,9 @@ export class MenuScene extends Phaser.Scene {
 
     // LEFT / RIGHT panel tips sit at the bottom of their own half of the screen
     // (label stacked above description so each fits within its half).
-    // Anchor each group above the bottom edge using the same 0.02 corner clearance plus the
-    // device safe-area bottom inset (home indicator); desc sits on the bottom, label above it.
-    const tipMargin = corner + si.bottom;
+    // Anchor each group above the bottom edge by a 0.03 corner clearance plus the device
+    // safe-area bottom inset (home indicator); desc sits on the bottom, label above it.
+    const tipMargin = Math.round(Math.min(W, H) * 0.03) + si.bottom;
     const panelTip = (centerX, label, desc) => {
       const d = this.add.text(centerX, H - tipMargin, desc, {
         fontSize: '14px', fontFamily: 'Arial', color: '#cfd8dc', align: 'center',

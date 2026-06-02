@@ -100,6 +100,17 @@ export const AudioSystem = {
         this._musicLP.Q.value = 0.6;
         this._musicGain.connect(this._musicLP);
         this._musicLP.connect(this._master);
+        // Defense: if the browser/OS auto-resumes the context while the page is hidden
+        // (common on screen lock / backgrounding), force it back to suspended + muted so
+        // audio can't leak out.
+        this.ctx.onstatechange = () => {
+          if (this.ctx && this.ctx.state === 'running' &&
+              typeof document !== 'undefined' && document.hidden) {
+            this.stopMusic();
+            if (this._master) this._master.gain.value = 0;
+            this.ctx.suspend().catch(() => {});
+          }
+        };
       }
     } catch { this.ctx = null; }
   },
@@ -118,12 +129,15 @@ export const AudioSystem = {
   // and suspend the whole context so nothing plays in the background.
   pauseForBackground() {
     this.stopMusic();
+    if (this._master) this._master.gain.value = 0; // hard-mute even if suspend is ignored
     if (this.ctx && this.ctx.state === 'running') this.ctx.suspend().catch(() => {});
   },
 
   // Called when the page becomes visible/focused again: resume and restart music if on.
   resumeFromBackground() {
     if (!this.ctx) return;
+    if (typeof document !== 'undefined' && document.hidden) return; // still hidden — stay paused
+    if (this._master) this._master.gain.value = 0.5;
     if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
     if (this.musicEnabled) this.startMusic();
   },
@@ -164,6 +178,7 @@ export const AudioSystem = {
   // Schedule any events due within the lookahead window, looping at LOOP_BEATS.
   _tick() {
     if (!this.ctx || !this._musicOn) return;
+    if (typeof document !== 'undefined' && document.hidden) return; // never schedule while hidden
     const ahead = 0.2;
     let guard = 0;
     while (guard++ < 256) {

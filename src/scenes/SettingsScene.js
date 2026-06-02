@@ -2,6 +2,7 @@ import { SPRITE_KEYS } from '../constants.js';
 import { SpriteManager } from '../SpriteManager.js';
 import { makeButton } from '../Button.js';
 import { GT } from '../data/GameText.js';
+import { resampleToCanvas } from '../imageResample.js';
 
 export class SettingsScene extends Phaser.Scene {
   constructor() { super('SettingsScene'); }
@@ -162,8 +163,9 @@ export class SettingsScene extends Phaser.Scene {
   // Hero sprites: resize to 100px (gameplay/collision) and 400px (title display).
   // One Image decode, two canvas draws — no duplicate file reads.
   _saveCharSprite(img, key) {
-    const gameplay = this._canvasResize(img, 100);
-    const title    = this._canvasResize(img, 400);
+    // Hero sprites use the selected resampler (Lanczos-3 / Bicubic Sharper); see imageResample.js.
+    const gameplay = resampleToCanvas(img, 100).toDataURL('image/png');
+    const title    = resampleToCanvas(img, 400).toDataURL('image/png');
 
     SpriteManager.save(key, gameplay);
     SpriteManager.saveTitle(key, title);

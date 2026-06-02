@@ -1,6 +1,7 @@
 import { SPRITE_KEYS } from '../constants.js';
 import { SpriteManager } from '../SpriteManager.js';
 import { applyText } from '../data/GameText.js';
+import { resampleToCanvas } from '../imageResample.js';
 
 // Maps each sprite key to its file in public/sprites/.
 // Drop matching PNGs into that folder to replace the procedural defaults.
@@ -130,10 +131,10 @@ export class BootScene extends Phaser.Scene {
       // 400px title texture, added under key + '_title'
       const titleKey = key + '_title';
       try { if (this.textures.exists(titleKey)) this.textures.remove(titleKey); } catch {}
-      this.textures.addCanvas(titleKey, this._squareCanvas(src, 400));
+      this.textures.addCanvas(titleKey, resampleToCanvas(src, 400));
 
       // 100px gameplay texture — replaces the native-resolution default key in place
-      const small = this._squareCanvas(src, 100);
+      const small = resampleToCanvas(src, 100);
       this.textures.remove(key);
       this.textures.addCanvas(key, small);
     }

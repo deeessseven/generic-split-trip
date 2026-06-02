@@ -60,6 +60,7 @@ export class MenuScene extends Phaser.Scene {
 
     // Buttons
     makeButton(this, cx, cy - 18, 220, 50, 'PLAY', 0x29b6f6, 0x0288d1, () => {
+      AudioSystem.startMusic('game'); // hard-cut the menu theme the instant Play is tapped
       this.scene.start('GameScene');
     }, '18px');
     makeButton(this, cx, cy + 50, 220, 44, GT.settingsTitle, 0x37474f, 0x263238, () => {

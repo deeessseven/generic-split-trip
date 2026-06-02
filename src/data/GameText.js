@@ -2,7 +2,7 @@ export const GT = {
   // ── Identity ──────────────────────────────────────────────────────────────
   gameTitle:        'SPLIT TRIP',
   gameSubtitle:     'Control two dimensions — survive both views',
-  gameVersion:      'v1.0',
+  copyright:        '© 2026 Split Trip',
 
   // ── Menu tips ─────────────────────────────────────────────────────────────
   tipLeftLabel:     'LEFT PANEL',

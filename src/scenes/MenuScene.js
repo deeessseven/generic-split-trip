@@ -111,10 +111,10 @@ export class MenuScene extends Phaser.Scene {
     panelTip(W * 0.25, GT.tipLeftLabel,  GT.tipLeftDesc);
     panelTip(W * 0.75, GT.tipRightLabel, GT.tipRightDesc);
 
-    // Version (kept clear of the bottom-right safe area)
-    this.add.text(W - 8 - si.right, H - 6 - si.bottom, GT.gameVersion, {
-      fontSize: '10px', fontFamily: 'Arial', color: '#546e7a',
-    }).setOrigin(1, 1);
+    // Copyright — centered along the bottom, clear of the safe area.
+    this.add.text(cx, H - 6 - si.bottom, GT.copyright, {
+      fontSize: '10px', fontFamily: 'Arial', color: '#607089',
+    }).setOrigin(0.5, 1);
 
     // Classy entrance: a quick fade from the dark background.
     this.cameras.main.fadeIn(350, 9, 9, 18);

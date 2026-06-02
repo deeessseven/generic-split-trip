@@ -101,37 +101,31 @@ export class MenuScene extends Phaser.Scene {
     // taps up/down = side-view rise.
     const thumbKey = 'thumb_hint';
     if (!this.textures.exists(thumbKey)) {
-      const c = document.createElement('canvas'); c.width = 200; c.height = 340;
+      const CW = 120, CH = 330;
+      const c = document.createElement('canvas'); c.width = CW; c.height = CH;
       const x = c.getContext('2d');
-      x.beginPath();                              // thumb + fist silhouette (pointing up)
-      x.moveTo(120, 302);
-      x.quadraticCurveTo(160, 300, 165, 275);
-      x.quadraticCurveTo(172, 230, 158, 205);
-      x.quadraticCurveTo(140, 188, 124, 185);
-      x.quadraticCurveTo(126, 110, 112, 55);
-      x.quadraticCurveTo(100, 33, 92, 55);
-      x.quadraticCurveTo(78, 110, 80, 185);
-      x.quadraticCurveTo(45, 193, 40, 235);
-      x.quadraticCurveTo(35, 295, 85, 302);
-      x.closePath();
-      const g = x.createLinearGradient(35, 0, 170, 0); // skin shading, light from the left
+      const mx = 60, w = 80, r = w / 2, top = 26, bottom = 300; // long rect, semicircle tip
+      x.beginPath();
+      x.moveTo(mx - r, bottom);
+      x.lineTo(mx - r, top + r);
+      x.arc(mx, top + r, r, Math.PI, 0, false); // round tip
+      x.lineTo(mx + r, bottom);
+      x.closePath();                            // flat bottom
+      const g = x.createLinearGradient(mx - r, 0, mx + r, 0); // skin shading, light from the left
       g.addColorStop(0, '#ffe0c4'); g.addColorStop(0.55, '#eaa97c'); g.addColorStop(1, '#cf8659');
       x.fillStyle = g;
       x.shadowColor = 'rgba(0,0,0,0.35)'; x.shadowBlur = 12; x.shadowOffsetY = 5;
       x.fill();
       x.shadowColor = 'transparent'; x.shadowBlur = 0; x.shadowOffsetY = 0;
       x.lineWidth = 4; x.strokeStyle = 'rgba(85,48,26,0.55)'; x.stroke();
-      x.beginPath(); x.ellipse(101, 74, 15, 23, 0, 0, Math.PI * 2);          // fingernail
+      x.beginPath(); x.ellipse(mx, top + 40, 15, 22, 0, 0, Math.PI * 2);    // fingernail near tip
       x.fillStyle = 'rgba(255,245,238,0.9)'; x.fill();
       x.lineWidth = 2; x.strokeStyle = 'rgba(120,80,55,0.4)'; x.stroke();
-      x.beginPath(); x.ellipse(95, 145, 12, 32, 0, 0, Math.PI * 2);          // pad highlight
+      x.beginPath(); x.ellipse(mx - 16, top + 130, 9, 55, 0, 0, Math.PI * 2); // soft highlight
       x.fillStyle = 'rgba(255,240,225,0.22)'; x.fill();
-      x.lineWidth = 3; x.strokeStyle = 'rgba(120,70,45,0.35)';               // knuckle creases
-      x.beginPath(); x.moveTo(70, 226); x.quadraticCurveTo(105, 218, 146, 233); x.stroke();
-      x.beginPath(); x.moveTo(66, 260); x.quadraticCurveTo(105, 251, 150, 263); x.stroke();
       this.textures.addCanvas(thumbKey, c);
     }
-    const thumbH = Math.round(100 * s), thumbW = Math.round(100 * s * 200 / 340);
+    const thumbH = Math.round(110 * s), thumbW = Math.round(110 * s * 120 / 330);
     const handY = H - si.bottom - Math.round(58 * s);
     const slideAmp = Math.round(W * 0.06);
     const tapAmp = Math.round(28 * s);

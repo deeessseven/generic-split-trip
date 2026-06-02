@@ -10,6 +10,7 @@ import {
 import { SpriteManager } from '../SpriteManager.js';
 import { GT } from '../data/GameText.js';
 import { AudioSystem } from '../AudioSystem.js';
+import { safeInsets } from '../safeArea.js';
 
 // ── Debug flag ────────────────────────────────────────────────────────────────
 // Set to true to draw the pixel-accurate collision silhouette over each sprite.
@@ -178,12 +179,18 @@ export class GameScene extends Phaser.Scene {
       strokeThickness: 4,
     }).setOrigin(0.5, 0).setDepth(6);
 
-    // Panel labels — nudged W/40 toward the horizontal center (left moves right, right moves left)
-    this.add.text(6 + W / 40, 6, `${GT.labelTopView}\n${GT.labelTopHint}`, {
+    // Panel labels. The screen may have rounded corners and/or a notch/cutout that clips the
+    // very corners, so inset each label diagonally inward by a small dynamic clearance (a
+    // fraction of the short side — this is what clears a rounded corner) PLUS any device
+    // safe-area inset (handles notches/cutouts; rounded-corner-only phones report 0 there).
+    const si = safeInsets();
+    const corner = Math.round(Math.min(W, H) * 0.04);
+    const labelTopY = corner + si.top;
+    this.add.text(corner + si.left, labelTopY, `${GT.labelTopView}\n${GT.labelTopHint}`, {
       fontSize: '11px', fontFamily: 'Arial', color: '#eceff1',
       alpha: 0.7,
     }).setDepth(6);
-    this.add.text(W - 6 - W / 40, 6, `${GT.labelSideView}\n${GT.labelSideHint}`, {
+    this.add.text(W - corner - si.right, labelTopY, `${GT.labelSideView}\n${GT.labelSideHint}`, {
       fontSize: '11px', fontFamily: 'Arial', color: '#eceff1', align: 'right',
       alpha: 0.7,
     }).setOrigin(1, 0).setDepth(6);

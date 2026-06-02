@@ -340,28 +340,35 @@ export class GameScene extends Phaser.Scene {
     const heroFracX = this.charTopBounds.maxHalfW  * 2 * S / this.lW * GAP_X_SCALE; // hero hitbox width (×1.2) as left-panel fraction
     const heroFracY = this.charSideBounds.maxHalfH * 2 * S / this.pH; // hero hitbox height as panel-height fraction
 
-    // Every wall keeps at least MIN_SEG px of solid wall on EACH side of the gap. Cap the gap
-    // so 2×MIN_SEG fits, then clamp its center so neither segment drops below MIN_SEG. Clamping
-    // the STORED values means draw + collision stay consistent (no mismatch). rng order (gapX
-    // then gapY) is preserved so the seeded layout is unchanged.
+    // A wall segment may be 0 (gap reaches the edge), but never a thin sliver: if a segment
+    // lands in (0, MIN_SEG) px, snap it to 0 or MIN_SEG (whichever is nearer) by nudging that
+    // gap edge. Operating on the STORED gap edges keeps draw + collision consistent. rng order
+    // (gapX then gapY) is preserved so the seeded layout is unchanged.
     const MIN_SEG = 10;
-    const gapXraw = this.rng.realInRange(0.18, 0.82); // rng #1
-    const gapXW = Math.min(
-      Math.max(heroFracX * GAP_MULT_INITIAL * decay, heroFracX * GAP_MULT_MIN),
-      1 - (2 * MIN_SEG) / this.lW,
-    );
-    const hX = gapXW / 2, loX = hX + MIN_SEG / this.lW, hiX = 1 - hX - MIN_SEG / this.lW;
-    const gapX = loX <= hiX ? Phaser.Math.Clamp(gapXraw, loX, hiX) : 0.5;
+    const snapEdges = (centerFrac, widthFrac, span) => {
+      let lo = centerFrac * span - (widthFrac / 2) * span; // near edge (px from 0)
+      let hi = centerFrac * span + (widthFrac / 2) * span; // far edge (px to span)
+      if (lo > 0 && lo < MIN_SEG)               lo = lo < MIN_SEG / 2 ? 0 : MIN_SEG;
+      const farW = span - hi;
+      if (farW > 0 && farW < MIN_SEG)           hi = farW < MIN_SEG / 2 ? span : span - MIN_SEG;
+      lo = Math.max(0, lo); hi = Math.min(span, hi);
+      return { width: (hi - lo) / span, center: (lo + hi) / 2 / span };
+    };
 
-    const gapYraw = this.rng.realInRange(0.18, 0.82); // rng #2
-    const gapYH = Math.min(
-      Math.max(heroFracY * GAP_MULT_INITIAL * decay, heroFracY * GAP_MULT_MIN),
-      1 - (2 * MIN_SEG) / this.pH,
-    );
-    const hY = gapYH / 2, loY = hY + MIN_SEG / this.pH, hiY = 1 - hY - MIN_SEG / this.pH;
-    const gapY = loY <= hiY ? Phaser.Math.Clamp(gapYraw, loY, hiY) : 0.5;
+    const gapXraw  = this.rng.realInRange(0.18, 0.82); // rng #1
+    const gapXWraw = Math.max(heroFracX * GAP_MULT_INITIAL * decay, heroFracX * GAP_MULT_MIN);
+    const gx = snapEdges(gapXraw, gapXWraw, this.lW);
 
-    this.obstacles.push({ dist: VISIBLE_DIST, gapX, gapXW, gapY, gapYH, passed: false });
+    const gapYraw  = this.rng.realInRange(0.18, 0.82); // rng #2
+    const gapYHraw = Math.max(heroFracY * GAP_MULT_INITIAL * decay, heroFracY * GAP_MULT_MIN);
+    const gy = snapEdges(gapYraw, gapYHraw, this.pH);
+
+    this.obstacles.push({
+      dist: VISIBLE_DIST,
+      gapX: gx.center, gapXW: gx.width,
+      gapY: gy.center, gapYH: gy.width,
+      passed: false,
+    });
   }
 
   // Returns per-row X extents of non-transparent pixels (the only profile collision uses).

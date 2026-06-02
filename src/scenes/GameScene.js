@@ -134,12 +134,12 @@ export class GameScene extends Phaser.Scene {
 
     // Flap puff emitters (emit on demand from _onDown). angle is the emission direction
     // in degrees: 0=right, 90=down, 180=left, 270=up.
-    // Side: ONE larger soft puff just below the bottom-center of the hero's opaque pixels,
-    // drifting left/back. Depth 3.5 (above the hero) so it's clearly visible.
+    // Side: ONE larger soft puff near the bottom of the hero's opaque pixels (shifted left),
+    // shooting down-left (135°). Depth 3.5 (above the hero) so it's clearly visible.
     this.flapFX = this.add.particles(0, 0, 'st_particle', {
       lifespan: 400,
-      speed: { min: 5, max: 25 }, // very low: blooms right at the bottom, barely drifts
-      angle: { min: 150, max: 190 },
+      speed: { min: 20, max: 60 },
+      angle: { min: 120, max: 150 }, // down-left (135°)
       scale: { start: 4.2, end: 0 }, // 3x larger
       alpha: { start: 0.65, end: 0 },
       emitting: false,
@@ -230,13 +230,13 @@ export class GameScene extends Phaser.Scene {
 
   // Flap thrust: one puff per view, fired together.
   _emitFlapPuffs() {
-    // Side: one larger soft puff at the bottom-center of the opaque silhouette (right below
-    // the bottom opaque pixels), drifting left/back. Tracks tilt + the ±5% visual scale.
+    // Side: one larger soft puff near the bottom of the opaque silhouette, shifted left by
+    // 25% of the opaque horizontal length, shooting down-left. Tracks tilt + visual scale.
     if (this.flapFX) {
       const sb = this.charSideBounds;
       const sc = this.charSideSprite.scaleX;
       const cx = sb.w / 2, cy = sb.h / 2;
-      const px = (sb.leftEdge + sb.rightEdge) / 2;
+      const px = (sb.leftEdge + sb.rightEdge) / 2 - 0.25 * (sb.rightEdge - sb.leftEdge);
       const th = this.sideAngle * Math.PI / 180;
       const cos = Math.cos(th), sin = Math.sin(th);
       const ex = this.charSideX + ((px - cx) * cos - (sb.botEdge - cy) * sin) * sc;

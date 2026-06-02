@@ -15,7 +15,7 @@ export class SettingsScene extends Phaser.Scene {
       { key: SPRITE_KEYS.CHAR_SIDE, label: GT.slotCharSide, hint: 'any size' },
       { key: SPRITE_KEYS.BG_TOP,    label: GT.slotBgTop,    hint: '512×512 tileable' },
       { key: SPRITE_KEYS.BG_SIDE,   label: GT.slotBgSide,   hint: '512×512 tileable' },
-      { key: SPRITE_KEYS.OBSTACLE,  label: GT.slotObstacle, hint: '26×26 tileable' },
+      { key: SPRITE_KEYS.OBSTACLE,  label: GT.slotObstacle, hint: '32×32 tileable' },
       { key: SPRITE_KEYS.HIT_MARK,  label: GT.slotHitMark,  hint: '256×256' },
     ];
 
@@ -191,11 +191,11 @@ export class SettingsScene extends Phaser.Scene {
   }
 
   // Resize uploads to a fixed square so they store small and tile predictably:
-  //   backgrounds → 512 (fill a panel), wall → 26 (matches the wall thickness), hit mark → 256.
+  //   backgrounds → 512 (fill a panel), wall → 32 (power-of-two, ~wall thickness), hit mark → 256.
   _saveGenericSprite(img, key) {
     let size = 256; // hit mark
     if (key === SPRITE_KEYS.BG_TOP || key === SPRITE_KEYS.BG_SIDE) size = 512;
-    else if (key === SPRITE_KEYS.OBSTACLE) size = 26;
+    else if (key === SPRITE_KEYS.OBSTACLE) size = 32;
     const dataURL = this._canvasResize(img, size);
     SpriteManager.save(key, dataURL);
     const customKey = key + '_custom';

@@ -27,7 +27,7 @@ export class MenuScene extends Phaser.Scene {
     // Audio toggle pills (top-left). Inset from rounded corners / notch like the HUD labels:
     // a small dynamic corner clearance plus any device safe-area inset.
     const si = safeInsets();
-    const corner = Math.round(Math.min(W, H) * 0.04);
+    const corner = Math.round(Math.min(W, H) * 0.02);
     const pillX = corner + si.left;
     const pillTop = corner + si.top;
     this._audioToggle(pillX, pillTop,      'Music: ', () => AudioSystem.isMusicEnabled(), (v) => AudioSystem.setMusicEnabled(v));
@@ -87,9 +87,9 @@ export class MenuScene extends Phaser.Scene {
 
     // LEFT / RIGHT panel tips sit at the bottom of their own half of the screen
     // (label stacked above description so each fits within its half).
-    // Anchor each group a dynamic margin above the bottom edge (scales with screen height)
-    // so there's always room to spare; desc sits on the bottom, label stacked just above it.
-    const tipMargin = Math.round(Math.max(22, H * 0.06));
+    // Anchor each group above the bottom edge using the same 0.02 corner clearance plus the
+    // device safe-area bottom inset (home indicator); desc sits on the bottom, label above it.
+    const tipMargin = corner + si.bottom;
     const panelTip = (centerX, label, desc) => {
       const d = this.add.text(centerX, H - tipMargin, desc, {
         fontSize: '14px', fontFamily: 'Arial', color: '#cfd8dc', align: 'center',

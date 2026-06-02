@@ -234,7 +234,7 @@ export class GameScene extends Phaser.Scene {
       const sb = this.charSideBounds;
       const sc = this.charSideSprite.scaleX;
       const cx = sb.w / 2, cy = sb.h / 2;
-      const px = (4 * sb.leftEdge + sb.rightEdge) / 5; // point 1/5 (20%) from the left of the opaque width
+      const px = (2 * sb.leftEdge + sb.rightEdge) / 3; // point 1/3 from the left of the opaque width
       const py = sb.botEdge - 20;                       // visible bottom edge (above the faint pixels)
       const th = this.sideAngle * Math.PI / 180;
       const cos = Math.cos(th), sin = Math.sin(th);
@@ -511,18 +511,24 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
+    // Top hero scales ±10% with the side hero's vertical position: side at the top of the
+    // display → +10%, at the bottom → −10%. Visual only — the wall-hit collision
+    // (charTopBounds × hitboxScale) is unaffected; the opaque-pixel clamp below multiplies
+    // by this scale so the (now larger/smaller) visible pixels still respect the bounds.
+    this.topVisScale = Phaser.Math.Clamp(1 + (0.5 - this.charYPx / this.pH) * 0.20, 0.90, 1.10);
+
     // ── Horizontal position (top-down, smooth follow finger) ────────────────
     this.charXPx = smooth(this.charXPx, this.targetCharXPx, 0.22, dt);
 
-    // Constrain by the hero's ROTATED OPAQUE pixels (dynamic with the tilt), not its center:
+    // Constrain by the hero's ROTATED OPAQUE pixels (dynamic with tilt + the ±10% scale):
     //  • rightmost opaque pixel must not pass the left side of the center divider
     //  • leftmost opaque pixel must not pass the left edge of the screen
-    // The top sprite renders at scale 1, so silhouette texture px == screen px.
     {
       const tb = this.charTopBounds;
       const tcx = tb.w / 2, tcy = tb.h / 2;
       const a = this.topAngle * Math.PI / 180;
       const ca = Math.cos(a), sa = Math.sin(a);
+      const vs = this.topVisScale;
       let minOff = Infinity, maxOff = -Infinity; // X offsets from the sprite center
       for (let row = 0; row < tb.h; row++) {
         if (!isFinite(tb.rowMinX[row])) continue;
@@ -533,8 +539,8 @@ export class GameScene extends Phaser.Scene {
         if (offR > maxOff) maxOff = offR;
       }
       if (isFinite(minOff)) {
-        const minC = -minOff;                  // leftmost opaque (charXPx+minOff) ≥ 0
-        const maxC = (this.lW - 1.5) - maxOff;  // rightmost opaque ≤ divider's left edge
+        const minC = -minOff * vs;                  // leftmost opaque (charXPx+minOff*vs) ≥ 0
+        const maxC = (this.lW - 1.5) - maxOff * vs;  // rightmost opaque ≤ divider's left edge
         this.charXPx = Phaser.Math.Clamp(this.charXPx, Math.min(minC, maxC), Math.max(minC, maxC));
       }
     }
@@ -705,7 +711,7 @@ export class GameScene extends Phaser.Scene {
     }
     const topTarget = this.topTiltState === 'left' ? -20 : this.topTiltState === 'right' ? 20 : 0;
     this.topAngle = smooth(this.topAngle, topTarget, 0.30, dt);
-    this.charTopSprite.setPosition(this.charXPx, this.charTopY).setAngle(this.topAngle);
+    this.charTopSprite.setPosition(this.charXPx, this.charTopY).setAngle(this.topAngle).setScale(this.topVisScale);
     // Visual-only: scale the side hero ±10% with the top hero's horizontal position
     // (right = bigger, left = smaller). Collision uses charSideBounds × hitboxScale and is
     // never read from the sprite's display scale, so the hitbox is unaffected.

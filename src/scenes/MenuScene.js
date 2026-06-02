@@ -96,25 +96,50 @@ export class MenuScene extends Phaser.Scene {
     addHero(W * 0.20, topKey, 0);
     addHero(W * 0.80, sideKey, 1100);
 
-    // Animated gesture hints in the lower area of each panel: a hand that slides left/right in
-    // the left (top-down steer) and one that taps up/down in the right (side-view rise).
-    const drawHand = (tilt) => {
-      const g = this.add.graphics().setDepth(4);
-      const w = Math.round(26 * s), h = Math.round(52 * s);
-      g.fillStyle(0xeaf2ff, 0.92);
-      g.fillRoundedRect(-w / 2, -h, w, h, w / 2);                                  // thumb (tip up)
-      g.fillEllipse(0, Math.round(w * 0.5), Math.round(w * 2.3), Math.round(w * 1.6)); // fist
-      g.lineStyle(Math.max(1, Math.round(2 * s)), 0x0a0a18, 0.45);
-      g.strokeRoundedRect(-w / 2, -h, w, h, w / 2);
-      g.setRotation(tilt);
-      return g;
-    };
-    const handY = H - si.bottom - Math.round(54 * s);
+    // Animated gesture hints: a shaded human thumb (skin gradient, fingernail, knuckle creases),
+    // drawn once to a texture. Left thumb (mirrored) slides L/R = top-down steer; right thumb
+    // taps up/down = side-view rise.
+    const thumbKey = 'thumb_hint';
+    if (!this.textures.exists(thumbKey)) {
+      const c = document.createElement('canvas'); c.width = 200; c.height = 340;
+      const x = c.getContext('2d');
+      x.beginPath();                              // thumb + fist silhouette (pointing up)
+      x.moveTo(120, 302);
+      x.quadraticCurveTo(160, 300, 165, 275);
+      x.quadraticCurveTo(172, 230, 158, 205);
+      x.quadraticCurveTo(140, 188, 124, 185);
+      x.quadraticCurveTo(126, 110, 112, 55);
+      x.quadraticCurveTo(100, 33, 92, 55);
+      x.quadraticCurveTo(78, 110, 80, 185);
+      x.quadraticCurveTo(45, 193, 40, 235);
+      x.quadraticCurveTo(35, 295, 85, 302);
+      x.closePath();
+      const g = x.createLinearGradient(35, 0, 170, 0); // skin shading, light from the left
+      g.addColorStop(0, '#ffe0c4'); g.addColorStop(0.55, '#eaa97c'); g.addColorStop(1, '#cf8659');
+      x.fillStyle = g;
+      x.shadowColor = 'rgba(0,0,0,0.35)'; x.shadowBlur = 12; x.shadowOffsetY = 5;
+      x.fill();
+      x.shadowColor = 'transparent'; x.shadowBlur = 0; x.shadowOffsetY = 0;
+      x.lineWidth = 4; x.strokeStyle = 'rgba(85,48,26,0.55)'; x.stroke();
+      x.beginPath(); x.ellipse(101, 74, 15, 23, 0, 0, Math.PI * 2);          // fingernail
+      x.fillStyle = 'rgba(255,245,238,0.9)'; x.fill();
+      x.lineWidth = 2; x.strokeStyle = 'rgba(120,80,55,0.4)'; x.stroke();
+      x.beginPath(); x.ellipse(95, 145, 12, 32, 0, 0, Math.PI * 2);          // pad highlight
+      x.fillStyle = 'rgba(255,240,225,0.22)'; x.fill();
+      x.lineWidth = 3; x.strokeStyle = 'rgba(120,70,45,0.35)';               // knuckle creases
+      x.beginPath(); x.moveTo(70, 226); x.quadraticCurveTo(105, 218, 146, 233); x.stroke();
+      x.beginPath(); x.moveTo(66, 260); x.quadraticCurveTo(105, 251, 150, 263); x.stroke();
+      this.textures.addCanvas(thumbKey, c);
+    }
+    const thumbH = Math.round(100 * s), thumbW = Math.round(100 * s * 200 / 340);
+    const handY = H - si.bottom - Math.round(58 * s);
     const slideAmp = Math.round(W * 0.06);
     const tapAmp = Math.round(28 * s);
-    const leftHand = drawHand(-0.12).setPosition(W * 0.25 - slideAmp, handY);
+    const leftHand = this.add.image(W * 0.25 - slideAmp, handY, thumbKey)
+      .setDepth(4).setDisplaySize(thumbW, thumbH).setFlipX(true); // left hand (mirrored)
     this.tweens.add({ targets: leftHand, x: W * 0.25 + slideAmp, duration: 1100, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-    const rightHand = drawHand(0.12).setPosition(W * 0.75, handY - tapAmp);
+    const rightHand = this.add.image(W * 0.75, handY - tapAmp, thumbKey)
+      .setDepth(4).setDisplaySize(thumbW, thumbH);
     this.tweens.add({ targets: rightHand, y: handY, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeIn' });
 
     // ── Center column (Title → SURVIVE → PLAY → Customize), measured & centered in the band ──

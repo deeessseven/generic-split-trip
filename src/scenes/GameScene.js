@@ -129,13 +129,13 @@ export class GameScene extends Phaser.Scene {
 
     // Character sprites (on top of obstacles and gap indicator).
     // ctKey/csKey are the 100px gameplay textures used for COLLISION (1 texel = 1 world px).
-    // For DISPLAY we use the high-res (400px) title textures scaled down to the same 100px
-    // footprint, so the hero is crisp on high-DPI screens (the GPU down-samples a big texture
-    // instead of up-sampling a 100px one). Collision is unaffected — it reads the 100px bounds.
+    // For DISPLAY we use the 512px pre-filtered (Magic Kernel Sharp) title textures scaled down
+    // to the same 100px footprint, so the hero is crisp on high-DPI screens (the GPU does a
+    // gentle final down-sample of a clean texture). Collision is unaffected — it reads 100px.
     const ctKey = SpriteManager.resolveKey(this, SPRITE_KEYS.CHAR_TOP);
     const csKey = SpriteManager.resolveKey(this, SPRITE_KEYS.CHAR_SIDE);
-    const ctDispKey = SpriteManager.resolveDisplayKey(this, SPRITE_KEYS.CHAR_TOP);
-    const csDispKey = SpriteManager.resolveDisplayKey(this, SPRITE_KEYS.CHAR_SIDE);
+    const ctDispKey = SpriteManager.resolveTitleKey(this, SPRITE_KEYS.CHAR_TOP);
+    const csDispKey = SpriteManager.resolveTitleKey(this, SPRITE_KEYS.CHAR_SIDE);
     const ctDisplay = this.textures.exists(ctDispKey) ? ctDispKey : ctKey; // fall back if no title texture
     const csDisplay = this.textures.exists(csDispKey) ? csDispKey : csKey;
     this.charTopSprite  = this.add.image(this.charXPx, this.charTopY,  ctDisplay).setDepth(3);

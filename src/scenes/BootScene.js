@@ -141,10 +141,11 @@ export class BootScene extends Phaser.Scene {
         this.textures.addCanvas(fullKey, fc);
       }
 
-      // 400px title texture, added under key + '_title'
+      // 512px pre-filtered display texture, added under key + '_title' (used for the title
+      // screen and now for in-game display, downscaled to the 100px footprint).
       const titleKey = key + '_title';
       try { if (this.textures.exists(titleKey)) this.textures.remove(titleKey); } catch {}
-      this.textures.addCanvas(titleKey, resampleToCanvas(src, 400));
+      this.textures.addCanvas(titleKey, resampleToCanvas(src, 512));
 
       // 100px gameplay texture — replaces the native-resolution default key in place
       const small = resampleToCanvas(src, 100);

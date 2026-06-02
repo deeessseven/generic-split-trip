@@ -168,7 +168,7 @@ export class SettingsScene extends Phaser.Scene {
   _saveCharSprite(img, key) {
     // Hero sprites use the selected resampler (Lanczos-3 / Bicubic Sharper); see imageResample.js.
     const gameplay = resampleToCanvas(img, 100).toDataURL('image/png');
-    const title    = resampleToCanvas(img, 400).toDataURL('image/png');
+    const title    = resampleToCanvas(img, 512).toDataURL('image/png');
 
     SpriteManager.save(key, gameplay);
     SpriteManager.saveTitle(key, title);

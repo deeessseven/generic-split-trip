@@ -190,7 +190,7 @@ export class GameScene extends Phaser.Scene {
     // fraction of the short side — this is what clears a rounded corner) PLUS any device
     // safe-area inset (handles notches/cutouts; rounded-corner-only phones report 0 there).
     const si = safeInsets();
-    const corner = Math.round(Math.min(W, H) * 0.04);
+    const corner = Math.round(Math.min(W, H) * 0.02);
     const labelTopY = corner + si.top;
     this.add.text(corner + si.left, labelTopY, `${GT.labelTopView}\n${GT.labelTopHint}`, {
       fontSize: '11px', fontFamily: 'Arial', color: '#eceff1',

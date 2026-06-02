@@ -14,39 +14,48 @@ const N = {
   C5: 523.25, D5: 587.33, E5: 659.25, F5: 698.46,
 };
 
-const BPM = 148;
-const BEAT = 60 / BPM;   // 0.5s
-const LOOP_BEATS = 32;   // 8 bars of 4/4 → 16s loop
+const BPM = 152;
+const BEAT = 60 / BPM;
+const LOOP_BEATS = 64;   // 16 bars of 4/4 → ~25s loop (Section A + a brighter Section B)
 
 // Build the song as a flat, beat-sorted event list: { b: startBeat, d: durBeats, f, v }.
 function buildSong() {
   const ev = [];
 
   // Pad — sustained chord tones, one event per note (close voicings for smooth changes).
+  // Section A (bars 1-8): C G Am F | C G F G.  Section B (bars 9-16): Am F C G | Am F G G.
   const chords = [
     [0,  ['C4', 'E4', 'G4']], [4,  ['D4', 'G4', 'B4']],
     [8,  ['C4', 'E4', 'A4']], [12, ['C4', 'F4', 'A4']],
     [16, ['C4', 'E4', 'G4']], [20, ['D4', 'G4', 'B4']],
     [24, ['C4', 'F4', 'A4']], [28, ['D4', 'G4', 'B4']],
+    [32, ['C4', 'E4', 'A4']], [36, ['C4', 'F4', 'A4']],
+    [40, ['C4', 'E4', 'G4']], [44, ['D4', 'G4', 'B4']],
+    [48, ['C4', 'E4', 'A4']], [52, ['C4', 'F4', 'A4']],
+    [56, ['D4', 'G4', 'B4']], [60, ['D4', 'G4', 'B4']],
   ];
   for (const [b, notes] of chords) for (const f of notes) ev.push({ b, d: 3.8, f, v: 'pad' });
 
   // Bass — root on beats 1 and 3 of each bar.
-  const roots = ['C2', 'G2', 'A2', 'F2', 'C2', 'G2', 'F2', 'G2'];
+  const roots = ['C2', 'G2', 'A2', 'F2', 'C2', 'G2', 'F2', 'G2',
+                 'A2', 'F2', 'C2', 'G2', 'A2', 'F2', 'G2', 'G2'];
   roots.forEach((f, i) => {
     ev.push({ b: i * 4,     d: 1.6, f, v: 'bass' });
     ev.push({ b: i * 4 + 2, d: 1.6, f, v: 'bass' });
   });
 
   // Light off-beat "bounce" (the fifth of each root) on beats 2 and 4 — adds upbeat lift.
-  const fifths = ['G2', 'D3', 'E3', 'C3', 'G2', 'D3', 'C3', 'D3'];
+  const fifths = ['G2', 'D3', 'E3', 'C3', 'G2', 'D3', 'C3', 'D3',
+                  'E3', 'C3', 'G2', 'D3', 'E3', 'C3', 'D3', 'D3'];
   fifths.forEach((f, i) => {
     ev.push({ b: i * 4 + 1, d: 0.6, f, v: 'bounce' });
     ev.push({ b: i * 4 + 3, d: 0.6, f, v: 'bounce' });
   });
 
-  // Lead — a singable phrase with longer notes and rests (no constant arpeggio buzz).
+  // Lead. Section A (bars 1-8) is the original phrase, UNCHANGED. Section B (bars 9-16) is
+  // a new, higher/brighter phrase so the loop is less repetitive (~25s before it repeats).
   const lead = [
+    // Section A — original melody (do not change)
     [0, 1, 'E4'], [1, 1, 'G4'], [2, 2, 'C5'],
     [4, 1.5, 'B4'], [5.5, 0.5, 'A4'], [6, 2, 'G4'],
     [8, 1, 'A4'], [9, 1, 'C5'], [10, 2, 'B4'],
@@ -55,6 +64,15 @@ function buildSong() {
     [20, 1.5, 'D5'], [21.5, 0.5, 'B4'], [22, 2, 'G4'],
     [24, 1, 'A4'], [25, 1, 'C5'], [26, 1, 'F5'], [27, 1, 'C5'],
     [28, 2, 'D5'], [30, 1, 'B4'],
+    // Section B — brighter continuation (new)
+    [32, 1, 'A4'], [33, 1, 'C5'], [34, 2, 'E5'],
+    [36, 1.5, 'F5'], [37.5, 0.5, 'E5'], [38, 2, 'C5'],
+    [40, 1, 'G4'], [41, 1, 'C5'], [42, 2, 'E5'],
+    [44, 2, 'D5'], [46, 2, 'B4'],
+    [48, 1, 'A4'], [49, 1, 'C5'], [50, 2, 'E5'],
+    [52, 1.5, 'F5'], [53.5, 0.5, 'E5'], [54, 2, 'C5'],
+    [56, 1, 'D5'], [57, 1, 'B4'], [58, 2, 'G4'],
+    [60, 2, 'D5'], [62, 2, 'G4'],
   ];
   for (const [b, d, f] of lead) ev.push({ b, d, f, v: 'lead' });
 

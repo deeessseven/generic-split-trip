@@ -511,11 +511,11 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
-    // Top hero scales ±10% with the side hero's vertical position: side at the top of the
-    // display → +10%, at the bottom → −10%. Visual only — the wall-hit collision
+    // Top hero scales ±15% with the side hero's vertical position: side at the top of the
+    // display → +15%, at the bottom → −15%. Visual only — the wall-hit collision
     // (charTopBounds × hitboxScale) is unaffected; the opaque-pixel clamp below multiplies
     // by this scale so the (now larger/smaller) visible pixels still respect the bounds.
-    this.topVisScale = Phaser.Math.Clamp(1 + (0.5 - this.charYPx / this.pH) * 0.20, 0.90, 1.10);
+    this.topVisScale = Phaser.Math.Clamp(1 + (0.5 - this.charYPx / this.pH) * 0.30, 0.85, 1.15);
 
     // ── Horizontal position (top-down, smooth follow finger) ────────────────
     this.charXPx = smooth(this.charXPx, this.targetCharXPx, 0.22, dt);
@@ -712,10 +712,10 @@ export class GameScene extends Phaser.Scene {
     const topTarget = this.topTiltState === 'left' ? -20 : this.topTiltState === 'right' ? 20 : 0;
     this.topAngle = smooth(this.topAngle, topTarget, 0.30, dt);
     this.charTopSprite.setPosition(this.charXPx, this.charTopY).setAngle(this.topAngle).setScale(this.topVisScale);
-    // Visual-only: scale the side hero ±10% with the top hero's horizontal position
+    // Visual-only: scale the side hero ±15% with the top hero's horizontal position
     // (right = bigger, left = smaller). Collision uses charSideBounds × hitboxScale and is
     // never read from the sprite's display scale, so the hitbox is unaffected.
-    const sideVisScale = Phaser.Math.Clamp(1 + (this.charXPx / this.lW - 0.5) * 0.20, 0.90, 1.10);
+    const sideVisScale = Phaser.Math.Clamp(1 + (this.charXPx / this.lW - 0.5) * 0.30, 0.85, 1.15);
     this.charSideSprite.setPosition(this.charSideX, this.charYPx).setAngle(this.sideAngle).setScale(sideVisScale);
     this.scoreTxt.setText(`${Math.floor(this.elapsedTime)}s  |  ${this.wallsPassed} ${GT.scoreUnit}`);
 

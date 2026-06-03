@@ -153,23 +153,37 @@ game.events.on('ready', () => {
     // poll the target size every tick and, the instant it changes, resize the container, the
     // scale manager, the renderer, AND every camera. The game always runs landscape (wide =
     // larger dim); in fullscreen we trust `screen` (the viewport under-reports there).
-    let lastW = 0, lastH = 0;
+    let lastW = 0, lastH = 0, laidW = 0, laidH = 0, reTimer = null;
+    // Resize canvas/scale/renderer/cameras immediately (cheap, reduces transient bars).
+    const applySize = (w, h) => {
+      const gc = sm.parent;
+      if (gc) { gc.style.width = w + 'px'; gc.style.height = h + 'px'; }
+      sm.getParentBounds();
+      sm.refresh();
+      if (game.renderer && game.renderer.resize) game.renderer.resize(sm.baseSize.width, sm.baseSize.height);
+      game.scene.getScenes(true).forEach((scn) => { if (scn.cameras) scn.cameras.resize(sm.gameSize.width, sm.gameSize.height); });
+    };
     const reconcile = () => {
       try {
         let aw, ah;
         if (document.fullscreenElement) { aw = screen.width; ah = screen.height; }
         else { aw = window.innerWidth; ah = window.innerHeight; }
         const w = Math.max(aw, ah), h = Math.min(aw, ah);
-        if (!w || !h || (w === lastW && h === lastH)) return;
-        lastW = w; lastH = h;
-        const gc = sm.parent;
-        if (gc) { gc.style.width = w + 'px'; gc.style.height = h + 'px'; }
-        sm.getParentBounds();
-        sm.refresh();
-        if (game.renderer && game.renderer.resize) game.renderer.resize(sm.baseSize.width, sm.baseSize.height);
-        game.scene.getScenes(true).forEach((scn) => {
-          if (scn.cameras) { scn.cameras.resize(sm.gameSize.width, sm.gameSize.height); }
-        });
+        if (!w || !h) return;
+        if (w !== lastW || h !== lastH) { lastW = w; lastH = h; applySize(w, h); }
+        // Scene content is laid out once in create(); to re-flow it on a real size change we
+        // restart the active scene(s) once the size has SETTLED (skipping Boot's preload). This
+        // is the same path as "Play Again", which is the only thing that reliably re-layouts.
+        if (w !== laidW || h !== laidH) {
+          clearTimeout(reTimer);
+          reTimer = setTimeout(() => {
+            if (w !== lastW || h !== lastH) return; // size moved again — wait for it to settle
+            laidW = w; laidH = h;
+            game.scene.getScenes(true).forEach((scn) => {
+              if (scn.scene && scn.scene.key !== 'BootScene') { try { scn.scene.restart(); } catch (e) { /* */ } }
+            });
+          }, 350);
+        }
       } catch (e) { /* */ }
     };
     setInterval(reconcile, 200);

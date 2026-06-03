@@ -88,12 +88,13 @@ export class MenuScene extends Phaser.Scene {
     const sideKey = SpriteManager.resolveTitleKey(this, SPRITE_KEYS.CHAR_SIDE);
     const heroSize = Math.max(80, Math.min(W * 0.6 - playW, W * 0.4 - 24, H * 0.6, 460));
     const bob = Math.round(7 * s);
-    const addHero = (hx, key, delay) => {
+    const addHero = (hx, key, delay, horizontal) => {
       const img = this.add.image(hx, cy, key).setDisplaySize(heroSize, heroSize);
-      this.tweens.add({ targets: img, y: cy - bob, duration: 2200, delay, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+      const t = horizontal ? { x: hx + bob } : { y: cy - bob };
+      this.tweens.add({ targets: img, ...t, duration: 2200, delay, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     };
-    addHero(W * 0.20, topKey, 0);
-    addHero(W * 0.80, sideKey, 1100);
+    addHero(W * 0.20, topKey, 0, true);     // top-view hero: subtle slide L/R (it steers horizontally)
+    addHero(W * 0.80, sideKey, 1100, false); // side-view hero: subtle bob up/down
 
     // Animated gesture hints: a shaded human thumb (skin gradient, fingernail, knuckle creases),
     // drawn once to a texture. Left thumb (mirrored) slides L/R = top-down steer; right thumb

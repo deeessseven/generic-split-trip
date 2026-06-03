@@ -74,12 +74,23 @@ export class MenuScene extends Phaser.Scene {
     }).setOrigin(0.5, 1);
 
     // ── Center column fit-scale: shrink the doubled column to the free band if needed ──
+    // Measure the column's REAL height at full scale s (title + SURVIVE built off-screen and
+    // discarded), then derive the fit from that instead of a hardcoded estimate. The column
+    // scales ~linearly with f, so fit = band/colAtS guarantees PLAY/Customize never spill onto
+    // the bottom pills — which the old estimate (+ 0.5 floor) failed to prevent on short screens.
     const band = pillsTop - tipsBottom;
-    const colEst = 138 * s * 1.45 + 2 * Math.round(16 * s)  // title (generous: stroke+shadow+pad)
-                 + 45 * s * 1.4 * 2                         // SURVIVE 2 lines
-                 + (144 + 92) * s                           // PLAY (75%) + Customize (doubled) heights
-                 + (14 + 21 + 14) * s;                      // gaps
-    const fit = Phaser.Math.Clamp((band - 12 * s) / colEst, 0.5, 1);
+    const gapS = Math.round(14 * s);
+    const mTitle = this.add.text(0, -9999, GT.gameTitle, {
+      fontSize: `${Math.round(138 * s)}px`, fontFamily: '"Arial Black", Arial, sans-serif',
+      stroke: '#29b6f6', strokeThickness: Math.max(3, Math.round(8 * s)),
+    }).setOrigin(0.5).setPadding(Math.round(16 * s));
+    const mSurv = this.add.text(0, -9999, GT.tipSurviveLabel + ':\n' + GT.tipSurviveDesc, {
+      fontSize: `${Math.round(45 * s)}px`, fontFamily: '"Arial Black", Arial', align: 'center',
+    }).setOrigin(0.5, 0);
+    const colAtS = mTitle.height + gapS + mSurv.height + Math.round(gapS * 1.5)
+                 + Math.round(144 * s) + gapS + Math.round(92 * s); // + PLAY + Customize heights
+    mTitle.destroy(); mSurv.destroy();
+    const fit = Phaser.Math.Clamp((band - Math.round(12 * s)) / colAtS, 0.35, 1);
     const f = s * fit;                                      // column scale
     const fpx = (n) => `${Math.round(n * f)}px`;
     const playW = Math.min(Math.round(570 * f), Math.round(W * 0.7)), playH = Math.round(144 * f);

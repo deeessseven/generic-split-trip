@@ -22,21 +22,24 @@ window.addEventListener('blur',  () => AudioSystem.pauseForBackground());
 window.addEventListener('focus', () => AudioSystem.resumeFromBackground());
 window.addEventListener('pagehide', () => AudioSystem.pauseForBackground());
 
-// On tap, enter fullscreen (hides address bar) and lock to landscape-primary so device
-// rotation has no effect. capture:true fires before Phaser handles the same event.
-// Retry on EVERY tap (no "achieved" latch): if the player ever exits fullscreen, the next
-// tap re-expands the game. Keeping the game fullscreen matters more than honoring a manual
-// exit, and the first attempt can also silently fail, so retrying guarantees it catches.
-document.addEventListener('pointerdown', function () {
-  window.__taps = (window.__taps || 0) + 1;
-  if (document.fullscreenElement) { window.__fs = 'already'; return; }
+// On tap, enter fullscreen (hides the address bar) and lock to landscape-primary so device
+// rotation has no effect. Triggered on pointerUP (finger-lift): Android Chrome honors the
+// fullscreen API far more reliably on the completed gesture than on touch-start, which is why
+// the first touch-start attempt used to fail with a TypeError. Retry on EVERY tap (no "achieved"
+// latch) so a manual exit gets re-corrected, with a `pending` guard so overlapping requests
+// can't collide into a TypeError. capture:true fires before Phaser handles the same event.
+let fsPending = false;
+document.addEventListener('pointerup', function () {
+  if (document.fullscreenElement || fsPending) return;
   const el = document.documentElement;
   const req = el.requestFullscreen?.bind(el) || el.webkitRequestFullscreen?.bind(el);
-  const lockOrientation = () => screen.orientation?.lock('landscape-primary').catch((e) => { window.__or = 'ERR:' + (e && e.name || e); });
-  if (req) {
-    req().then(() => { window.__fs = 'OK@tap' + window.__taps; lockOrientation(); })
-         .catch((e) => { window.__fs = 'ERR:' + (e && e.name || e) + '@tap' + window.__taps; lockOrientation(); });
-  } else { window.__fs = 'no-api'; lockOrientation(); }
+  const lockOrientation = () => { try { screen.orientation?.lock('landscape-primary').catch(() => {}); } catch (e) { /* */ } };
+  if (!req) { lockOrientation(); return; }
+  fsPending = true;
+  Promise.resolve(req())
+    .then(lockOrientation)
+    .catch(() => {})
+    .finally(() => { fsPending = false; });
 }, { capture: true });
 
 const config = {
@@ -80,27 +83,6 @@ const config = {
 }
 
 const game = new Phaser.Game(config);
-
-// TEMP DEBUG: sizing/fullscreen readout. Compare FIRST Play vs PLAY AGAIN. Remove later.
-(function () {
-  const box = document.createElement('div');
-  box.style.cssText = 'position:fixed;top:0;left:0;z-index:99999;background:rgba(0,0,0,0.72);' +
-    'color:#0f0;font:11px/1.3 monospace;padding:3px 5px;white-space:pre;pointer-events:none;';
-  document.body.appendChild(box);
-  const upd = () => {
-    const gc = document.getElementById('game-container');
-    const cv = gc && gc.querySelector('canvas');
-    box.textContent =
-      'disp   ' + (cv ? cv.offsetWidth + ' x ' + cv.offsetHeight : 'n/a') + '\n' +
-      'screen ' + screen.width + ' x ' + screen.height + '\n' +
-      'win    ' + window.innerWidth + ' x ' + window.innerHeight +
-      '  fs:' + (document.fullscreenElement ? 'Y' : 'N') + '\n' +
-      'fsreq ' + (window.__fs || '-') + '\n' +
-      'orient ' + (window.__or || '-');
-  };
-  upd();
-  setInterval(upd, 200);
-})();
 
 // When the container is CSS-rotated 90°CW (portrait mode), Phaser's built-in
 // coordinate transform maps touches to wrong game coords. Patch updateInputPlugins

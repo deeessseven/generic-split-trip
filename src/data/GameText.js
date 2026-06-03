@@ -38,7 +38,7 @@ export const GT = {
   slotBgTop:        'Background\nTop View',
   slotBgSide:       'Background\nSide View',
   slotObstacle:     'Obstacle\nTexture',
-  slotHitMark:      'Collision\nMark',
+  slotHitMark:      'Collision\nMark', // "Collision Mark" === HIT_MARK sprite (preferred 32×32)
   btnBack:          'BACK',
   toastSpriteSaved: 'Sprite saved! It will apply next game.',
 

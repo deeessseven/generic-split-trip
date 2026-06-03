@@ -6,13 +6,14 @@ import { squareCanvas } from '../canvasUtil.js';
 
 // Maps each sprite key to its file in public/sprites/.
 // Drop matching PNGs into that folder to replace the procedural defaults.
+// HIT_MARK is the "Collision Mark" (same thing): the stamp drawn where the hero crashes.
 const SPRITE_FILES = {
   [SPRITE_KEYS.CHAR_TOP]:  'sprites/heroTop.png',
   [SPRITE_KEYS.CHAR_SIDE]: 'sprites/heroSide.png',
   [SPRITE_KEYS.BG_TOP]:    'sprites/bkgdTop.png',
   [SPRITE_KEYS.BG_SIDE]:   'sprites/bkgdSide.png',
   [SPRITE_KEYS.OBSTACLE]:  'sprites/wall.png',
-  [SPRITE_KEYS.HIT_MARK]:  'sprites/hitmark.png',
+  [SPRITE_KEYS.HIT_MARK]:  'sprites/hit.png', // collision / hit mark, preferred 32×32
 };
 
 export class BootScene extends Phaser.Scene {
@@ -142,14 +143,16 @@ export class BootScene extends Phaser.Scene {
     }
   }
 
-  // Force the backgrounds and wall to fixed square sizes (512 / 64), whether they came from
-  // a bundled file or a procedural default — so on-screen tiling is consistent regardless of
-  // the source art's resolution. (Uploads are sized the same way in SettingsScene.)
+  // Force the backgrounds, wall, and collision/hit mark to fixed square sizes (512 / 64 / 32),
+  // whether they came from a bundled file or a procedural default — so tiling stays consistent
+  // and the hit mark matches its preferred 32×32. (Uploads are sized the same way in
+  // SettingsScene.) The size check below makes an already-correct file a no-op.
   _normalizeTiledSprites() {
     const targets = [
       [SPRITE_KEYS.BG_TOP, 512],
       [SPRITE_KEYS.BG_SIDE, 512],
       [SPRITE_KEYS.OBSTACLE, 64],
+      [SPRITE_KEYS.HIT_MARK, 32], // collision mark === hit mark; preferred 32×32
     ];
     for (const [key, size] of targets) {
       if (!this.textures.exists(key)) continue;

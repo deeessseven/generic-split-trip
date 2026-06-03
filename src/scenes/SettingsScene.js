@@ -20,61 +20,82 @@ export class SettingsScene extends Phaser.Scene {
       { key: SPRITE_KEYS.BG_TOP,    label: GT.slotBgTop,    hint: '512×512 tileable' },
       { key: SPRITE_KEYS.BG_SIDE,   label: GT.slotBgSide,   hint: '512×512 tileable' },
       { key: SPRITE_KEYS.OBSTACLE,  label: GT.slotObstacle, hint: '64×64 tileable' },
-      { key: SPRITE_KEYS.HIT_MARK,  label: GT.slotHitMark,  hint: '256×256' },
+      // "Collision Mark" (GT.slotHitMark) is the HIT_MARK sprite — same thing; preferred 32×32.
+      { key: SPRITE_KEYS.HIT_MARK,  label: GT.slotHitMark,  hint: '32×32' },
     ];
 
     // Background
     this.add.rectangle(cx, cy, W, H, 0x0d0d1a);
-    this.add.text(cx, 22, GT.settingsTitle, {
-      fontSize: '28px', fontFamily: '"Arial Black", Arial', color: '#ffffff',
-    }).setOrigin(0.5);
-    this.add.text(cx, 54, GT.settingsSubtitle, {
-      fontSize: '12px', fontFamily: 'Arial', color: '#78909c',
-    }).setOrigin(0.5);
 
-    // Slot grid — one row; shrink slot width to fit however many slots within the screen.
-    // On short screens (H < 360) also compress the slot vertically (vk) and lift it just enough
-    // to stay clear of the Back button. vk = 1 at H >= 360, so the normal layout is unchanged.
-    const vk     = Math.min(1, H / 360);
-    const gap    = 14;
-    const slotW  = Math.min(140, (W * 0.95 - (SLOT_DEFS.length - 1) * gap) / SLOT_DEFS.length);
-    const slotH  = Math.round(170 * vk);
-    const totalW = SLOT_DEFS.length * slotW + (SLOT_DEFS.length - 1) * gap;
-    const startX = cx - totalW / 2 + slotW / 2;
-    // The slot's content reaches ~95*vk below its center; keep that (plus a margin) above the
-    // Back button (44 tall, centered at y = H - 36). min() means H >= 360 keeps slotY = cy + 10.
-    const backTop = (H - 36) - 22;
-    const slotY  = Math.min(cy + 10, backTop - Math.round(95 * vk) - 6);
+    // Sizes here target ~2× the old text/buttons and +50% previews. A 6-slot row PLUS a header
+    // and footer can't all be that large in ~360px of landscape height (they'd overflow), so the
+    // page is split into three vertical regions (header / grid / footer) and each region's
+    // content is grown toward the target then fit to its region height and the screen width — as
+    // large as fits, never overflowing. Long strings shrink-to-fit (_fitText) so they don't spill.
+    const maxW    = W * 0.95;
+    const headerH = Math.round(H * 0.22);
+    const footerH = Math.round(H * 0.28);
+
+    // ── Header: title + subtitle, anchored to the top ──
+    const title = this._fitText(cx, Math.round(H * 0.015), GT.settingsTitle, 56,
+      { fontFamily: '"Arial Black", Arial', color: '#ffffff' }, maxW, headerH * 0.62).setOrigin(0.5, 0);
+    const subtitle = this._fitText(cx, title.y + title.height + Math.round(H * 0.01), GT.settingsSubtitle, 24,
+      { fontFamily: 'Arial', color: '#78909c', align: 'center' }, maxW, headerH * 0.32).setOrigin(0.5, 0);
+    const headerBottom = subtitle.y + subtitle.height;
+
+    // ── Footer: Back button + note, anchored to the bottom ──
+    const note = this._fitText(cx, H - Math.round(H * 0.015),
+      'Note: sprite uploads require a modern browser. Capacitor iOS supported.', 18,
+      { fontFamily: 'Arial', color: '#546e7a', align: 'center' }, maxW, footerH * 0.30).setOrigin(0.5, 1);
+    const backH = Math.round(footerH * 0.55);
+    const backW = Math.min(Math.round(400 * Math.min(1, H / 360)), Math.round(W * 0.9));
+    const backY = note.y - note.height - Math.round(H * 0.012) - backH / 2;
+    const backTop = backY - backH / 2;
+    makeButton(this, cx, backY, backW, backH, GT.btnBack, 0x37474f, 0x263238, () => {
+      this.scene.start('MenuScene');
+    }, `${Math.round(backH * 0.42)}px`);
+
+    // ── Slot grid: one row, sized to fill the band between header and footer ──
+    // DSW/DSH = the design slot's width/height at slotScale = 1 (preview 108 + 2× text stacked).
+    const DSW = 120, DSH = 256;
+    const gap   = Math.round(12 * Math.min(1, H / 360));
+    const slotW = Math.min(150, (W * 0.96 - (SLOT_DEFS.length - 1) * gap) / SLOT_DEFS.length);
+    const band  = Math.max(0, backTop - headerBottom);
+    const slotScale = Math.min(1, slotW / DSW, band / DSH);
+    const slotY    = headerBottom + band / 2;
+    const slotBoxH = Math.round(DSH * slotScale);
+    const totalW   = SLOT_DEFS.length * slotW + (SLOT_DEFS.length - 1) * gap;
+    const startX   = cx - totalW / 2 + slotW / 2;
 
     this._previews = {};
-
     SLOT_DEFS.forEach((def, i) => {
       const x = startX + i * (slotW + gap);
-      this._buildSlot(x, slotY, slotW, slotH, def, vk);
+      this._buildSlot(x, slotY, slotW, slotBoxH, slotScale, def);
     });
-
-    // Back button
-    makeButton(this, cx, H - 36, 200, 44, GT.btnBack, 0x37474f, 0x263238, () => {
-      this.scene.start('MenuScene');
-    }, '18px');
-
-    // Note about iOS web
-    this.add.text(cx, H - 10, 'Note: sprite uploads require a modern browser. Capacitor iOS supported.', {
-      fontSize: '9px', fontFamily: 'Arial', color: '#546e7a',
-    }).setOrigin(0.5, 1);
   }
 
-  _buildSlot(x, y, slotW, slotH, def, vk = 1) {
+  // Add a centered-by-caller text at the target font px, then shrink the font so the text fits
+  // within maxW (and maxH if given). Lets the big customize-page labels grow without overflowing.
+  _fitText(x, y, str, fontPx, style, maxW, maxH) {
+    const t = this.add.text(x, y, str, { fontSize: `${Math.round(fontPx)}px`, ...style });
+    let s = 1;
+    if (t.width > maxW) s = Math.min(s, maxW / t.width);
+    if (maxH && t.height > maxH) s = Math.min(s, maxH / t.height);
+    if (s < 1) t.setFontSize(Math.max(8, Math.floor(fontPx * s)));
+    return t;
+  }
+
+  _buildSlot(x, y, slotW, slotBoxH, ss, def) {
     const { key, label, hint } = def;
 
-    // Scale the slot's contents down when the slot is narrower than full width (so the preview
-    // and text don't overflow on cramped screens), and again by vk on short-height screens so
-    // text, preview and spacing all compress together. vk = 1 leaves this unchanged.
-    const fs = Math.max(0.7, Math.min(1, slotW / 140)) * vk;
-    const px = (n) => `${Math.round(n * fs)}px`;
+    // ss (set in create) scales the slot design — preview 108 (+50% of the old 72) and 2× text —
+    // to whatever fits the band. The two action lines and the hint are long, so cap THEIR font to
+    // the slot width too (independently of ss) so they never spill past the slot edges.
+    const fpx = (n) => `${Math.round(n * ss)}px`;
+    const linePx = `${Math.round(20 * Math.min(ss, slotW / 180))}px`;
 
     // Slot background
-    const bg = this.add.rectangle(x, y, slotW, slotH, 0x1a2332)
+    const bg = this.add.rectangle(x, y, slotW, slotBoxH, 0x1a2332)
       .setStrokeStyle(1, 0x37474f)
       .setInteractive({ useHandCursor: true });
 
@@ -82,25 +103,26 @@ export class SettingsScene extends Phaser.Scene {
     const previewKey = SpriteManager.isCharKey(key)
       ? SpriteManager.resolveTitleKey(this, key)
       : SpriteManager.resolveKey(this, key);
-    const preview = this.add.image(x, y - 32 * vk, previewKey).setDisplaySize(72 * fs, 72 * fs);
+    const ps = Math.round(108 * ss); // +50% of the old 72
+    const preview = this.add.image(x, y - 74 * ss, previewKey).setDisplaySize(ps, ps);
     this._previews[key] = preview;
 
     // Labels
-    this.add.text(x, y + 30 * vk, label, {
-      fontSize: px(12), fontFamily: 'Arial', color: '#cfd8dc', align: 'center',
+    this.add.text(x, y + 14 * ss, label, {
+      fontSize: fpx(24), fontFamily: 'Arial', color: '#cfd8dc', align: 'center',
     }).setOrigin(0.5);
-    this.add.text(x, y + 55 * vk, hint, {
-      fontSize: px(10), fontFamily: 'Arial', color: '#546e7a',
+    this.add.text(x, y + 58 * ss, hint, {
+      fontSize: linePx, fontFamily: 'Arial', color: '#546e7a',
     }).setOrigin(0.5);
 
     // Upload indicator
-    this.add.text(x, y + 72 * vk, '[ tap to upload ]', {
-      fontSize: px(10), fontFamily: 'Arial', color: '#29b6f6',
+    this.add.text(x, y + 88 * ss, '[ tap to upload ]', {
+      fontSize: linePx, fontFamily: 'Arial', color: '#29b6f6',
     }).setOrigin(0.5);
 
     // Reset button
-    const resetTxt = this.add.text(x, y + 89 * vk, '[ reset default ]', {
-      fontSize: px(10), fontFamily: 'Arial', color: '#ef9a9a',
+    const resetTxt = this.add.text(x, y + 118 * ss, '[ reset default ]', {
+      fontSize: linePx, fontFamily: 'Arial', color: '#ef9a9a',
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
     // Slot upload on tap
@@ -203,9 +225,10 @@ export class SettingsScene extends Phaser.Scene {
   }
 
   // Resize uploads to a fixed square so they store small and tile predictably:
-  //   backgrounds → 512 (fill a panel), wall → 64 (matches WALL_WIDTH), hit mark → 256.
+  //   backgrounds → 512 (fill a panel), wall → 64 (matches WALL_WIDTH),
+  //   collision/hit mark → 32 (its preferred size).
   _saveGenericSprite(img, key) {
-    let size = 256; // hit mark
+    let size = 32; // collision mark === hit mark (preferred 32×32)
     if (key === SPRITE_KEYS.BG_TOP || key === SPRITE_KEYS.BG_SIDE) size = 512;
     else if (key === SPRITE_KEYS.OBSTACLE) size = 64;
     const dataURL = squareCanvas(img, size).toDataURL('image/png');
@@ -222,10 +245,11 @@ export class SettingsScene extends Phaser.Scene {
 
   _showToast(msg) {
     const { width: W, height: H } = this.scale;
-    const toast = this.add.text(W / 2, H - 80, msg, {
-      fontSize: '13px', fontFamily: 'Arial', color: '#ffffff',
+    const P = Math.min(1, H / 360);
+    const toast = this.add.text(W / 2, Math.round(H * 0.70), msg, {
+      fontSize: `${Math.round(26 * P)}px`, fontFamily: 'Arial', color: '#ffffff',
       backgroundColor: '#263238',
-      padding: { x: 12, y: 8 },
+      padding: { x: Math.round(12 * P), y: Math.round(8 * P) },
     }).setOrigin(0.5).setDepth(20).setAlpha(0);
     this.tweens.add({
       targets: toast,

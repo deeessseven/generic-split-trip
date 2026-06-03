@@ -39,5 +39,5 @@ export const SPRITE_KEYS = {
   BG_TOP:    'bg_top',
   BG_SIDE:   'bg_side',
   OBSTACLE:  'obstacle',
-  HIT_MARK:  'hit_mark',
+  HIT_MARK:  'hit_mark', // a.k.a. the "Collision Mark" (user-facing name) — same sprite
 };

@@ -28,12 +28,15 @@ window.addEventListener('pagehide', () => AudioSystem.pauseForBackground());
 // tap re-expands the game. Keeping the game fullscreen matters more than honoring a manual
 // exit, and the first attempt can also silently fail, so retrying guarantees it catches.
 document.addEventListener('pointerdown', function () {
-  if (document.fullscreenElement) return; // already fullscreen, nothing to do
+  if (document.fullscreenElement) { window.__fs = 'already'; return; } // already fullscreen
   const el = document.documentElement;
   const req = el.requestFullscreen?.bind(el) || el.webkitRequestFullscreen?.bind(el);
-  const lockOrientation = () => screen.orientation?.lock('landscape-primary').catch(() => {});
-  if (req) req().then(lockOrientation).catch(lockOrientation);
-  else lockOrientation();
+  const lockOrientation = () => screen.orientation?.lock('landscape-primary').catch((e) => { window.__or = 'ERR:' + (e && e.name || e); });
+  if (req) {
+    window.__fs = 'req';
+    req().then(() => { window.__fs = 'OK'; lockOrientation(); })
+         .catch((e) => { window.__fs = 'ERR:' + (e && e.name || e); lockOrientation(); });
+  } else { window.__fs = 'no-api'; lockOrientation(); }
 }, { capture: true });
 
 const config = {
@@ -99,7 +102,8 @@ const game = new Phaser.Game(config);
       'render ' + (game.renderer ? game.renderer.width + ' x ' + game.renderer.height : 'n/a') + '\n' +
       'dpr ' + (window.devicePixelRatio || 1) +
       '  ' + (window.innerHeight > window.innerWidth ? 'portrait' : 'landscape') +
-      '  fs:' + (document.fullscreenElement ? 'Y' : 'N');
+      '  fs:' + (document.fullscreenElement ? 'Y' : 'N') + '\n' +
+      'fsreq ' + (window.__fs || '-') + '  orient ' + (window.__or || '-');
   };
   upd();
   setInterval(upd, 200);

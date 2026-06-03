@@ -121,7 +121,7 @@ export class MenuScene extends Phaser.Scene {
       x.lineWidth = 5; x.strokeStyle = 'rgba(150,95,20,0.5)'; x.stroke();
       // fingernail: larger, its top arch CONCENTRIC with the thumb tip (matching curvature, a
       // 16px skin margin inside), closed by a base line. Subtle gradient fill.
-      const nr = 84, ncy = top + r, nBot = 166; // ncy = thumb-tip center → matching curvature
+      const nr = 80, ncy = top + r, nBot = 162; // ncy = thumb-tip center → matching curvature (nail −5%)
       x.beginPath();
       x.moveTo(mx - nr, nBot);
       x.lineTo(mx - nr, ncy);

@@ -1,4 +1,7 @@
-// Hero-sprite downscaling.
+// Sprite downscaling (gamma-correct / linear-light for all paths). Heroes use the configured
+// kernel (RESAMPLE_MODE, currently Lanczos-3); the tiled sprites — backgrounds / wall / hit mark —
+// pass mode='triangle' (tent/bilinear, ring-free) so a tiled texture can't get seam halos, and
+// it stays smooth when a small procedural fallback has to be UPscaled rather than down.
 //
 // A hero is scaled in TWO stages:
 //   1) This one-time CPU resample from the source art down to the 128px (gameplay) and
@@ -16,7 +19,7 @@
 //   'triangle'        — bilinear (widened): soft.
 //   'magic-kernel-sharp' — Magic Kernel (quadratic B-spline) + Sharp correction pass; the
 //                       Facebook/Instagram downscaler: sharp and clean with no ringing halos.
-//   'browser'         — canvas imageSmoothingQuality 'high' (the previous default).
+//   'browser'         — canvas imageSmoothingQuality 'high' (sRGB, NOT gamma-correct; fallback only).
 //
 // NOTE: bundled sprites in public/sprites/ are resampled at every boot, so a mode change
 // takes effect on reload. UPLOADED heroes are baked at upload time, so re-upload to compare
@@ -96,8 +99,8 @@ function sharpenMKS(buf, w, h) {
 }
 
 // Map the active mode to its kernel function + support radius (in source pixels).
-function pickKernel() {
-  switch (RESAMPLE_MODE) {
+function pickKernel(mode) {
+  switch (mode) {
     case 'lanczos':     return { kernel: lanczos3,      support: 3 };
     case 'lanczos2':    return { kernel: lanczos2,      support: 2 };
     case 'catmull-rom': return { kernel: catmullRom,    support: 2 };
@@ -193,10 +196,10 @@ function linToSrgb8(v) { return v <= 0 ? 0 : v >= 1 ? 255 : LIN_TO_SRGB[(v * 409
 // Resample any image source onto a `size`×`size` canvas using RESAMPLE_MODE; returns the
 // canvas. Falls back to browser smoothing (squareCanvas) for mode 'browser' or if pixels can't
 // be read (tainted canvas). Stretches non-square sources into the square, matching the old path.
-export function resampleToCanvas(src, size) {
+export function resampleToCanvas(src, size, mode = RESAMPLE_MODE) {
   const sw = src.naturalWidth || src.width;
   const sh = src.naturalHeight || src.height;
-  if (RESAMPLE_MODE === 'browser' || !sw || !sh) return squareCanvas(src, size);
+  if (mode === 'browser' || !sw || !sh) return squareCanvas(src, size);
 
   let data;
   try {
@@ -222,7 +225,7 @@ export function resampleToCanvas(src, size) {
     fsrc[o + 3] = a;
   }
 
-  const { kernel, support, sharpen } = pickKernel();
+  const { kernel, support, sharpen } = pickKernel(mode);
   const cx = contributions(sw, size, kernel, support);
   const cy = contributions(sh, size, kernel, support);
   const mid = passX(fsrc, sw, sh, size, cx);

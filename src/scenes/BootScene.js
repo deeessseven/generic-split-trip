@@ -2,7 +2,6 @@ import { SPRITE_KEYS } from '../constants.js';
 import { SpriteManager } from '../SpriteManager.js';
 import { applyText } from '../data/GameText.js';
 import { resampleToCanvas } from '../imageResample.js';
-import { squareCanvas } from '../canvasUtil.js';
 
 // Maps each sprite key to its file in public/sprites/.
 // Drop matching PNGs into that folder to replace the procedural defaults.
@@ -149,7 +148,9 @@ export class BootScene extends Phaser.Scene {
   // Force the backgrounds, wall, and collision/hit mark to fixed square sizes (512 / 64 / 32),
   // whether they came from a bundled file or a procedural default — so tiling stays consistent
   // and the hit mark matches its preferred 32×32. (Uploads are sized the same way in
-  // SettingsScene.) The size check below makes an already-correct file a no-op.
+  // SettingsScene.) The size check below makes an already-correct file a no-op. Uses the
+  // gamma-correct 'triangle' (tent/bilinear) resample: ring-free so tiled textures get no seam
+  // halos, and smooth in BOTH directions (a procedural fallback may need upscaling, not just down).
   _normalizeTiledSprites() {
     const targets = [
       [SPRITE_KEYS.BG_TOP, 512],
@@ -161,7 +162,7 @@ export class BootScene extends Phaser.Scene {
       if (!this.textures.exists(key)) continue;
       const src = this.textures.get(key).getSourceImage();
       if (src.width === size && src.height === size) continue; // already correct
-      const canvas = squareCanvas(src, size);
+      const canvas = resampleToCanvas(src, size, 'triangle');
       this.textures.remove(key);
       this.textures.addCanvas(key, canvas);
     }

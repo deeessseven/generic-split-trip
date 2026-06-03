@@ -4,7 +4,6 @@ import { makeButton } from '../Button.js';
 import { GT } from '../data/GameText.js';
 import { resampleToCanvas } from '../imageResample.js';
 import { relayoutOnResize } from '../responsive.js';
-import { squareCanvas } from '../canvasUtil.js';
 
 export class SettingsScene extends Phaser.Scene {
   constructor() { super('SettingsScene'); }
@@ -226,11 +225,13 @@ export class SettingsScene extends Phaser.Scene {
   // Resize uploads to a fixed square so they store small and tile predictably:
   //   backgrounds → 512 (fill a panel), wall → 64 (matches WALL_WIDTH),
   //   collision/hit mark → 32 (its preferred size).
+  // Uses the gamma-correct 'triangle' (tent/bilinear) resample — ring-free matters because
+  // backgrounds/wall are tiled, so a sharp kernel could leave a visible seam at the wrap edge.
   _saveGenericSprite(img, key) {
     let size = 32; // collision mark === hit mark (preferred 32×32)
     if (key === SPRITE_KEYS.BG_TOP || key === SPRITE_KEYS.BG_SIDE) size = 512;
     else if (key === SPRITE_KEYS.OBSTACLE) size = 64;
-    const dataURL = squareCanvas(img, size).toDataURL('image/png');
+    const dataURL = resampleToCanvas(img, size, 'triangle').toDataURL('image/png');
     SpriteManager.save(key, dataURL);
     const customKey = key + '_custom';
     try { if (this.textures.exists(customKey)) this.textures.remove(customKey); } catch {}

@@ -23,13 +23,7 @@
 // modes on those.
 import { squareCanvas } from './canvasUtil.js';
 
-// A/B: the active mode can be overridden with a ?hk= URL param (e.g. ?hk=lanczos) to compare
-// kernels live; an unknown/absent value falls back to the default. Only affects BUNDLED sprites
-// (they re-resample at boot); uploaded sprites are baked at upload time.
-const _HK_MODES = ['bicubic-sharper', 'lanczos', 'lanczos2', 'catmull-rom', 'mitchell', 'box', 'triangle', 'magic-kernel-sharp', 'browser'];
-const _hk = (typeof location !== 'undefined' && location.search)
-  ? new URLSearchParams(location.search).get('hk') : null;
-export const RESAMPLE_MODE = _HK_MODES.includes(_hk) ? _hk : 'magic-kernel-sharp';
+export const RESAMPLE_MODE = 'lanczos';
 
 // ── Kernels ──────────────────────────────────────────────────────────────────
 function lanczosA(x, a) {

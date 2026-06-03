@@ -194,7 +194,7 @@ export class SettingsScene extends Phaser.Scene {
   // Hero sprites: 128px (gameplay/collision) + 512px (pre-filtered display). One Image decode,
   // a couple of canvas resamples.
   _saveCharSprite(img, key) {
-    // Hero sprites use the configured resampler (RESAMPLE_MODE, currently magic-kernel-sharp); see imageResample.js.
+    // Hero sprites use the configured resampler (RESAMPLE_MODE in imageResample.js, currently Lanczos-3).
     const gameplay = resampleToCanvas(img, 128).toDataURL('image/png');
     const title    = resampleToCanvas(img, 512).toDataURL('image/png');
 

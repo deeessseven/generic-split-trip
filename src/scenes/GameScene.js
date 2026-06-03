@@ -55,6 +55,16 @@ export class GameScene extends Phaser.Scene {
     this.topScale  = this.charTopY / VISIBLE_DIST;
     this.sideScale = (this.rW * (1 - CHAR_SIDE_X_FRAC)) / VISIBLE_DIST;
 
+    // Spawn obstacles fully OFF-SCREEN — just past each panel's entry edge — so they scroll
+    // smoothly into view instead of popping in half-visible at the edge. At exactly VISIBLE_DIST
+    // a wall's CENTER sits on the edge (half showing); pushing the spawn out by half the wall
+    // size (+2px) in dist units hides it completely first. Top and side views have different
+    // scales, so use whichever needs the larger lead-in.
+    this.obstacleSpawnDist = VISIBLE_DIST + Math.max(
+      (WALL_THICKNESS / 2 + 2) / this.topScale,
+      (WALL_WIDTH     / 2 + 2) / this.sideScale,
+    );
+
     // ── Character state ───────────────────────────────────────────────────────
     this.charXPx       = this.lW / 2;
     this.targetCharXPx = this.lW / 2;
@@ -369,7 +379,7 @@ export class GameScene extends Phaser.Scene {
     const gy = snapEdges(gapYraw, gapYHraw, this.pH);
 
     this.obstacles.push({
-      dist: VISIBLE_DIST,
+      dist: this.obstacleSpawnDist,
       gapX: gx.center, gapXW: gx.width,
       gapY: gy.center, gapYH: gy.width,
       passed: false,

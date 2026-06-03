@@ -33,18 +33,24 @@ export class SettingsScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     // Slot grid — one row; shrink slot width to fit however many slots within the screen.
+    // On short screens (H < 360) also compress the slot vertically (vk) and lift it just enough
+    // to stay clear of the Back button. vk = 1 at H >= 360, so the normal layout is unchanged.
+    const vk     = Math.min(1, H / 360);
     const gap    = 14;
     const slotW  = Math.min(140, (W * 0.95 - (SLOT_DEFS.length - 1) * gap) / SLOT_DEFS.length);
-    const slotH  = 170;
+    const slotH  = Math.round(170 * vk);
     const totalW = SLOT_DEFS.length * slotW + (SLOT_DEFS.length - 1) * gap;
     const startX = cx - totalW / 2 + slotW / 2;
-    const slotY  = cy + 10;
+    // The slot's content reaches ~95*vk below its center; keep that (plus a margin) above the
+    // Back button (44 tall, centered at y = H - 36). min() means H >= 360 keeps slotY = cy + 10.
+    const backTop = (H - 36) - 22;
+    const slotY  = Math.min(cy + 10, backTop - Math.round(95 * vk) - 6);
 
     this._previews = {};
 
     SLOT_DEFS.forEach((def, i) => {
       const x = startX + i * (slotW + gap);
-      this._buildSlot(x, slotY, slotW, slotH, def);
+      this._buildSlot(x, slotY, slotW, slotH, def, vk);
     });
 
     // Back button
@@ -58,12 +64,13 @@ export class SettingsScene extends Phaser.Scene {
     }).setOrigin(0.5, 1);
   }
 
-  _buildSlot(x, y, slotW, slotH, def) {
+  _buildSlot(x, y, slotW, slotH, def, vk = 1) {
     const { key, label, hint } = def;
 
-    // Scale the slot's contents down when the slot is narrower than full width, so the
-    // preview and text don't overflow the box on cramped screens (e.g. 6 slots, small W).
-    const fs = Math.max(0.7, Math.min(1, slotW / 140));
+    // Scale the slot's contents down when the slot is narrower than full width (so the preview
+    // and text don't overflow on cramped screens), and again by vk on short-height screens so
+    // text, preview and spacing all compress together. vk = 1 leaves this unchanged.
+    const fs = Math.max(0.7, Math.min(1, slotW / 140)) * vk;
     const px = (n) => `${Math.round(n * fs)}px`;
 
     // Slot background
@@ -75,24 +82,24 @@ export class SettingsScene extends Phaser.Scene {
     const previewKey = SpriteManager.isCharKey(key)
       ? SpriteManager.resolveTitleKey(this, key)
       : SpriteManager.resolveKey(this, key);
-    const preview = this.add.image(x, y - 32, previewKey).setDisplaySize(72 * fs, 72 * fs);
+    const preview = this.add.image(x, y - 32 * vk, previewKey).setDisplaySize(72 * fs, 72 * fs);
     this._previews[key] = preview;
 
     // Labels
-    this.add.text(x, y + 30, label, {
+    this.add.text(x, y + 30 * vk, label, {
       fontSize: px(12), fontFamily: 'Arial', color: '#cfd8dc', align: 'center',
     }).setOrigin(0.5);
-    this.add.text(x, y + 55, hint, {
+    this.add.text(x, y + 55 * vk, hint, {
       fontSize: px(10), fontFamily: 'Arial', color: '#546e7a',
     }).setOrigin(0.5);
 
     // Upload indicator
-    this.add.text(x, y + 72, '[ tap to upload ]', {
+    this.add.text(x, y + 72 * vk, '[ tap to upload ]', {
       fontSize: px(10), fontFamily: 'Arial', color: '#29b6f6',
     }).setOrigin(0.5);
 
     // Reset button
-    const resetTxt = this.add.text(x, y + 89, '[ reset default ]', {
+    const resetTxt = this.add.text(x, y + 89 * vk, '[ reset default ]', {
       fontSize: px(10), fontFamily: 'Arial', color: '#ef9a9a',
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 

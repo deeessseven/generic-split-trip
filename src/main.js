@@ -155,17 +155,38 @@ game.events.on('ready', () => {
     // container and resize on every event that changes the viewport, plus a few delayed
     // passes to catch the initial settle (the visualViewport API fires on address-bar moves
     // that a plain window 'resize' can miss).
-    const forceRefresh = () => { try { sm.getParentBounds(); sm.refresh(); } catch (e) { /* */ } };
-    window.addEventListener('orientationchange', () => setTimeout(forceRefresh, 60));
-    window.addEventListener('load', forceRefresh);
-    window.addEventListener('resize', forceRefresh);
-    document.addEventListener('fullscreenchange', forceRefresh);
-    if (window.visualViewport) window.visualViewport.addEventListener('resize', forceRefresh);
-    [120, 350, 700, 1200, 2000].forEach((t) => setTimeout(forceRefresh, t));
-    // Precise trigger: re-measure + resize the canvas the instant the container's box actually
-    // changes (rotation, address-bar collapse, etc.) — no timing guesses, no leftover dark bars.
+    // Robust sizing. The game always runs landscape (wide = larger available dim). In FULLSCREEN
+    // we size to `screen` (the real full screen) because the viewport under-reports there (the
+    // magenta bar); otherwise we use the visible viewport. We size the container explicitly,
+    // refresh the scale manager, then FORCE the renderer and EVERY camera to match — Phaser's
+    // CameraManager skips a camera's resize when it no longer matches the previous size, which is
+    // what left the canvas clear-colour (green) bars.
+    const forceSize = () => {
+      try {
+        let aw, ah;
+        if (document.fullscreenElement) { aw = screen.width; ah = screen.height; }
+        else { aw = window.innerWidth; ah = window.innerHeight; }
+        const w = Math.max(aw, ah), h = Math.min(aw, ah);
+        const gc = sm.parent;
+        if (gc) {
+          if (gc.style.width  !== w + 'px') gc.style.width  = w + 'px';
+          if (gc.style.height !== h + 'px') gc.style.height = h + 'px';
+        }
+        sm.getParentBounds();
+        sm.refresh();
+        if (game.renderer && game.renderer.resize) game.renderer.resize(sm.baseSize.width, sm.baseSize.height);
+        game.scene.getScenes(true).forEach((scn) => { if (scn.cameras) scn.cameras.resize(sm.gameSize.width, sm.gameSize.height); });
+      } catch (e) { /* */ }
+    };
+    const settle = () => { forceSize(); [50, 150, 350, 700, 1200].forEach((t) => setTimeout(forceSize, t)); };
+    window.addEventListener('orientationchange', settle);
+    window.addEventListener('load', settle);
+    window.addEventListener('resize', forceSize);
+    document.addEventListener('fullscreenchange', settle);
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', forceSize);
+    [120, 350, 700, 1200, 2000].forEach((t) => setTimeout(forceSize, t));
     if (typeof ResizeObserver !== 'undefined' && sm.parent) {
-      const ro = new ResizeObserver(() => forceRefresh());
+      const ro = new ResizeObserver(() => forceSize());
       ro.observe(sm.parent);
     }
 

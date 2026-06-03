@@ -43,15 +43,13 @@ export class SettingsScene extends Phaser.Scene {
       { fontFamily: 'Arial', color: '#78909c', align: 'center' }, maxW, headerH * 0.32).setOrigin(0.5, 0);
     const headerBottom = subtitle.y + subtitle.height;
 
-    // ── Footer: Back button + note, anchored to the bottom ──
-    const note = this._fitText(cx, H - Math.round(H * 0.015),
-      "Note: uploads use your device's file / photo picker.", 18,
-      { fontFamily: 'Arial', color: '#546e7a', align: 'center' }, maxW, footerH * 0.30).setOrigin(0.5, 1);
+    // ── Footer: just the Back button, anchored to the bottom (no note — uploading is
+    // self-explanatory, and dropping it gives the slot grid more height). ──
     // Keep the BACK label at its size, but halve the gray rectangle around it.
     const backFs = Math.round(footerH * 0.55 * 0.42);                                   // label size (unchanged)
     const backH  = Math.round(footerH * 0.55 * 0.5);                                    // rectangle halved
     const backW  = Math.min(Math.round(200 * Math.min(1, H / 360)), Math.round(W * 0.9)); // halved (was 400)
-    const backY  = note.y - note.height - Math.round(H * 0.012) - backH / 2;
+    const backY  = H - Math.round(H * 0.02) - backH / 2;
     const backTop = backY - backH / 2;
     makeButton(this, cx, backY, backW, backH, GT.btnBack, 0x37474f, 0x263238, () => {
       this.scene.start('MenuScene');

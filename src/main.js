@@ -78,6 +78,31 @@ const config = {
 
 const game = new Phaser.Game(config);
 
+// TEMP DEBUG: on-screen sizing readout to diagnose first-load fullscreen bars. Remove later.
+// A DOM overlay (independent of the canvas) so it shows even if the canvas is mis-sized.
+(function () {
+  const box = document.createElement('div');
+  box.style.cssText = 'position:fixed;top:0;left:0;z-index:99999;background:rgba(0,0,0,0.72);' +
+    'color:#0f0;font:11px/1.35 monospace;padding:4px 6px;white-space:pre;pointer-events:none;';
+  document.body.appendChild(box);
+  const upd = () => {
+    const vv = window.visualViewport;
+    const gc = document.getElementById('game-container');
+    const cv = gc && gc.querySelector('canvas');
+    box.textContent =
+      'win    ' + window.innerWidth + ' x ' + window.innerHeight + '\n' +
+      'visual ' + (vv ? Math.round(vv.width) + ' x ' + Math.round(vv.height) : 'n/a') + '\n' +
+      'cont   ' + (gc ? gc.offsetWidth + ' x ' + gc.offsetHeight : 'n/a') + '\n' +
+      'buffer ' + (cv ? cv.width + ' x ' + cv.height : 'n/a') + '\n' +
+      'disp   ' + (cv ? cv.offsetWidth + ' x ' + cv.offsetHeight : 'n/a') + '\n' +
+      'dpr ' + (window.devicePixelRatio || 1) +
+      '  ' + (window.innerHeight > window.innerWidth ? 'portrait' : 'landscape') +
+      '  fs:' + (document.fullscreenElement ? 'Y' : 'N');
+  };
+  upd();
+  setInterval(upd, 200);
+})();
+
 // When the container is CSS-rotated 90°CW (portrait mode), Phaser's built-in
 // coordinate transform maps touches to wrong game coords. Patch updateInputPlugins
 // (fires after Phaser sets ptr.x/y, before any scene handler) to recompute from

@@ -31,7 +31,7 @@ export class MenuScene extends Phaser.Scene {
 
     // ── Background: vertical gradient → slow drifting dots → vignette frame ──
     const bg = this.add.graphics().setDepth(-3);
-    bg.fillGradientStyle(0x1b2552, 0x1b2552, 0x07070f, 0x07070f, 1); // navy (top) → near-black (bottom)
+    bg.fillGradientStyle(0x283c7a, 0x283c7a, 0x1a2340, 0x1a2340, 1); // brighter blue (so shadows read)
     bg.fillRect(0, 0, W, H);
     if (this.textures.exists('st_parallax')) {
       const dots = this.add.tileSprite(cx, cy, W, H, 'st_parallax').setAlpha(0.20).setDepth(-2);
@@ -142,14 +142,26 @@ export class MenuScene extends Phaser.Scene {
     const baseY = H - thumbH / 2;             // image bottom flush with the screen's bottom edge
     const slideAmp = Math.round(W * 0.06);
     const tapAmp = Math.round(28 * s);
-    // Left hand (mirrored): slides L/R; bottom stays on the screen edge.
+    const shDX = Math.round(14 * s), shDY = Math.round(7 * s); // shadow offset (light from upper-left)
+    const ease = 'Sine.easeInOut';
+
+    // Left hand (mirrored) + cast shadow: slides L/R; bottom stays on the screen edge.
+    const leftShadow = this.add.image(W * 0.25 - slideAmp + shDX, baseY + shDY, thumbKey)
+      .setDepth(3).setDisplaySize(thumbW, thumbH).setFlipX(true).setTint(0x000000).setAlpha(0.22);
     const leftHand = this.add.image(W * 0.25 - slideAmp, baseY, thumbKey)
       .setDepth(4).setDisplaySize(thumbW, thumbH).setFlipX(true);
-    this.tweens.add({ targets: leftHand, x: W * 0.25 + slideAmp, duration: 1100, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-    // Right hand: taps DOWNWARD from the edge and back, so its bottom never lifts off the edge.
-    const rightHand = this.add.image(W * 0.75, baseY, thumbKey)
-      .setDepth(4).setDisplaySize(thumbW, thumbH);
-    this.tweens.add({ targets: rightHand, y: baseY + tapAmp, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    this.tweens.add({ targets: leftHand,   x: W * 0.25 + slideAmp,        duration: 1100, yoyo: true, repeat: -1, ease });
+    this.tweens.add({ targets: leftShadow, x: W * 0.25 + slideAmp + shDX, duration: 1100, yoyo: true, repeat: -1, ease });
+
+    // Right hand: taps DOWNWARD and is 20% LARGER at its lifted peak (depth). Its shadow grows +
+    // softens when lifted, and tightens + darkens as it presses the screen.
+    const rightHand = this.add.image(W * 0.75, baseY, thumbKey).setDepth(4).setDisplaySize(thumbW, thumbH);
+    const rsx = rightHand.scaleX, rsy = rightHand.scaleY; // normal (pressed) scale
+    rightHand.setScale(rsx * 1.2, rsy * 1.2);             // start lifted (peak) — 20% larger
+    const rightShadow = this.add.image(W * 0.75 + shDX * 2, baseY + shDY * 2, thumbKey)
+      .setDepth(3).setDisplaySize(thumbW, thumbH).setTint(0x000000).setScale(rsx * 1.35, rsy * 1.35).setAlpha(0.12);
+    this.tweens.add({ targets: rightHand, y: baseY + tapAmp, scaleX: rsx, scaleY: rsy, duration: 650, yoyo: true, repeat: -1, ease });
+    this.tweens.add({ targets: rightShadow, x: W * 0.75 + Math.round(shDX * 0.5), y: baseY + tapAmp + Math.round(shDY * 0.5), scaleX: rsx, scaleY: rsy, alpha: 0.32, duration: 650, yoyo: true, repeat: -1, ease });
 
     // ── Center column (Title → SURVIVE → PLAY → Customize), measured & centered in the band ──
     const title = this.add.text(cx, 0, GT.gameTitle, {

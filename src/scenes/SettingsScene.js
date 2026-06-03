@@ -16,7 +16,7 @@ export class SettingsScene extends Phaser.Scene {
       { key: SPRITE_KEYS.CHAR_SIDE, label: GT.slotCharSide, hint: 'any size' },
       { key: SPRITE_KEYS.BG_TOP,    label: GT.slotBgTop,    hint: '512×512 tileable' },
       { key: SPRITE_KEYS.BG_SIDE,   label: GT.slotBgSide,   hint: '512×512 tileable' },
-      { key: SPRITE_KEYS.OBSTACLE,  label: GT.slotObstacle, hint: '32×32 tileable' },
+      { key: SPRITE_KEYS.OBSTACLE,  label: GT.slotObstacle, hint: '64×64 tileable' },
       { key: SPRITE_KEYS.HIT_MARK,  label: GT.slotHitMark,  hint: '256×256' },
     ];
 
@@ -217,7 +217,7 @@ export class SettingsScene extends Phaser.Scene {
   _saveGenericSprite(img, key) {
     let size = 256; // hit mark
     if (key === SPRITE_KEYS.BG_TOP || key === SPRITE_KEYS.BG_SIDE) size = 512;
-    else if (key === SPRITE_KEYS.OBSTACLE) size = 32;
+    else if (key === SPRITE_KEYS.OBSTACLE) size = 64;
     const dataURL = this._canvasResize(img, size);
     SpriteManager.save(key, dataURL);
     const customKey = key + '_custom';

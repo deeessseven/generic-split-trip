@@ -22,8 +22,8 @@ export const GAP_MULT_MIN     = 1.4;  // floor: gap never tightens below 1.4× t
 export const GAP_X_SCALE      = 1.5;  // extra widening for the horizontal gap only (+50%)
 
 // Obstacle appearance
-export const WALL_THICKNESS = 26;  // px — top-down horizontal wall height
-export const WALL_WIDTH      = 52; // px — side-view wall width
+export const WALL_THICKNESS = 64;  // px — top-down horizontal wall height
+export const WALL_WIDTH      = 64; // px — side-view wall width
 
 // Character fixed positions inside their panels
 export const CHAR_TOPDOWN_Y_FRAC = 0.70; // Y position in top-down panel (0=top, 1=bottom)

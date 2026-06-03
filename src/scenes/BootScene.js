@@ -46,7 +46,7 @@ export class BootScene extends Phaser.Scene {
     // Normalize bundled hero sprites into 100px (gameplay) + 400px (title) textures
     this._normalizeCharSprites();
 
-    // Normalize bundled/default backgrounds → 512px and the wall → 32px (matches uploads)
+    // Normalize bundled/default backgrounds → 512px and the wall → 64px (matches uploads)
     this._normalizeTiledSprites();
 
     // Generate decorative FX textures (vignette, parallax dots, particle) once
@@ -154,14 +154,14 @@ export class BootScene extends Phaser.Scene {
     }
   }
 
-  // Force the backgrounds and wall to fixed square sizes (512 / 32), whether they came from
+  // Force the backgrounds and wall to fixed square sizes (512 / 64), whether they came from
   // a bundled file or a procedural default — so on-screen tiling is consistent regardless of
   // the source art's resolution. (Uploads are sized the same way in SettingsScene.)
   _normalizeTiledSprites() {
     const targets = [
       [SPRITE_KEYS.BG_TOP, 512],
       [SPRITE_KEYS.BG_SIDE, 512],
-      [SPRITE_KEYS.OBSTACLE, 32],
+      [SPRITE_KEYS.OBSTACLE, 64],
     ];
     for (const [key, size] of targets) {
       if (!this.textures.exists(key)) continue;

@@ -149,16 +149,15 @@ export class GameScene extends Phaser.Scene {
     this.debugGfx = DEBUG_OUTLINE ? this.add.graphics().setDepth(20) : null;
 
     // Character sprites (on top of obstacles and gap indicator).
-    // ctKey/csKey are the 128px gameplay textures used for COLLISION (1 texel = 1 world px).
-    // For DISPLAY we use the 512px pre-filtered (Magic Kernel Sharp) title textures scaled down
-    // to the same 128px footprint, so the hero is crisp on high-DPI screens (the GPU does a
-    // gentle final down-sample of a clean texture). Collision is unaffected — it reads 128px.
+    // ctKey/csKey are the 128px gameplay textures — a gamma-correct (linear-light) Magic-Kernel-
+    // Sharp downscale of the native art (see imageResample.js) — used for BOTH collision (1 texel
+    // = 1 world px) and DISPLAY, shown 1:1 at the 128px footprint. That's sharper here than letting
+    // the GPU box-filter the 512px title texture down to 128; the 512px texture is still used by
+    // the menu's larger hero. topDisplayScale therefore resolves to 1 (128/128) below.
     const ctKey = SpriteManager.resolveKey(this, SPRITE_KEYS.CHAR_TOP);
     const csKey = SpriteManager.resolveKey(this, SPRITE_KEYS.CHAR_SIDE);
-    const ctDispKey = SpriteManager.resolveTitleKey(this, SPRITE_KEYS.CHAR_TOP);
-    const csDispKey = SpriteManager.resolveTitleKey(this, SPRITE_KEYS.CHAR_SIDE);
-    const ctDisplay = this.textures.exists(ctDispKey) ? ctDispKey : ctKey; // fall back if no title texture
-    const csDisplay = this.textures.exists(csDispKey) ? csDispKey : csKey;
+    const ctDisplay = ctKey;
+    const csDisplay = csKey;
     this.charTopSprite  = this.add.image(this.charXPx, this.charTopY,  ctDisplay).setDepth(3);
     this.charSideSprite = this.add.image(this.charSideX, this.charYPx, csDisplay).setDepth(3);
 

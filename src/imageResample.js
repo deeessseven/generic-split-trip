@@ -174,7 +174,21 @@ function passY(src, w, sh, dh, contrib) {
   return out;
 }
 
-function clamp8(v) { v = Math.round(v); return v < 0 ? 0 : v > 255 ? 255 : v; }
+// sRGB ↔ linear-light conversion for GAMMA-CORRECT resampling. Averaging sRGB-encoded bytes
+// directly darkens a downscaled image and crushes fine-detail contrast; filtering must happen in
+// linear light. Decode is an exact 256-entry sRGB LUT; encode uses a fine 4096-step LUT (well
+// below 8-bit banding) so there's no per-pixel pow() in the hot loop.
+const SRGB_TO_LINEAR = (() => {
+  const t = new Float32Array(256);
+  for (let i = 0; i < 256; i++) { const c = i / 255; t[i] = c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); }
+  return t;
+})();
+const LIN_TO_SRGB = (() => {
+  const N = 4096; const t = new Uint8ClampedArray(N + 1);
+  for (let i = 0; i <= N; i++) { const v = i / N; const s = v <= 0.0031308 ? v * 12.92 : 1.055 * Math.pow(v, 1 / 2.4) - 0.055; t[i] = Math.round(s * 255); }
+  return t;
+})();
+function linToSrgb8(v) { return v <= 0 ? 0 : v >= 1 ? 255 : LIN_TO_SRGB[(v * 4096 + 0.5) | 0]; }
 
 // Resample any image source onto a `size`×`size` canvas using RESAMPLE_MODE; returns the
 // canvas. Falls back to browser smoothing (squareCanvas) for mode 'browser' or if pixels can't
@@ -195,13 +209,17 @@ export function resampleToCanvas(src, size) {
     return squareCanvas(src, size); // cross-origin / tainted — can't read pixels
   }
 
-  // To premultiplied-alpha float, so filtering can't bleed color across transparent edges
-  // (otherwise you get dark/colored halos around the hero's silhouette).
+  // To premultiplied LINEAR-light float: decode sRGB→linear (gamma-correct downscaling preserves
+  // the brightness and contrast of fine detail), then premultiply by alpha so filtering can't
+  // bleed color across transparent edges (no dark/colored halos around the silhouette). Alpha is
+  // already linear; keep it 0..1.
   const fsrc = new Float32Array(sw * sh * 4);
   for (let i = 0, n = sw * sh; i < n; i++) {
-    const o = i * 4; const al = data[o + 3] / 255;
-    fsrc[o] = data[o] * al; fsrc[o + 1] = data[o + 1] * al; fsrc[o + 2] = data[o + 2] * al;
-    fsrc[o + 3] = data[o + 3];
+    const o = i * 4; const a = data[o + 3] / 255;
+    fsrc[o]     = SRGB_TO_LINEAR[data[o]]     * a;
+    fsrc[o + 1] = SRGB_TO_LINEAR[data[o + 1]] * a;
+    fsrc[o + 2] = SRGB_TO_LINEAR[data[o + 2]] * a;
+    fsrc[o + 3] = a;
   }
 
   const { kernel, support, sharpen } = pickKernel();
@@ -211,7 +229,7 @@ export function resampleToCanvas(src, size) {
   let fin = passY(mid, size, sh, size, cy);
   if (sharpen) fin = sharpenMKS(fin, size, size); // Magic Kernel Sharp: undo the resample blur
 
-  // Unpremultiply + clamp back to 8-bit.
+  // Unpremultiply, then encode linear→sRGB back to 8-bit.
   const canvas = document.createElement('canvas');
   canvas.width = size; canvas.height = size;
   const octx = canvas.getContext('2d');
@@ -219,15 +237,15 @@ export function resampleToCanvas(src, size) {
   const out = img.data;
   for (let i = 0, n = size * size; i < n; i++) {
     const o = i * 4;
-    let a = fin[o + 3];
-    a = a < 0 ? 0 : a > 255 ? 255 : a;
+    let a = fin[o + 3];                       // alpha 0..1
+    a = a < 0 ? 0 : a > 1 ? 1 : a;
     if (a > 0) {
-      const inv = 255 / a;
-      out[o]     = clamp8(fin[o] * inv);
-      out[o + 1] = clamp8(fin[o + 1] * inv);
-      out[o + 2] = clamp8(fin[o + 2] * inv);
+      const inv = 1 / a;                       // unpremultiply, then linear→sRGB
+      out[o]     = linToSrgb8(fin[o]     * inv);
+      out[o + 1] = linToSrgb8(fin[o + 1] * inv);
+      out[o + 2] = linToSrgb8(fin[o + 2] * inv);
     } else { out[o] = out[o + 1] = out[o + 2] = 0; }
-    out[o + 3] = Math.round(a);
+    out[o + 3] = Math.round(a * 255);
   }
   octx.putImageData(img, 0, 0);
   return canvas;

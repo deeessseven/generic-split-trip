@@ -38,7 +38,7 @@ export class SettingsScene extends Phaser.Scene {
 
     // ── Header: title + subtitle, anchored to the top ──
     const title = this._fitText(cx, Math.round(H * 0.015), GT.settingsTitle, 56,
-      { fontFamily: '"Arial Black", Arial', color: '#ffffff' }, maxW, headerH * 0.62).setOrigin(0.5, 0);
+      { fontFamily: '"Arial Black", Arial', color: '#ffffff' }, maxW, headerH * 0.46).setOrigin(0.5, 0);
     const subtitle = this._fitText(cx, title.y + title.height + Math.round(H * 0.01), GT.settingsSubtitle, 24,
       { fontFamily: 'Arial', color: '#78909c', align: 'center' }, maxW, headerH * 0.32).setOrigin(0.5, 0);
     const headerBottom = subtitle.y + subtitle.height;
@@ -60,7 +60,8 @@ export class SettingsScene extends Phaser.Scene {
     const DSW = 120, DSH = 256;
     const gap   = Math.round(12 * Math.min(1, H / 360));
     const slotW = Math.min(150, (W * 0.96 - (SLOT_DEFS.length - 1) * gap) / SLOT_DEFS.length);
-    const band  = Math.max(0, backTop - headerBottom);
+    const slotGap = Math.round(H * 0.03); // a little breathing room between the slots and Back button
+    const band  = Math.max(0, backTop - headerBottom - slotGap);
     const slotScale = Math.min(1, slotW / DSW, band / DSH);
     const slotY    = headerBottom + band / 2;
     const slotBoxH = Math.round(DSH * slotScale);

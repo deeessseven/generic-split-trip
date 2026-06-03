@@ -32,7 +32,7 @@ export const GT = {
 
   // ── Settings ──────────────────────────────────────────────────────────────
   settingsTitle:    'CUSTOMIZE SPRITES',
-  settingsSubtitle: 'Tap a slot to upload a custom image — tap [reset] to restore default',
+  settingsSubtitle: 'Tap to upload a custom image — tap [reset] to restore default',
   slotCharTop:      'Character\nTop View',
   slotCharSide:     'Character\nSide View',
   slotBgTop:        'Background\nTop View',

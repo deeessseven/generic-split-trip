@@ -15,8 +15,8 @@ export class SettingsScene extends Phaser.Scene {
     const cx = W / 2, cy = H / 2;
 
     const SLOT_DEFS = [
-      { key: SPRITE_KEYS.CHAR_TOP,  label: GT.slotCharTop,  hint: 'any size' },
-      { key: SPRITE_KEYS.CHAR_SIDE, label: GT.slotCharSide, hint: 'any size' },
+      { key: SPRITE_KEYS.CHAR_TOP,  label: GT.slotCharTop,  hint: '512×512' },
+      { key: SPRITE_KEYS.CHAR_SIDE, label: GT.slotCharSide, hint: '512×512' },
       { key: SPRITE_KEYS.BG_TOP,    label: GT.slotBgTop,    hint: '512×512 tileable' },
       { key: SPRITE_KEYS.BG_SIDE,   label: GT.slotBgSide,   hint: '512×512 tileable' },
       { key: SPRITE_KEYS.OBSTACLE,  label: GT.slotObstacle, hint: '64×64 tileable' },

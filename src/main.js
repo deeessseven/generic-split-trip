@@ -28,12 +28,15 @@ window.addEventListener('pagehide', () => AudioSystem.pauseForBackground());
 // tap re-expands the game. Keeping the game fullscreen matters more than honoring a manual
 // exit, and the first attempt can also silently fail, so retrying guarantees it catches.
 document.addEventListener('pointerdown', function () {
-  if (document.fullscreenElement) return; // already fullscreen, nothing to do
+  window.__taps = (window.__taps || 0) + 1;
+  if (document.fullscreenElement) { window.__fs = 'already'; return; }
   const el = document.documentElement;
   const req = el.requestFullscreen?.bind(el) || el.webkitRequestFullscreen?.bind(el);
-  const lockOrientation = () => screen.orientation?.lock('landscape-primary').catch(() => {});
-  if (req) req().then(lockOrientation).catch(lockOrientation); // harmless if the browser refuses
-  else lockOrientation();
+  const lockOrientation = () => screen.orientation?.lock('landscape-primary').catch((e) => { window.__or = 'ERR:' + (e && e.name || e); });
+  if (req) {
+    req().then(() => { window.__fs = 'OK@tap' + window.__taps; lockOrientation(); })
+         .catch((e) => { window.__fs = 'ERR:' + (e && e.name || e) + '@tap' + window.__taps; lockOrientation(); });
+  } else { window.__fs = 'no-api'; lockOrientation(); }
 }, { capture: true });
 
 const config = {
@@ -77,6 +80,27 @@ const config = {
 }
 
 const game = new Phaser.Game(config);
+
+// TEMP DEBUG: sizing/fullscreen readout. Compare FIRST Play vs PLAY AGAIN. Remove later.
+(function () {
+  const box = document.createElement('div');
+  box.style.cssText = 'position:fixed;top:0;left:0;z-index:99999;background:rgba(0,0,0,0.72);' +
+    'color:#0f0;font:11px/1.3 monospace;padding:3px 5px;white-space:pre;pointer-events:none;';
+  document.body.appendChild(box);
+  const upd = () => {
+    const gc = document.getElementById('game-container');
+    const cv = gc && gc.querySelector('canvas');
+    box.textContent =
+      'disp   ' + (cv ? cv.offsetWidth + ' x ' + cv.offsetHeight : 'n/a') + '\n' +
+      'screen ' + screen.width + ' x ' + screen.height + '\n' +
+      'win    ' + window.innerWidth + ' x ' + window.innerHeight +
+      '  fs:' + (document.fullscreenElement ? 'Y' : 'N') + '\n' +
+      'fsreq ' + (window.__fs || '-') + '\n' +
+      'orient ' + (window.__or || '-');
+  };
+  upd();
+  setInterval(upd, 200);
+})();
 
 // When the container is CSS-rotated 90°CW (portrait mode), Phaser's built-in
 // coordinate transform maps touches to wrong game coords. Patch updateInputPlugins

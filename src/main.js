@@ -147,48 +147,39 @@ game.events.on('ready', () => {
       style.marginTop = oy + 'px';
     };
 
-    // First load / mobile address-bar collapse / fullscreen transition can leave the canvas
-    // sized to a stale (smaller) viewport, showing dark bars at the edges. Re-measure the
-    // container and resize on every event that changes the viewport, plus a few delayed
-    // passes to catch the initial settle (the visualViewport API fires on address-bar moves
-    // that a plain window 'resize' can miss).
-    // Robust sizing. The game always runs landscape (wide = larger available dim). In FULLSCREEN
-    // we size to `screen` (the real full screen) because the viewport under-reports there (the
-    // magenta bar); otherwise we use the visible viewport. We size the container explicitly,
-    // refresh the scale manager, then FORCE the renderer and EVERY camera to match — Phaser's
-    // CameraManager skips a camera's resize when it no longer matches the previous size, which is
-    // what left the canvas clear-colour (green) bars.
-    const forceSize = () => {
+    // CONTINUOUS RECONCILE. The discrete resize/orientation/fullscreen events fired with stale
+    // dimensions (or were missed) on some devices, so the game only re-sized on scene CREATE
+    // (first load / Play Again) — leaving bars after rotation or mid-game fullscreen. Instead we
+    // poll the target size every tick and, the instant it changes, resize the container, the
+    // scale manager, the renderer, AND every camera. The game always runs landscape (wide =
+    // larger dim); in fullscreen we trust `screen` (the viewport under-reports there).
+    let lastW = 0, lastH = 0;
+    const reconcile = () => {
       try {
         let aw, ah;
         if (document.fullscreenElement) { aw = screen.width; ah = screen.height; }
         else { aw = window.innerWidth; ah = window.innerHeight; }
         const w = Math.max(aw, ah), h = Math.min(aw, ah);
+        if (!w || !h || (w === lastW && h === lastH)) return;
+        lastW = w; lastH = h;
         const gc = sm.parent;
-        if (gc) {
-          if (gc.style.width  !== w + 'px') gc.style.width  = w + 'px';
-          if (gc.style.height !== h + 'px') gc.style.height = h + 'px';
-        }
+        if (gc) { gc.style.width = w + 'px'; gc.style.height = h + 'px'; }
         sm.getParentBounds();
         sm.refresh();
         if (game.renderer && game.renderer.resize) game.renderer.resize(sm.baseSize.width, sm.baseSize.height);
-        game.scene.getScenes(true).forEach((scn) => { if (scn.cameras) scn.cameras.resize(sm.gameSize.width, sm.gameSize.height); });
+        game.scene.getScenes(true).forEach((scn) => {
+          if (scn.cameras) { scn.cameras.resize(sm.gameSize.width, sm.gameSize.height); }
+        });
       } catch (e) { /* */ }
     };
-    const settle = () => { forceSize(); [50, 150, 350, 700, 1200].forEach((t) => setTimeout(forceSize, t)); };
-    window.addEventListener('orientationchange', settle);
-    window.addEventListener('load', settle);
-    window.addEventListener('resize', forceSize);
-    document.addEventListener('fullscreenchange', settle);
-    if (window.visualViewport) window.visualViewport.addEventListener('resize', forceSize);
-    [120, 350, 700, 1200, 2000].forEach((t) => setTimeout(forceSize, t));
+    setInterval(reconcile, 200);
+    ['resize', 'orientationchange'].forEach((e) => window.addEventListener(e, reconcile));
+    document.addEventListener('fullscreenchange', reconcile);
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', reconcile);
     if (typeof ResizeObserver !== 'undefined' && sm.parent) {
-      const ro = new ResizeObserver(() => forceSize());
-      ro.observe(sm.parent);
+      new ResizeObserver(reconcile).observe(sm.parent);
     }
-
-    // Trigger an immediate resize with corrected dimensions.
-    if (sm.getParentBounds()) sm.refresh();
+    reconcile();
   }
 
   if (typeof im.updateInputPlugins !== 'function') return;

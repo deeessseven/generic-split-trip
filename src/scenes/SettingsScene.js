@@ -45,15 +45,17 @@ export class SettingsScene extends Phaser.Scene {
 
     // ── Footer: Back button + note, anchored to the bottom ──
     const note = this._fitText(cx, H - Math.round(H * 0.015),
-      'Note: sprite uploads require a modern browser. Capacitor iOS supported.', 18,
+      "Note: uploads use your device's file / photo picker.", 18,
       { fontFamily: 'Arial', color: '#546e7a', align: 'center' }, maxW, footerH * 0.30).setOrigin(0.5, 1);
-    const backH = Math.round(footerH * 0.55);
-    const backW = Math.min(Math.round(400 * Math.min(1, H / 360)), Math.round(W * 0.9));
-    const backY = note.y - note.height - Math.round(H * 0.012) - backH / 2;
+    // Keep the BACK label at its size, but halve the gray rectangle around it.
+    const backFs = Math.round(footerH * 0.55 * 0.42);                                   // label size (unchanged)
+    const backH  = Math.round(footerH * 0.55 * 0.5);                                    // rectangle halved
+    const backW  = Math.min(Math.round(200 * Math.min(1, H / 360)), Math.round(W * 0.9)); // halved (was 400)
+    const backY  = note.y - note.height - Math.round(H * 0.012) - backH / 2;
     const backTop = backY - backH / 2;
     makeButton(this, cx, backY, backW, backH, GT.btnBack, 0x37474f, 0x263238, () => {
       this.scene.start('MenuScene');
-    }, `${Math.round(backH * 0.42)}px`);
+    }, `${backFs}px`);
 
     // ── Slot grid: one row, sized to fill the band between header and footer ──
     // DSW/DSH = the design slot's width/height at slotScale = 1 (preview 108 + 2× text stacked).
@@ -94,10 +96,8 @@ export class SettingsScene extends Phaser.Scene {
     const fpx = (n) => `${Math.round(n * ss)}px`;
     const linePx = `${Math.round(20 * Math.min(ss, slotW / 180))}px`;
 
-    // Slot background
-    const bg = this.add.rectangle(x, y, slotW, slotBoxH, 0x1a2332)
-      .setStrokeStyle(1, 0x37474f)
-      .setInteractive({ useHandCursor: true });
+    // Slot background (visual only — uploading is triggered by the "[ tap to upload ]" line)
+    this.add.rectangle(x, y, slotW, slotBoxH, 0x1a2332).setStrokeStyle(1, 0x37474f);
 
     // Preview — char keys use the title-size texture (400px) for a crisper preview
     const previewKey = SpriteManager.isCharKey(key)
@@ -115,20 +115,18 @@ export class SettingsScene extends Phaser.Scene {
       fontSize: linePx, fontFamily: 'Arial', color: '#546e7a',
     }).setOrigin(0.5);
 
-    // Upload indicator
-    this.add.text(x, y + 88 * ss, '[ tap to upload ]', {
+    // Upload trigger — ONLY this line opens the picker (tapping the preview does nothing).
+    const uploadTxt = this.add.text(x, y + 88 * ss, '[ tap to upload ]', {
       fontSize: linePx, fontFamily: 'Arial', color: '#29b6f6',
-    }).setOrigin(0.5);
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    uploadTxt.on('pointerover', () => uploadTxt.setColor('#81d4fa'));
+    uploadTxt.on('pointerout',  () => uploadTxt.setColor('#29b6f6'));
+    uploadTxt.on('pointerup',   () => this._openFilePicker(key));
 
     // Reset button
     const resetTxt = this.add.text(x, y + 118 * ss, '[ reset default ]', {
       fontSize: linePx, fontFamily: 'Arial', color: '#ef9a9a',
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-
-    // Slot upload on tap
-    bg.on('pointerover',  () => bg.setFillStyle(0x263238));
-    bg.on('pointerout',   () => bg.setFillStyle(0x1a2332));
-    bg.on('pointerup',    () => this._openFilePicker(key));
 
     // Reset on tap — removes both sizes for char keys
     resetTxt.on('pointerup', () => {

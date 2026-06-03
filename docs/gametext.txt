@@ -52,3 +52,4 @@ slotObstacle     = Obstacle\nTexture
 slotHitMark      = Collision\nMark
 btnBack          = BACK
 toastSpriteSaved = Sprite saved! It will apply next game.
+toastUploadError = Could not read that image — try another file.

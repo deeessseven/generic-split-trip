@@ -1,8 +1,8 @@
 // Hero-sprite downscaling.
 //
 // A hero is scaled in TWO stages:
-//   1) This one-time CPU resample from the source art down to the 100px (gameplay) and
-//      400px (title) square textures — that is what the algorithms below control.
+//   1) This one-time CPU resample from the source art down to the 128px (gameplay) and
+//      512px (title) square textures — that is what the algorithms below control.
 //   2) The per-frame GPU bilinear sampler that draws those textures on screen (your ±15%
 //      scaling, device pixel ratio, etc.) — fixed by WebGL, can't be swapped.
 //

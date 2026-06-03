@@ -42,10 +42,13 @@ export class BootScene extends Phaser.Scene {
     // Apply gametext.txt overrides before any scene reads GT values
     applyText(this.cache.text.get('gametext'));
 
+    // Drop any orphaned legacy full-resolution hero originals from older builds (one-time).
+    SpriteManager.cleanupLegacyFull();
+
     // Generate procedural textures only for sprites not found in the folder
     this._generateDefaultTextures(this._missingSprites);
 
-    // Normalize bundled hero sprites into 100px (gameplay) + 400px (title) textures
+    // Normalize bundled hero sprites into 128px (gameplay) + 512px (title) textures
     this._normalizeCharSprites();
 
     // Normalize bundled/default backgrounds → 512px and the wall → 64px (matches uploads)
@@ -86,7 +89,7 @@ export class BootScene extends Phaser.Scene {
       this.textures.addCanvas('st_parallax', c);
     }
     // Default collision mark: a red X + ring (256px). Only if no bundled/uploaded one
-    // exists — so a real sprites/hitmark.png or a Settings upload takes priority.
+    // exists — so a real sprites/hit.png or a Settings upload takes priority.
     if (!this.textures.exists(SPRITE_KEYS.HIT_MARK)) {
       const c = document.createElement('canvas'); c.width = 256; c.height = 256;
       const ctx = c.getContext('2d');

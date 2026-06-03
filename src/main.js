@@ -47,8 +47,8 @@ const config = {
   parent: 'game-container',
   backgroundColor: '#1a1a2e',
   // Generate mipmaps (power-of-two textures only) so scrolling/minified textures don't
-  // shimmer; antialias is the WebGL default but set explicitly. NPOT textures (heroes)
-  // simply skip mipmaps — no error.
+  // shimmer; antialias is the WebGL default but set explicitly. NPOT textures (e.g. the
+  // gesture-hint thumb, or a procedural 48px hero fallback) simply skip mipmaps — no error.
   render: {
     mipmapFilter: 'LINEAR_MIPMAP_LINEAR',
     antialias: true,

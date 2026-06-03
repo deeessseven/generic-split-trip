@@ -34,7 +34,7 @@ export class SettingsScene extends Phaser.Scene {
     // large as fits, never overflowing. Long strings shrink-to-fit (_fitText) so they don't spill.
     const maxW    = W * 0.95;
     const headerH = Math.round(H * 0.22);
-    const footerH = Math.round(H * 0.28);
+    const backRef = Math.round(H * 0.28); // reference height the bottom Back button is sized from
 
     // ── Header: title + subtitle, anchored to the top ──
     const title = this._fitText(cx, Math.round(H * 0.015), GT.settingsTitle, 56,
@@ -46,8 +46,8 @@ export class SettingsScene extends Phaser.Scene {
     // ── Footer: just the Back button, anchored to the bottom (no note — uploading is
     // self-explanatory, and dropping it gives the slot grid more height). ──
     // Keep the BACK label at its size, but halve the gray rectangle around it.
-    const backFs = Math.round(footerH * 0.55 * 0.42);                                   // label size (unchanged)
-    const backH  = Math.round(footerH * 0.55 * 0.5);                                    // rectangle halved
+    const backFs = Math.round(backRef * 0.55 * 0.42);                                   // label size (unchanged)
+    const backH  = Math.round(backRef * 0.55 * 0.5);                                    // rectangle halved
     const backW  = Math.min(Math.round(200 * Math.min(1, H / 360)), Math.round(W * 0.9)); // halved (was 400)
     const backY  = H - Math.round(H * 0.02) - backH / 2;
     const backTop = backY - backH / 2;
@@ -98,7 +98,7 @@ export class SettingsScene extends Phaser.Scene {
     // Slot background (visual only — uploading is triggered by the "[ tap to upload ]" line)
     this.add.rectangle(x, y, slotW, slotBoxH, 0x1a2332).setStrokeStyle(1, 0x37474f);
 
-    // Preview — char keys use the title-size texture (400px) for a crisper preview
+    // Preview — char keys use the title-size texture (512px) for a crisper preview
     const previewKey = SpriteManager.isCharKey(key)
       ? SpriteManager.resolveTitleKey(this, key)
       : SpriteManager.resolveKey(this, key);
@@ -142,9 +142,9 @@ export class SettingsScene extends Phaser.Scene {
   }
 
   // ── File picker ─────────────────────────────────────────────────────────────
-  // Uses a real <input type="file"> for cross-platform compatibility.
-  // In Capacitor (WKWebView / Android WebView) this works natively.
-  // On desktop browsers it opens the system file dialog.
+  // Uses a real <input type="file" accept="image/*">: the system photo/file picker on mobile
+  // browsers and Android WebView, the file dialog on desktop. On iOS WKWebView it works on
+  // modern iOS; a Capacitor build wanting guaranteed photo access would use the Camera plugin.
 
   _openFilePicker(key) {
     const input = document.createElement('input');
@@ -184,15 +184,17 @@ export class SettingsScene extends Phaser.Scene {
           this._saveGenericSprite(img, key);
         }
       };
+      img.onerror = () => this._showToast(GT.toastUploadError); // unsupported/corrupt image
       img.src = e.target.result;
     };
+    reader.onerror = () => this._showToast(GT.toastUploadError);
     reader.readAsDataURL(file);
   }
 
   // Hero sprites: 128px (gameplay/collision) + 512px (pre-filtered display). One Image decode,
   // a couple of canvas resamples.
   _saveCharSprite(img, key) {
-    // Hero sprites use the selected resampler (Lanczos-3 / Bicubic Sharper); see imageResample.js.
+    // Hero sprites use the configured resampler (RESAMPLE_MODE, currently magic-kernel-sharp); see imageResample.js.
     const gameplay = resampleToCanvas(img, 128).toDataURL('image/png');
     const title    = resampleToCanvas(img, 512).toDataURL('image/png');
 
@@ -210,7 +212,7 @@ export class SettingsScene extends Phaser.Scene {
       loaded++;
       if (loaded === 2) {
         const preview = this._previews[key];
-        // Show the 400px version in the settings preview (crisper)
+        // Show the 512px version in the settings preview (crisper)
         if (preview) preview.setTexture(titleKey);
         this._showToast(GT.toastSpriteSaved);
       }

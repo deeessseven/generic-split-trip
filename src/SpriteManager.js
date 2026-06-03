@@ -3,11 +3,11 @@ import { SPRITE_KEYS } from './constants.js';
 const PREFIX       = 'splittrip_sprite_';
 const TITLE_PREFIX = 'splittrip_sprite_title_';
 
-// Keys that get two stored sizes: 100px for gameplay collision, 400px for title display.
+// Keys that get two stored sizes: 128px for gameplay collision, 512px for title display.
 const CHAR_KEYS = new Set([SPRITE_KEYS.CHAR_TOP, SPRITE_KEYS.CHAR_SIDE]);
 
 export const SpriteManager = {
-  // ── Gameplay-size storage (100px for CHAR keys) ───────────────────────────
+  // ── Gameplay-size storage (128px for CHAR keys) ───────────────────────────
   save(key, dataURL) {
     try {
       localStorage.setItem(PREFIX + key, dataURL);
@@ -30,7 +30,7 @@ export const SpriteManager = {
     } catch { /* ignore */ }
   },
 
-  // ── Title-size storage (400px, CHAR keys only) ────────────────────────────
+  // ── Title-size storage (512px, CHAR keys only) ────────────────────────────
   saveTitle(key, dataURL) {
     try {
       localStorage.setItem(TITLE_PREFIX + key, dataURL);
@@ -57,19 +57,29 @@ export const SpriteManager = {
     return CHAR_KEYS.has(key);
   },
 
+  // One-time cleanup of the legacy full-resolution hero originals (splittrip_sprite_full_*).
+  // That path was removed (display uses the 512px texture); drop any leftovers so they don't
+  // keep eating localStorage for users who uploaded a hero before the change. removeItem on a
+  // missing key is a harmless no-op.
+  cleanupLegacyFull() {
+    for (const key of [SPRITE_KEYS.CHAR_TOP, SPRITE_KEYS.CHAR_SIDE]) {
+      try { localStorage.removeItem('splittrip_sprite_full_' + key); } catch { /* ignore */ }
+    }
+  },
+
   // ── Texture key resolution ────────────────────────────────────────────────
 
-  /** Gameplay key: returns key_custom (100px) if it exists, else the default. */
+  /** Gameplay key: returns key_custom (128px) if it exists, else the default. */
   resolveKey(scene, defaultKey) {
     const customKey = defaultKey + '_custom';
     return scene.textures.exists(customKey) ? customKey : defaultKey;
   },
 
   /** Title key resolution order:
-   *   1. key_title_custom  — user upload, 400px
-   *   2. key_custom        — user upload, 100px (fallback if title version missing)
-   *   3. key_title         — bundled default, 400px (created by BootScene)
-   *   4. key               — bundled/procedural default (100px or 48px) */
+   *   1. key_title_custom  — user upload, 512px
+   *   2. key_custom        — user upload, 128px (fallback if title version missing)
+   *   3. key_title         — bundled default, 512px (created by BootScene)
+   *   4. key               — bundled/procedural default (128px or 48px) */
   resolveTitleKey(scene, defaultKey) {
     const titleCustom = defaultKey + '_title_custom';
     if (scene.textures.exists(titleCustom)) return titleCustom;
@@ -82,7 +92,7 @@ export const SpriteManager = {
 
   // ── Preloaders ────────────────────────────────────────────────────────────
 
-  /** Load all custom gameplay sprites (100px for CHAR keys) into the Phaser loader.
+  /** Load all custom gameplay sprites (128px for CHAR keys) into the Phaser loader.
    *  Call in a scene's preload(). Registers textures under key + '_custom'. */
   preloadCustom(scene) {
     for (const key of Object.values(SPRITE_KEYS)) {
@@ -96,7 +106,7 @@ export const SpriteManager = {
     }
   },
 
-  /** Load title-size sprites (400px) for CHAR keys only.
+  /** Load title-size sprites (512px) for CHAR keys only.
    *  Call in a scene's preload(). Registers textures under key + '_title_custom'. */
   preloadCustomTitle(scene) {
     for (const key of [SPRITE_KEYS.CHAR_TOP, SPRITE_KEYS.CHAR_SIDE]) {

@@ -41,6 +41,7 @@ export const GT = {
   slotHitMark:      'Collision\nMark', // "Collision Mark" === HIT_MARK sprite (preferred 32×32)
   btnBack:          'BACK',
   toastSpriteSaved: 'Sprite saved! It will apply next game.',
+  toastUploadError: 'Could not read that image — try another file.',
 
   // ── Story / variant identity (empty by default — fill in gametext.txt) ────
   heroName:         '',

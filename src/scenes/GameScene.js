@@ -321,7 +321,7 @@ export class GameScene extends Phaser.Scene {
     // untilted (ignores the flap tilt). Tracks the ±15% visual scale.
     if (this.flapFX) {
       const sb = this.charSideBounds;
-      const sc = this.charSideSprite.scaleX / this.sideDisplayScale; // logical (100px→world) scale, minus the display-texture factor
+      const sc = this.charSideSprite.scaleX / this.sideDisplayScale; // logical (128px→world) scale, minus the display-texture factor
       const cx = sb.w / 2, cy = sb.h / 2;
       const px = (2 * sb.leftEdge + sb.rightEdge) / 3;
       const py = sb.botEdge - (sb.botEdge - sb.topEdge) / 5; // up 1/5 of the opaque height
@@ -463,9 +463,10 @@ export class GameScene extends Phaser.Scene {
     AudioSystem.playCrash();
 
     if (hitX !== undefined) {
-      // Collision mark — uploadable sprite (default: red X). Displayed ~56px at the contact.
+      // Collision mark (a.k.a. hit mark) — uploadable sprite (default: red X). Drawn at 32px
+      // to match its preferred 32×32 size.
       const hitKey = SpriteManager.resolveKey(this, SPRITE_KEYS.HIT_MARK);
-      this.add.image(hitX, hitY, hitKey).setDisplaySize(56, 56).setDepth(10);
+      this.add.image(hitX, hitY, hitKey).setDisplaySize(32, 32).setDepth(10);
 
       // Debris burst at the impact point
       this.add.particles(0, 0, 'st_particle', {

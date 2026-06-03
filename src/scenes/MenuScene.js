@@ -68,8 +68,15 @@ export class MenuScene extends Phaser.Scene {
     const soundCY = copyrightY - Math.round(26 * s) - pillH / 2 - Math.round(2 * s); // both pills sit ~8px lower than before (dynamic)
     const musicCY = soundCY - (pillH + Math.round(6 * s));
     const pillsTop = musicCY - pillH / 2;
-    this._audioToggle(cx, musicCY, 'Music: ',    () => AudioSystem.isMusicEnabled(), (v) => AudioSystem.setMusicEnabled(v), pillUi);
-    this._audioToggle(cx, soundCY, 'Sound FX: ', () => AudioSystem.isSfxEnabled(),   (v) => AudioSystem.setSfxEnabled(v), pillUi);
+    // Make both pills the SAME width: measure each "<label>Off" (widest toggle state) at the pill
+    // font, take the max, add the same padding _audioToggle uses, and pass it to both.
+    const measurePill = (label) => {
+      const t = this.add.text(0, 0, label + 'Off', { fontSize: `${Math.round(13 * pillUi)}px`, fontFamily: '"Arial Black", Arial' });
+      const wpx = Math.ceil(t.width); t.destroy(); return wpx;
+    };
+    const pillW = Math.max(measurePill('Music: '), measurePill('Sound FX: ')) + Math.round(24 * pillUi);
+    this._audioToggle(cx, musicCY, 'Music: ',    () => AudioSystem.isMusicEnabled(), (v) => AudioSystem.setMusicEnabled(v), pillUi, pillW);
+    this._audioToggle(cx, soundCY, 'Sound FX: ', () => AudioSystem.isSfxEnabled(),   (v) => AudioSystem.setSfxEnabled(v), pillUi, pillW);
     this.add.text(cx, copyrightY, GT.copyright, {
       fontSize: px(15), fontFamily: 'Arial', color: '#607089',
     }).setOrigin(0.5, 1);
@@ -183,13 +190,14 @@ export class MenuScene extends Phaser.Scene {
 
   // Tappable On/Off pill button (rounded-rect background + centered label), anchored by its
   // CENTER (centerX, centerY). Toggles and recolors itself.
-  _audioToggle(centerX, centerY, label, getEnabled, setEnabled, uiScale = 1) {
+  _audioToggle(centerX, centerY, label, getEnabled, setEnabled, uiScale = 1, fixedW = 0) {
     const h = Math.round(23 * uiScale);
     // Measure the widest state ("Off") so the pill width never jumps as it toggles.
     const txt = this.add.text(0, 0, label + 'Off', {
       fontSize: `${Math.round(13 * uiScale)}px`, fontFamily: '"Arial Black", Arial',
     }).setOrigin(0.5).setDepth(10);
-    const w = Math.ceil(txt.width) + Math.round(24 * uiScale); // a little extra width on each pill
+    // Use the caller's fixed width if given (so both pills match), else size to this label.
+    const w = fixedW || (Math.ceil(txt.width) + Math.round(24 * uiScale));
     const left = Math.round(centerX - w / 2), top = Math.round(centerY - h / 2);
     const cx = left + w / 2, cy = top + h / 2;
     txt.setPosition(cx, cy);

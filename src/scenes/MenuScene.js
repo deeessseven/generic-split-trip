@@ -65,11 +65,11 @@ export class MenuScene extends Phaser.Scene {
     const pillUi = 1.5 * s;
     const pillH = Math.round(23 * pillUi);
     const copyrightY = H - si.bottom - Math.round(6 * s);
-    const soundCY = copyrightY - Math.round(26 * s) - pillH / 2 - Math.round(10 * s); // nudged up 10px
+    const soundCY = copyrightY - Math.round(26 * s) - pillH / 2 - Math.round(2 * s); // both pills sit ~8px lower than before (dynamic)
     const musicCY = soundCY - (pillH + Math.round(6 * s));
     const pillsTop = musicCY - pillH / 2;
-    this._audioToggle(cx, musicCY, 'Music: ', () => AudioSystem.isMusicEnabled(), (v) => AudioSystem.setMusicEnabled(v), pillUi);
-    this._audioToggle(cx, soundCY, 'Sound: ', () => AudioSystem.isSfxEnabled(),   (v) => AudioSystem.setSfxEnabled(v), pillUi);
+    this._audioToggle(cx, musicCY, 'Music: ',    () => AudioSystem.isMusicEnabled(), (v) => AudioSystem.setMusicEnabled(v), pillUi);
+    this._audioToggle(cx, soundCY, 'Sound FX: ', () => AudioSystem.isSfxEnabled(),   (v) => AudioSystem.setSfxEnabled(v), pillUi);
     this.add.text(cx, copyrightY, GT.copyright, {
       fontSize: px(15), fontFamily: 'Arial', color: '#607089',
     }).setOrigin(0.5, 1);
@@ -189,7 +189,7 @@ export class MenuScene extends Phaser.Scene {
     const txt = this.add.text(0, 0, label + 'Off', {
       fontSize: `${Math.round(13 * uiScale)}px`, fontFamily: '"Arial Black", Arial',
     }).setOrigin(0.5).setDepth(10);
-    const w = Math.ceil(txt.width) + Math.round(16 * uiScale);
+    const w = Math.ceil(txt.width) + Math.round(24 * uiScale); // a little extra width on each pill
     const left = Math.round(centerX - w / 2), top = Math.round(centerY - h / 2);
     const cx = left + w / 2, cy = top + h / 2;
     txt.setPosition(cx, cy);

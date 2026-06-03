@@ -16,6 +16,9 @@ import { safeInsets } from '../safeArea.js';
 // Set to true to draw the pixel-accurate collision silhouette over each sprite.
 // Keep false in production — the black outline is visible to players.
 const DEBUG_OUTLINE = true;
+
+// Show the menu's gesture thumbs only the very first time gameplay starts (per page load).
+let firstGameplay = true;
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Frame-rate-independent lerp. A raw Phaser.Math.Linear(a, b, rate) converges at a
@@ -253,8 +256,8 @@ export class GameScene extends Phaser.Scene {
       alpha: 0.7,
     }).setOrigin(1, 0).setDepth(6);
 
-    // Touch indicator overlays
-    this._showTouchHints();
+    // First-time-only gesture hint (the menu thumbs); no per-game text messages.
+    this._showStartThumbs();
 
     // ── Input ─────────────────────────────────────────────────────────────────
     this.input.on('pointerdown',      this._onDown, this);
@@ -521,25 +524,46 @@ export class GameScene extends Phaser.Scene {
 
   // ── Touch hint overlay ─────────────────────────────────────────────────────
 
-  _showTouchHints() {
-    this.leftHint = this.add.text(this.lW / 2, this.pH * 0.88, GT.hintSteer, {
-      fontSize: '13px', fontFamily: 'Arial', color: '#b2dfdb',
-    }).setOrigin(0.5).setDepth(7).setAlpha(0.75);
+  // The very first time gameplay starts (per page load), overlay the menu's gesture thumbs —
+  // left slides L/R (steer), right taps up/down (rise) — for 3 seconds, then fade out fully.
+  // No per-game text messages.
+  _showStartThumbs() {
+    if (!firstGameplay || !this.textures.exists('thumb_hint')) return;
+    firstGameplay = false;
 
-    this.rightHint = this.add.text(this.rX + this.rW / 2, this.pH * 0.88, GT.hintRise, {
-      fontSize: '13px', fontFamily: 'Arial', color: '#b2dfdb',
-    }).setOrigin(0.5).setDepth(7).setAlpha(0.75);
+    const W = this.scale.width, H = this.scale.height;
+    const s = Phaser.Math.Clamp(H / 540, 0.7, 1.4);
+    const thumbW = Math.round(88 * s), thumbH = Math.round(86 * s);
+    const baseY = H - thumbH / 2;
+    const slideAmp = Math.round(W * 0.06);
+    const tapAmp = Math.round(28 * s);
+    const shDX = Math.round(14 * s), shDY = Math.round(7 * s);
+    const ease = 'Sine.easeInOut', key = 'thumb_hint';
+    const leftX = this.lW / 2, rightX = this.rX + this.rW / 2;
+    const D = 30, SD = 29; // above the gameplay HUD
 
-    // Flag prevents two simultaneous fade tweens if both triggers fire near-simultaneously
-    let hintsActive = true;
-    const fadeOut = (duration) => {
-      if (!hintsActive) return;
-      hintsActive = false;
-      this.tweens.add({ targets: [this.leftHint, this.rightHint], alpha: 0, duration });
-    };
+    const leftShadow = this.add.image(leftX - slideAmp + shDX, baseY + shDY, key)
+      .setDepth(SD).setDisplaySize(thumbW, thumbH).setFlipX(true).setTint(0x000000).setAlpha(0.36);
+    const leftHand = this.add.image(leftX - slideAmp, baseY, key)
+      .setDepth(D).setDisplaySize(thumbW, thumbH).setFlipX(true);
+    this.tweens.add({ targets: leftHand,   x: leftX + slideAmp,        duration: 1100, yoyo: true, repeat: -1, ease });
+    this.tweens.add({ targets: leftShadow, x: leftX + slideAmp + shDX, duration: 1100, yoyo: true, repeat: -1, ease });
 
-    this.time.delayedCall(3000, () => fadeOut(1000));
-    this.input.once('pointerdown', () => fadeOut(400));
+    const rightHand = this.add.image(rightX, baseY, key).setDepth(D).setDisplaySize(thumbW, thumbH);
+    const rsx = rightHand.scaleX, rsy = rightHand.scaleY;
+    rightHand.setScale(rsx * 1.2, rsy * 1.2);
+    const rightShadow = this.add.image(rightX + shDX * 2, baseY + shDY * 2, key)
+      .setDepth(SD).setDisplaySize(thumbW, thumbH).setTint(0x000000).setScale(rsx * 1.35, rsy * 1.35).setAlpha(0.2);
+    this.tweens.add({ targets: rightHand, y: baseY + tapAmp, scaleX: rsx, scaleY: rsy, duration: 650, yoyo: true, repeat: -1, ease });
+    this.tweens.add({ targets: rightShadow, x: rightX + Math.round(shDX * 0.5), y: baseY + tapAmp + Math.round(shDY * 0.5), scaleX: rsx, scaleY: rsy, alpha: 0.5, duration: 650, yoyo: true, repeat: -1, ease });
+
+    const objs = [leftShadow, leftHand, rightShadow, rightHand];
+    this.time.delayedCall(3000, () => {
+      this.tweens.add({
+        targets: objs, alpha: 0, duration: 700, ease: 'Sine.easeIn',
+        onComplete: () => objs.forEach((o) => { this.tweens.killTweensOf(o); o.destroy(); }),
+      });
+    });
   }
 
   // ── Main update loop ───────────────────────────────────────────────────────

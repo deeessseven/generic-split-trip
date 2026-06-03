@@ -191,8 +191,8 @@ export class GameScene extends Phaser.Scene {
     this.hitboxScale    = 0.95;
     this.charTopBounds  = this._spriteBounds(ctKey);
     this.charSideBounds = this._spriteBounds(csKey);
-    // Factor that renders each (possibly higher-res) display texture at the 100px logical
-    // footprint: gameplay-texture-width / display-texture-width (= 0.25 for 100px vs 400px,
+    // Factor that renders each (possibly higher-res) display texture at the 128px logical
+    // footprint: gameplay-texture-width / display-texture-width (= 0.25 for 128px vs 512px,
     // or 1 if it fell back to the gameplay texture). All visual scaling multiplies by this.
     this.topDisplayScale  = this.charTopBounds.w  / this.textures.getFrame(ctDisplay).realWidth;
     this.sideDisplayScale = this.charSideBounds.w / this.textures.getFrame(csDisplay).realWidth;

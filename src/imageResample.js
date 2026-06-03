@@ -24,7 +24,6 @@
 // NOTE: bundled sprites in public/sprites/ are resampled at every boot, so a mode change
 // takes effect on reload. UPLOADED heroes are baked at upload time, so re-upload to compare
 // modes on those.
-import { squareCanvas } from './canvasUtil.js';
 
 export const RESAMPLE_MODE = 'lanczos';
 
@@ -192,6 +191,20 @@ const LIN_TO_SRGB = (() => {
   return t;
 })();
 function linToSrgb8(v) { return v <= 0 ? 0 : v >= 1 ? 255 : LIN_TO_SRGB[(v * 4096 + 0.5) | 0]; }
+
+// Browser-smoothing fallback: draw any source onto a square canvas with high-quality smoothing.
+// Used for mode 'browser' and when pixels can't be read (cross-origin / tainted canvas). NOT
+// gamma-correct — it's only the fallback path; the main path above is linear-light.
+function squareCanvas(src, size) {
+  const canvas = document.createElement('canvas');
+  canvas.width  = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(src, 0, 0, size, size);
+  return canvas;
+}
 
 // Resample any image source onto a `size`×`size` canvas using RESAMPLE_MODE; returns the
 // canvas. Falls back to browser smoothing (squareCanvas) for mode 'browser' or if pixels can't

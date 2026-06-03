@@ -1,7 +1,7 @@
 {
-  "appId": "com.splitrunner.game",
-  "appName": "Split Runner",
-  "webDir": "dist",
+  "appId": "com.splittrip.game",
+  "appName": "Split Trip",
+  "webDir": "docs",
   "plugins": {
     "SplashScreen": {
       "launchAutoHide": true,

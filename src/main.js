@@ -39,7 +39,7 @@ document.addEventListener('pointerdown', function () {
 const config = {
   type: Phaser.AUTO,
   parent: 'game-container',
-  backgroundColor: '#1a1a2e',
+  backgroundColor: '#00ff00', // TEMP DEBUG: green = canvas clear-color (inside the canvas)
   // Generate mipmaps (power-of-two textures only) so scrolling/minified textures don't
   // shimmer; antialias is the WebGL default but set explicitly. NPOT textures (heroes)
   // simply skip mipmaps — no error.
@@ -95,6 +95,8 @@ const game = new Phaser.Game(config);
       'cont   ' + (gc ? gc.offsetWidth + ' x ' + gc.offsetHeight : 'n/a') + '\n' +
       'buffer ' + (cv ? cv.width + ' x ' + cv.height : 'n/a') + '\n' +
       'disp   ' + (cv ? cv.offsetWidth + ' x ' + cv.offsetHeight : 'n/a') + '\n' +
+      'screen ' + screen.width + ' x ' + screen.height + '\n' +
+      'render ' + (game.renderer ? game.renderer.width + ' x ' + game.renderer.height : 'n/a') + '\n' +
       'dpr ' + (window.devicePixelRatio || 1) +
       '  ' + (window.innerHeight > window.innerWidth ? 'portrait' : 'landscape') +
       '  fs:' + (document.fullscreenElement ? 'Y' : 'N');

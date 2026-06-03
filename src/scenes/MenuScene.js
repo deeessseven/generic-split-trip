@@ -5,6 +5,8 @@ import { GT } from '../data/GameText.js';
 import { AudioSystem } from '../AudioSystem.js';
 import { safeInsets } from '../safeArea.js';
 import { relayoutOnResize } from '../responsive.js';
+import { buildThumbTexture, addThumbHints } from '../thumbHints.js';
+import { GameScene } from './GameScene.js';
 
 export class MenuScene extends Phaser.Scene {
   constructor() { super('MenuScene'); }
@@ -12,7 +14,6 @@ export class MenuScene extends Phaser.Scene {
   preload() {
     SpriteManager.preloadCustom(this);
     SpriteManager.preloadCustomTitle(this);
-    SpriteManager.preloadCustomFull(this);
   }
 
   create() {
@@ -109,72 +110,11 @@ export class MenuScene extends Phaser.Scene {
     addHero(W * 0.20, topKey, 0, true);     // top-view hero: subtle slide L/R (it steers horizontally)
     addHero(W * 0.80, sideKey, 1100, false); // side-view hero: subtle bob up/down
 
-    // Animated gesture hints: a shaded human thumb (skin gradient, fingernail, knuckle creases),
-    // drawn once to a texture. Left thumb (mirrored) slides L/R = top-down steer; right thumb
-    // taps up/down = side-view rise.
-    const thumbKey = 'thumb_hint';
-    if (this.textures.exists(thumbKey)) this.textures.remove(thumbKey);
-    {
-      const CW = 224, CH = 224;
-      const c = document.createElement('canvas'); c.width = CW; c.height = CH;
-      const x = c.getContext('2d');
-      const mx = 112, w = 200, r = w / 2, top = 18, bottom = CH; // wide+short; tip up, flat bottom at edge
-      x.beginPath();
-      x.moveTo(mx - r, bottom);
-      x.lineTo(mx - r, top + r);
-      x.arc(mx, top + r, r, Math.PI, 0, false); // round tip
-      x.lineTo(mx + r, bottom);
-      x.closePath();
-      const g = x.createLinearGradient(mx - r, 0, mx + r, 0); // emoji-yellow skin
-      g.addColorStop(0, '#ffe082'); g.addColorStop(0.55, '#ffcb4d'); g.addColorStop(1, '#f2a93b');
-      x.fillStyle = g;
-      x.shadowColor = 'rgba(0,0,0,0.3)'; x.shadowBlur = 6; x.shadowOffsetX = 3;
-      x.fill();
-      x.shadowColor = 'transparent'; x.shadowBlur = 0; x.shadowOffsetX = 0;
-      x.lineWidth = 5; x.strokeStyle = 'rgba(150,95,20,0.5)'; x.stroke();
-      // fingernail: larger, its top arch CONCENTRIC with the thumb tip (matching curvature, a
-      // 16px skin margin inside), closed by a base line. Subtle gradient fill.
-      const nr = 80, ncy = top + r, nBot = 162; // ncy = thumb-tip center → matching curvature (nail −5%)
-      x.beginPath();
-      x.moveTo(mx - nr, nBot);
-      x.lineTo(mx - nr, ncy);
-      x.arc(mx, ncy, nr, Math.PI, 0, false);
-      x.lineTo(mx + nr, nBot);
-      x.closePath();
-      const ng = x.createLinearGradient(mx - nr, 0, mx + nr, 0);
-      ng.addColorStop(0, '#fffdf2'); ng.addColorStop(0.55, '#fff0c8'); ng.addColorStop(1, '#f3d79a');
-      x.fillStyle = ng; x.fill();
-      x.lineWidth = 3; x.strokeStyle = 'rgba(150,100,30,0.55)'; x.stroke();
-      // knuckle creases across the body (below the nail)
-      x.lineWidth = 4; x.strokeStyle = 'rgba(150,100,30,0.38)';
-      x.beginPath(); x.moveTo(mx - 80, 188); x.quadraticCurveTo(mx, 204, mx + 80, 188); x.stroke();
-      x.beginPath(); x.moveTo(mx - 78, 210); x.quadraticCurveTo(mx, 224, mx + 78, 210); x.stroke();
-      this.textures.addCanvas(thumbKey, c);
-    }
-    const thumbW = Math.round(88 * s), thumbH = Math.round(86 * s);
-    const baseY = H - thumbH / 2;             // image bottom flush with the screen's bottom edge
-    const slideAmp = Math.round(W * 0.06);
-    const tapAmp = Math.round(28 * s);
-    const shDX = Math.round(14 * s), shDY = Math.round(7 * s); // shadow offset (light from upper-left)
-    const ease = 'Sine.easeInOut';
-
-    // Left hand (mirrored) + cast shadow: slides L/R; bottom stays on the screen edge.
-    const leftShadow = this.add.image(W * 0.25 - slideAmp + shDX, baseY + shDY, thumbKey)
-      .setDepth(3).setDisplaySize(thumbW, thumbH).setFlipX(true).setTint(0x000000).setAlpha(0.36);
-    const leftHand = this.add.image(W * 0.25 - slideAmp, baseY, thumbKey)
-      .setDepth(4).setDisplaySize(thumbW, thumbH).setFlipX(true);
-    this.tweens.add({ targets: leftHand,   x: W * 0.25 + slideAmp,        duration: 1100, yoyo: true, repeat: -1, ease });
-    this.tweens.add({ targets: leftShadow, x: W * 0.25 + slideAmp + shDX, duration: 1100, yoyo: true, repeat: -1, ease });
-
-    // Right hand: taps DOWNWARD and is 20% LARGER at its lifted peak (depth). Its shadow grows +
-    // softens when lifted, and tightens + darkens as it presses the screen.
-    const rightHand = this.add.image(W * 0.75, baseY, thumbKey).setDepth(4).setDisplaySize(thumbW, thumbH);
-    const rsx = rightHand.scaleX, rsy = rightHand.scaleY; // normal (pressed) scale
-    rightHand.setScale(rsx * 1.2, rsy * 1.2);             // start lifted (peak) — 20% larger
-    const rightShadow = this.add.image(W * 0.75 + shDX * 2, baseY + shDY * 2, thumbKey)
-      .setDepth(3).setDisplaySize(thumbW, thumbH).setTint(0x000000).setScale(rsx * 1.35, rsy * 1.35).setAlpha(0.2);
-    this.tweens.add({ targets: rightHand, y: baseY + tapAmp, scaleX: rsx, scaleY: rsy, duration: 650, yoyo: true, repeat: -1, ease });
-    this.tweens.add({ targets: rightShadow, x: W * 0.75 + Math.round(shDX * 0.5), y: baseY + tapAmp + Math.round(shDY * 0.5), scaleX: rsx, scaleY: rsy, alpha: 0.5, duration: 650, yoyo: true, repeat: -1, ease });
+    // Animated gesture hints (shared with the first gameplay starts; see thumbHints.js).
+    // Left thumb (mirrored) slides L/R = top-down steer; right thumb taps up/down = side rise.
+    // Menu copies sit just above the background (depth 4/3), below the center column.
+    buildThumbTexture(this);
+    addThumbHints(this, { leftX: W * 0.25, rightX: W * 0.75, s, W, H, depthHand: 4, depthShadow: 3 });
 
     // ── Center column (Title → SURVIVE → PLAY → Customize), measured & centered in the band ──
     const title = this.add.text(cx, 0, GT.gameTitle, {
@@ -229,7 +169,7 @@ export class MenuScene extends Phaser.Scene {
       .on('pointerover', () => drawPlay(0x0288d1))
       .on('pointerout',  () => drawPlay(0x29b6f6))
       .on('pointerdown', () => drawPlay(0x0288d1))
-      .on('pointerup',   () => { AudioSystem.startMusic('game'); this.scene.start('GameScene'); });
+      .on('pointerup',   () => { GameScene.noteNewGame(); this.scene.start('GameScene'); });
     yy += playH + gap;
 
     const setY = yy + setH / 2;

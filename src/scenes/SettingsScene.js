@@ -4,6 +4,7 @@ import { makeButton } from '../Button.js';
 import { GT } from '../data/GameText.js';
 import { resampleToCanvas } from '../imageResample.js';
 import { relayoutOnResize } from '../responsive.js';
+import { squareCanvas } from '../canvasUtil.js';
 
 export class SettingsScene extends Phaser.Scene {
   constructor() { super('SettingsScene'); }
@@ -109,9 +110,6 @@ export class SettingsScene extends Phaser.Scene {
         SpriteManager.removeTitle(key);
         const titleKey = key + '_title_custom';
         try { if (this.textures.exists(titleKey)) this.textures.remove(titleKey); } catch {}
-        SpriteManager.removeFull(key);
-        const fullKey = key + '_full_custom';
-        try { if (this.textures.exists(fullKey)) this.textures.remove(fullKey); } catch {}
       }
       preview.setTexture(key);
     });
@@ -165,8 +163,8 @@ export class SettingsScene extends Phaser.Scene {
     reader.readAsDataURL(file);
   }
 
-  // Hero sprites: 128px (gameplay/collision), 512px (pre-filtered display), and the original
-  // full-res (display, if it fits storage). One Image decode, a few canvas draws.
+  // Hero sprites: 128px (gameplay/collision) + 512px (pre-filtered display). One Image decode,
+  // a couple of canvas resamples.
   _saveCharSprite(img, key) {
     // Hero sprites use the selected resampler (Lanczos-3 / Bicubic Sharper); see imageResample.js.
     const gameplay = resampleToCanvas(img, 128).toDataURL('image/png');
@@ -174,23 +172,6 @@ export class SettingsScene extends Phaser.Scene {
 
     SpriteManager.save(key, gameplay);
     SpriteManager.saveTitle(key, title);
-
-    // Also keep the ORIGINAL full-resolution image for crisp in-game display (GameScene
-    // downscales it directly). Stored only if it fits localStorage; otherwise display falls
-    // back to the 400px title. Re-encode the source pixels losslessly to PNG.
-    const fullKey = key + '_full_custom';
-    SpriteManager.removeFull(key); // drop any stale original; only re-saved below if it fits
-    let haveFull = false;
-    try {
-      const fw = img.naturalWidth || img.width, fh = img.naturalHeight || img.height;
-      const fc = document.createElement('canvas');
-      fc.width = fw; fc.height = fh;
-      fc.getContext('2d').drawImage(img, 0, 0);
-      const fullData = fc.toDataURL('image/png');
-      haveFull = SpriteManager.saveFull(key, fullData);
-      try { if (this.textures.exists(fullKey)) this.textures.remove(fullKey); } catch {}
-      if (haveFull) this.textures.addBase64(fullKey, fullData);
-    } catch { haveFull = false; }
 
     const customKey = key + '_custom';
     const titleKey  = key + '_title_custom';
@@ -215,12 +196,12 @@ export class SettingsScene extends Phaser.Scene {
   }
 
   // Resize uploads to a fixed square so they store small and tile predictably:
-  //   backgrounds → 512 (fill a panel), wall → 32 (power-of-two, ~wall thickness), hit mark → 256.
+  //   backgrounds → 512 (fill a panel), wall → 64 (matches WALL_WIDTH), hit mark → 256.
   _saveGenericSprite(img, key) {
     let size = 256; // hit mark
     if (key === SPRITE_KEYS.BG_TOP || key === SPRITE_KEYS.BG_SIDE) size = 512;
     else if (key === SPRITE_KEYS.OBSTACLE) size = 64;
-    const dataURL = this._canvasResize(img, size);
+    const dataURL = squareCanvas(img, size).toDataURL('image/png');
     SpriteManager.save(key, dataURL);
     const customKey = key + '_custom';
     try { if (this.textures.exists(customKey)) this.textures.remove(customKey); } catch {}
@@ -230,20 +211,6 @@ export class SettingsScene extends Phaser.Scene {
       this._showToast(GT.toastSpriteSaved);
     });
     this.textures.addBase64(customKey, dataURL);
-  }
-
-  // Resize any image to a square canvas of the given px size, return PNG dataURL.
-  // High-quality smoothing preserves detail when down/upscaling an upload to the target
-  // size — the browser default ('low') looks soft/aliased.
-  _canvasResize(img, size) {
-    const canvas = document.createElement('canvas');
-    canvas.width  = size;
-    canvas.height = size;
-    const ctx = canvas.getContext('2d');
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(img, 0, 0, size, size);
-    return canvas.toDataURL('image/png');
   }
 
   _showToast(msg) {

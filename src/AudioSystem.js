@@ -250,20 +250,26 @@ export const AudioSystem = {
     else this.ctx.resume().then(begin).catch(() => {});
   },
 
+  // Hard-cut a list of scheduled/sounding voices: cancel their envelopes, zero gain, disconnect
+  // from the bus (this silences even notes scheduled to START later, which a gain ramp alone
+  // won't on a running context), and stop the oscillator. Safe on null/already-stopped voices.
+  _killVoices(voices) {
+    if (!voices) return;
+    for (const v of voices) {
+      try { v.g.gain.cancelScheduledValues(0); v.g.gain.value = 0; } catch { /* */ }
+      try { v.g.disconnect(); } catch { /* */ }
+      try { v.o.stop(); } catch { /* not started yet */ }
+    }
+  },
+
   stopMusic() {
     this._musicOn = false;
     if (this._timer) { clearInterval(this._timer); this._timer = null; }
-    // Hard-cut every note currently sounding/scheduled. Long menu pads ring for ~2s, so
-    // just stopping the scheduler isn't enough — disconnect each voice from the bus so the
-    // music goes silent the instant it's toggled off (and cleanly between track switches).
-    if (this._musicVoices) {
-      for (const v of this._musicVoices) {
-        try { v.g.gain.cancelScheduledValues(0); v.g.gain.value = 0; } catch { /* */ }
-        try { v.g.disconnect(); } catch { /* */ }
-        try { v.o.stop(); } catch { /* not started yet */ }
-      }
-      this._musicVoices = null;
-    }
+    // Hard-cut every note currently sounding/scheduled. Long menu pads ring for ~2s, so just
+    // stopping the scheduler isn't enough — disconnecting each voice makes the music go silent
+    // the instant it's toggled off (and cleanly between track switches).
+    this._killVoices(this._musicVoices);
+    this._musicVoices = null;
   },
 
   // Schedule any events due within the lookahead window, looping at LOOP_BEATS.
@@ -433,16 +439,9 @@ export const AudioSystem = {
     add(N.F2, t + 2.5, 3.1, 'sine', 0.11, 0.02, 0.4);
   },
 
-  // Hard-cut the game-over tune (called on restart / background). Disconnecting each voice
-  // from the bus gives instant, total silence — including notes scheduled to start LATER in
-  // the tune, which a gain-ramp/stop alone doesn't reliably mute on a running context.
+  // Hard-cut the game-over tune (called on restart / background) — see _killVoices.
   stopGameOver() {
-    if (!this._gameOverVoices) { this._gameOverVoices = null; return; }
-    for (const v of this._gameOverVoices) {
-      try { v.g.gain.cancelScheduledValues(0); v.g.gain.value = 0; } catch { /* */ }
-      try { v.g.disconnect(); } catch { /* */ } // sever from the music bus → silent now
-      try { v.o.stop(); } catch { /* not started yet */ }
-    }
+    this._killVoices(this._gameOverVoices);
     this._gameOverVoices = null;
   },
 

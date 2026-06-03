@@ -12,14 +12,17 @@ import { GT } from '../data/GameText.js';
 import { AudioSystem } from '../AudioSystem.js';
 import { safeInsets } from '../safeArea.js';
 import { relayoutOnResize } from '../responsive.js';
+import { addThumbHints } from '../thumbHints.js';
 
 // ── Debug flag ────────────────────────────────────────────────────────────────
 // Set to true to draw the pixel-accurate collision silhouette over each sprite.
 // Keep false in production — the black outline is visible to players.
 const DEBUG_OUTLINE = false;
 
-// Show the menu's gesture thumbs for the first 3 gameplay starts (per page load).
-let gameplayCount = 0;
+// Count of NEW games started this page load (incremented by noteNewGame from the PLAY /
+// PLAY AGAIN buttons — NOT in create(), so a resize-driven scene.restart() doesn't inflate it).
+// The menu's gesture thumbs show for the first 3 games.
+let gamesStarted = 0;
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Frame-rate-independent lerp. A raw Phaser.Math.Linear(a, b, rate) converges at a
@@ -32,6 +35,10 @@ function smooth(current, target, rate, dt) {
 
 export class GameScene extends Phaser.Scene {
   constructor() { super('GameScene'); }
+
+  // Call when the player deliberately starts a new game (PLAY / PLAY AGAIN), before
+  // scene.start('GameScene'). Kept out of create() so a resize-driven restart isn't counted.
+  static noteNewGame() { gamesStarted++; }
 
   // Reload custom sprites each time the game starts so Settings changes take effect
   preload() {
@@ -128,14 +135,13 @@ export class GameScene extends Phaser.Scene {
     this.groundStrip = this.add.tileSprite(this.rX + this.rW / 2, H - 10, this.rW, 20, bgTopKey).setDepth(2.5);
 
     // Obstacle TileSprite pool. Each visible obstacle uses up to 4 tiles (2 walls in the
-    // top view + 2 in the side view). At max difficulty several obstacles are on-screen in
-    // both views at once, so the worst case approaches ~16-18 tiles. 32 leaves comfortable
-    // headroom — if the pool ran dry, _placeTile would silently skip a wall segment while
-    // collision still triggered, producing an invisible-but-lethal wall. Invisible tiles
-    // are nearly free, so over-allocating is safe.
-    const obsKey = SpriteManager.resolveKey(this, SPRITE_KEYS.OBSTACLE);
+    // top view + 2 in the side view). The on-screen worst case is ~16 tiles, so 32 is ample
+    // headroom; but _placeTile also grows the pool on demand (using _obsKey) if it ever runs
+    // dry, so a missing tile can never become an invisible-but-lethal wall. Invisible tiles
+    // are nearly free.
+    this._obsKey = SpriteManager.resolveKey(this, SPRITE_KEYS.OBSTACLE);
     this._obstacleTiles = Array.from({ length: 32 }, () =>
-      this.add.tileSprite(0, 0, 1, 1, obsKey).setDepth(2).setVisible(false)
+      this.add.tileSprite(0, 0, 1, 1, this._obsKey).setDepth(2).setVisible(false)
     );
     this._obstacleTileIdx = 0;
 
@@ -143,10 +149,10 @@ export class GameScene extends Phaser.Scene {
     this.debugGfx = DEBUG_OUTLINE ? this.add.graphics().setDepth(20) : null;
 
     // Character sprites (on top of obstacles and gap indicator).
-    // ctKey/csKey are the 100px gameplay textures used for COLLISION (1 texel = 1 world px).
+    // ctKey/csKey are the 128px gameplay textures used for COLLISION (1 texel = 1 world px).
     // For DISPLAY we use the 512px pre-filtered (Magic Kernel Sharp) title textures scaled down
-    // to the same 100px footprint, so the hero is crisp on high-DPI screens (the GPU does a
-    // gentle final down-sample of a clean texture). Collision is unaffected — it reads 100px.
+    // to the same 128px footprint, so the hero is crisp on high-DPI screens (the GPU does a
+    // gentle final down-sample of a clean texture). Collision is unaffected — it reads 128px.
     const ctKey = SpriteManager.resolveKey(this, SPRITE_KEYS.CHAR_TOP);
     const csKey = SpriteManager.resolveKey(this, SPRITE_KEYS.CHAR_SIDE);
     const ctDispKey = SpriteManager.resolveTitleKey(this, SPRITE_KEYS.CHAR_TOP);
@@ -485,8 +491,12 @@ export class GameScene extends Phaser.Scene {
   // ── Rendering ──────────────────────────────────────────────────────────────
 
   _placeTile(x, y, w, h, tileOffsetX = 0) {
-    const t = this._obstacleTiles[this._obstacleTileIdx++];
-    if (!t) return;
+    let t = this._obstacleTiles[this._obstacleTileIdx];
+    if (!t) { // pool ran dry — grow it so a wall segment can never be skipped (invisible-but-lethal)
+      t = this.add.tileSprite(0, 0, 1, 1, this._obsKey).setDepth(2);
+      this._obstacleTiles.push(t);
+    }
+    this._obstacleTileIdx++;
     t.setPosition(x + w / 2, y + h / 2).setSize(w, h).setTilePosition(tileOffsetX, 0).setVisible(true);
   }
 
@@ -536,40 +546,18 @@ export class GameScene extends Phaser.Scene {
 
   // ── Touch hint overlay ─────────────────────────────────────────────────────
 
-  // For the first 3 gameplay starts (per page load), overlay the menu's gesture thumbs —
-  // left slides L/R (steer), right taps up/down (rise) — for 3 seconds, then fade out fully.
-  // No per-game text messages.
+  // For the first 3 games (per page load), overlay the menu's gesture thumbs — left slides L/R
+  // (steer), right taps up/down (rise) — for 3 seconds, then fade out fully. Gated on
+  // gamesStarted (counted at PLAY/PLAY AGAIN, not in create), so a resize-driven restart shows
+  // the hint again for the SAME game without consuming one of the three. No per-game text.
   _showStartThumbs() {
-    if (gameplayCount >= 3 || !this.textures.exists('thumb_hint')) return;
-    gameplayCount++;
+    if (gamesStarted > 3 || !this.textures.exists('thumb_hint')) return;
 
     const W = this.scale.width, H = this.scale.height;
     const s = Phaser.Math.Clamp(H / 540, 0.7, 1.4);
-    const thumbW = Math.round(88 * s), thumbH = Math.round(86 * s);
-    const baseY = H - thumbH / 2;
-    const slideAmp = Math.round(W * 0.06);
-    const tapAmp = Math.round(28 * s);
-    const shDX = Math.round(14 * s), shDY = Math.round(7 * s);
-    const ease = 'Sine.easeInOut', key = 'thumb_hint';
-    const leftX = this.lW / 2, rightX = this.rX + this.rW / 2;
-    const D = 30, SD = 29; // above the gameplay HUD
-
-    const leftShadow = this.add.image(leftX - slideAmp + shDX, baseY + shDY, key)
-      .setDepth(SD).setDisplaySize(thumbW, thumbH).setFlipX(true).setTint(0x000000).setAlpha(0.36);
-    const leftHand = this.add.image(leftX - slideAmp, baseY, key)
-      .setDepth(D).setDisplaySize(thumbW, thumbH).setFlipX(true);
-    this.tweens.add({ targets: leftHand,   x: leftX + slideAmp,        duration: 1100, yoyo: true, repeat: -1, ease });
-    this.tweens.add({ targets: leftShadow, x: leftX + slideAmp + shDX, duration: 1100, yoyo: true, repeat: -1, ease });
-
-    const rightHand = this.add.image(rightX, baseY, key).setDepth(D).setDisplaySize(thumbW, thumbH);
-    const rsx = rightHand.scaleX, rsy = rightHand.scaleY;
-    rightHand.setScale(rsx * 1.2, rsy * 1.2);
-    const rightShadow = this.add.image(rightX + shDX * 2, baseY + shDY * 2, key)
-      .setDepth(SD).setDisplaySize(thumbW, thumbH).setTint(0x000000).setScale(rsx * 1.35, rsy * 1.35).setAlpha(0.2);
-    this.tweens.add({ targets: rightHand, y: baseY + tapAmp, scaleX: rsx, scaleY: rsy, duration: 650, yoyo: true, repeat: -1, ease });
-    this.tweens.add({ targets: rightShadow, x: rightX + Math.round(shDX * 0.5), y: baseY + tapAmp + Math.round(shDY * 0.5), scaleX: rsx, scaleY: rsy, alpha: 0.5, duration: 650, yoyo: true, repeat: -1, ease });
-
-    const objs = [leftShadow, leftHand, rightShadow, rightHand];
+    const { objs } = addThumbHints(this, {
+      leftX: this.lW / 2, rightX: this.rX + this.rW / 2, s, W, H, depthHand: 30, depthShadow: 29,
+    });
     this.time.delayedCall(3000, () => {
       this.tweens.add({
         targets: objs, alpha: 0, duration: 700, ease: 'Sine.easeIn',

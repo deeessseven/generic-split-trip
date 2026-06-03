@@ -21,6 +21,8 @@
 // NOTE: bundled sprites in public/sprites/ are resampled at every boot, so a mode change
 // takes effect on reload. UPLOADED heroes are baked at upload time, so re-upload to compare
 // modes on those.
+import { squareCanvas } from './canvasUtil.js';
+
 export const RESAMPLE_MODE = 'magic-kernel-sharp';
 
 // ── Kernels ──────────────────────────────────────────────────────────────────
@@ -174,23 +176,13 @@ function passY(src, w, sh, dh, contrib) {
 
 function clamp8(v) { v = Math.round(v); return v < 0 ? 0 : v > 255 ? 255 : v; }
 
-function browserCanvas(src, size) {
-  const canvas = document.createElement('canvas');
-  canvas.width = size; canvas.height = size;
-  const ctx = canvas.getContext('2d');
-  ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = 'high';
-  ctx.drawImage(src, 0, 0, size, size);
-  return canvas;
-}
-
 // Resample any image source onto a `size`×`size` canvas using RESAMPLE_MODE; returns the
-// canvas. Falls back to browser smoothing for mode 'browser' or if pixels can't be read
-// (tainted canvas). Stretches non-square sources into the square, matching the old path.
+// canvas. Falls back to browser smoothing (squareCanvas) for mode 'browser' or if pixels can't
+// be read (tainted canvas). Stretches non-square sources into the square, matching the old path.
 export function resampleToCanvas(src, size) {
   const sw = src.naturalWidth || src.width;
   const sh = src.naturalHeight || src.height;
-  if (RESAMPLE_MODE === 'browser' || !sw || !sh) return browserCanvas(src, size);
+  if (RESAMPLE_MODE === 'browser' || !sw || !sh) return squareCanvas(src, size);
 
   let data;
   try {
@@ -200,7 +192,7 @@ export function resampleToCanvas(src, size) {
     sctx.drawImage(src, 0, 0);
     data = sctx.getImageData(0, 0, sw, sh).data;
   } catch {
-    return browserCanvas(src, size); // cross-origin / tainted — can't read pixels
+    return squareCanvas(src, size); // cross-origin / tainted — can't read pixels
   }
 
   // To premultiplied-alpha float, so filtering can't bleed color across transparent edges

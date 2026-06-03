@@ -2,6 +2,7 @@ import { SPRITE_KEYS } from '../constants.js';
 import { SpriteManager } from '../SpriteManager.js';
 import { applyText } from '../data/GameText.js';
 import { resampleToCanvas } from '../imageResample.js';
+import { squareCanvas } from '../canvasUtil.js';
 
 // Maps each sprite key to its file in public/sprites/.
 // Drop matching PNGs into that folder to replace the procedural defaults.
@@ -115,10 +116,10 @@ export class BootScene extends Phaser.Scene {
   }
 
   // Bundled hero PNGs in public/sprites/ can be any resolution (e.g. 555×555, 840×840).
-  // We keep the original under key + '_full' (display), build a 512px pre-filtered display
-  // texture (key + '_title'), and replace the gameplay/collision texture (char_top/char_side)
-  // with a 128px square (1 texel = 1 world px — the hero's logical footprint). This mirrors
-  // how user uploads are resized in SettingsScene. Procedural fallbacks (48px) are skipped.
+  // We build a 512px pre-filtered display texture (key + '_title') and replace the gameplay/
+  // collision texture (char_top/char_side) with a 128px square (1 texel = 1 world px — the
+  // hero's logical footprint). This mirrors how user uploads are resized in SettingsScene.
+  // Procedural fallbacks (48px) are skipped.
   _normalizeCharSprites() {
     for (const key of [SPRITE_KEYS.CHAR_TOP, SPRITE_KEYS.CHAR_SIDE]) {
       // Skip sprites that fell back to procedural generation (already small/fast)
@@ -127,21 +128,8 @@ export class BootScene extends Phaser.Scene {
 
       const src = this.textures.get(key).getSourceImage();
 
-      // Preserve the ORIGINAL full-resolution image under key + '_full' for crisp DISPLAY:
-      // GameScene downscales this on the GPU instead of up-scaling the 100px texture. Stored
-      // as an independent canvas copy so removing the original key (below) can't affect it.
-      const fullKey = key + '_full';
-      try { if (this.textures.exists(fullKey)) this.textures.remove(fullKey); } catch {}
-      const fw = src.naturalWidth || src.width, fh = src.naturalHeight || src.height;
-      if (fw && fh) {
-        const fc = document.createElement('canvas');
-        fc.width = fw; fc.height = fh;
-        fc.getContext('2d').drawImage(src, 0, 0);
-        this.textures.addCanvas(fullKey, fc);
-      }
-
       // 512px pre-filtered display texture, added under key + '_title' (used for the title
-      // screen and now for in-game display, downscaled to the 100px footprint).
+      // screen and for in-game display, downscaled to the 128px footprint).
       const titleKey = key + '_title';
       try { if (this.textures.exists(titleKey)) this.textures.remove(titleKey); } catch {}
       this.textures.addCanvas(titleKey, resampleToCanvas(src, 512));
@@ -167,29 +155,18 @@ export class BootScene extends Phaser.Scene {
       if (!this.textures.exists(key)) continue;
       const src = this.textures.get(key).getSourceImage();
       if (src.width === size && src.height === size) continue; // already correct
-      const canvas = this._squareCanvas(src, size);
+      const canvas = squareCanvas(src, size);
       this.textures.remove(key);
       this.textures.addCanvas(key, canvas);
     }
   }
 
-  // Draw any image source onto a square canvas of the given px size; returns the canvas.
-  // High-quality smoothing matters here: hero source files are large (e.g. 555-840px) and
-  // get downscaled 5-8x, so the browser default ('low') yields a soft/aliased result. 'high'
-  // uses a better resampling kernel and preserves much more detail within the same pixels.
-  _squareCanvas(src, size) {
-    const canvas = document.createElement('canvas');
-    canvas.width  = size;
-    canvas.height = size;
-    const ctx = canvas.getContext('2d');
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(src, 0, 0, size, size);
-    return canvas;
-  }
-
   _generateDefaultTextures(missing) {
-    if (missing.size === 0) return; // all sprites loaded from folder — nothing to generate
+    // Only the char/bg/obstacle sprites are drawn here; the hit mark is generated in
+    // _generateFXTextures. If none of those drawn sprites are missing, skip the graphics alloc
+    // entirely (the hit mark being absent must not force a pointless graphics object).
+    const drawn = [SPRITE_KEYS.CHAR_TOP, SPRITE_KEYS.CHAR_SIDE, SPRITE_KEYS.BG_TOP, SPRITE_KEYS.BG_SIDE, SPRITE_KEYS.OBSTACLE];
+    if (!drawn.some((k) => missing.has(k))) return;
 
     const g = this.make.graphics({ x: 0, y: 0, add: false });
 

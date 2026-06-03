@@ -11,6 +11,7 @@ import { SpriteManager } from '../SpriteManager.js';
 import { GT } from '../data/GameText.js';
 import { AudioSystem } from '../AudioSystem.js';
 import { safeInsets } from '../safeArea.js';
+import { relayoutOnResize } from '../responsive.js';
 
 // ── Debug flag ────────────────────────────────────────────────────────────────
 // Set to true to draw the pixel-accurate collision silhouette over each sprite.
@@ -38,6 +39,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   create() {
+    relayoutOnResize(this);
     const W = this.scale.width;
     const H = this.scale.height;
 

@@ -1,11 +1,13 @@
 import { makeButton } from '../Button.js';
 import { GT } from '../data/GameText.js';
 import { AudioSystem } from '../AudioSystem.js';
+import { relayoutOnResize } from '../responsive.js';
 
 export class GameOverScene extends Phaser.Scene {
   constructor() { super('GameOverScene'); }
 
   create(data) {
+    relayoutOnResize(this);
     const { width: W, height: H } = this.scale;
     const cx = W / 2, cy = H / 2;
     const score = data?.score ?? 0;

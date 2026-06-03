@@ -4,6 +4,7 @@ import { SpriteManager } from '../SpriteManager.js';
 import { GT } from '../data/GameText.js';
 import { AudioSystem } from '../AudioSystem.js';
 import { safeInsets } from '../safeArea.js';
+import { relayoutOnResize } from '../responsive.js';
 
 export class MenuScene extends Phaser.Scene {
   constructor() { super('MenuScene'); }
@@ -15,6 +16,7 @@ export class MenuScene extends Phaser.Scene {
   }
 
   create() {
+    relayoutOnResize(this);
     const { width: W, height: H } = this.scale;
     const cx = W / 2, cy = H / 2;
 

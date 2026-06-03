@@ -28,21 +28,18 @@ window.addEventListener('pagehide', () => AudioSystem.pauseForBackground());
 // tap re-expands the game. Keeping the game fullscreen matters more than honoring a manual
 // exit, and the first attempt can also silently fail, so retrying guarantees it catches.
 document.addEventListener('pointerdown', function () {
-  if (document.fullscreenElement) { window.__fs = 'already'; return; } // already fullscreen
+  if (document.fullscreenElement) return; // already fullscreen, nothing to do
   const el = document.documentElement;
   const req = el.requestFullscreen?.bind(el) || el.webkitRequestFullscreen?.bind(el);
-  const lockOrientation = () => screen.orientation?.lock('landscape-primary').catch((e) => { window.__or = 'ERR:' + (e && e.name || e); });
-  if (req) {
-    window.__fs = 'req';
-    req().then(() => { window.__fs = 'OK'; lockOrientation(); })
-         .catch((e) => { window.__fs = 'ERR:' + (e && e.name || e); lockOrientation(); });
-  } else { window.__fs = 'no-api'; lockOrientation(); }
+  const lockOrientation = () => screen.orientation?.lock('landscape-primary').catch(() => {});
+  if (req) req().then(lockOrientation).catch(lockOrientation); // harmless if the browser refuses
+  else lockOrientation();
 }, { capture: true });
 
 const config = {
   type: Phaser.AUTO,
   parent: 'game-container',
-  backgroundColor: '#00ff00', // TEMP DEBUG: green = canvas clear-color (inside the canvas)
+  backgroundColor: '#1a1a2e',
   // Generate mipmaps (power-of-two textures only) so scrolling/minified textures don't
   // shimmer; antialias is the WebGL default but set explicitly. NPOT textures (heroes)
   // simply skip mipmaps — no error.
@@ -80,34 +77,6 @@ const config = {
 }
 
 const game = new Phaser.Game(config);
-
-// TEMP DEBUG: on-screen sizing readout to diagnose first-load fullscreen bars. Remove later.
-// A DOM overlay (independent of the canvas) so it shows even if the canvas is mis-sized.
-(function () {
-  const box = document.createElement('div');
-  box.style.cssText = 'position:fixed;top:0;left:0;z-index:99999;background:rgba(0,0,0,0.72);' +
-    'color:#0f0;font:11px/1.35 monospace;padding:4px 6px;white-space:pre;pointer-events:none;';
-  document.body.appendChild(box);
-  const upd = () => {
-    const vv = window.visualViewport;
-    const gc = document.getElementById('game-container');
-    const cv = gc && gc.querySelector('canvas');
-    box.textContent =
-      'win    ' + window.innerWidth + ' x ' + window.innerHeight + '\n' +
-      'visual ' + (vv ? Math.round(vv.width) + ' x ' + Math.round(vv.height) : 'n/a') + '\n' +
-      'cont   ' + (gc ? gc.offsetWidth + ' x ' + gc.offsetHeight : 'n/a') + '\n' +
-      'buffer ' + (cv ? cv.width + ' x ' + cv.height : 'n/a') + '\n' +
-      'disp   ' + (cv ? cv.offsetWidth + ' x ' + cv.offsetHeight : 'n/a') + '\n' +
-      'screen ' + screen.width + ' x ' + screen.height + '\n' +
-      'render ' + (game.renderer ? game.renderer.width + ' x ' + game.renderer.height : 'n/a') + '\n' +
-      'dpr ' + (window.devicePixelRatio || 1) +
-      '  ' + (window.innerHeight > window.innerWidth ? 'portrait' : 'landscape') +
-      '  fs:' + (document.fullscreenElement ? 'Y' : 'N') + '\n' +
-      'fsreq ' + (window.__fs || '-') + '  orient ' + (window.__or || '-');
-  };
-  upd();
-  setInterval(upd, 200);
-})();
 
 // When the container is CSS-rotated 90°CW (portrait mode), Phaser's built-in
 // coordinate transform maps touches to wrong game coords. Patch updateInputPlugins

@@ -15,10 +15,10 @@ import { safeInsets } from '../safeArea.js';
 // ── Debug flag ────────────────────────────────────────────────────────────────
 // Set to true to draw the pixel-accurate collision silhouette over each sprite.
 // Keep false in production — the black outline is visible to players.
-const DEBUG_OUTLINE = true;
+const DEBUG_OUTLINE = false;
 
-// Show the menu's gesture thumbs only the very first time gameplay starts (per page load).
-let firstGameplay = true;
+// Show the menu's gesture thumbs for the first 3 gameplay starts (per page load).
+let gameplayCount = 0;
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Frame-rate-independent lerp. A raw Phaser.Math.Linear(a, b, rate) converges at a
@@ -524,12 +524,12 @@ export class GameScene extends Phaser.Scene {
 
   // ── Touch hint overlay ─────────────────────────────────────────────────────
 
-  // The very first time gameplay starts (per page load), overlay the menu's gesture thumbs —
+  // For the first 3 gameplay starts (per page load), overlay the menu's gesture thumbs —
   // left slides L/R (steer), right taps up/down (rise) — for 3 seconds, then fade out fully.
   // No per-game text messages.
   _showStartThumbs() {
-    if (!firstGameplay || !this.textures.exists('thumb_hint')) return;
-    firstGameplay = false;
+    if (gameplayCount >= 3 || !this.textures.exists('thumb_hint')) return;
+    gameplayCount++;
 
     const W = this.scale.width, H = this.scale.height;
     const s = Phaser.Math.Clamp(H / 540, 0.7, 1.4);

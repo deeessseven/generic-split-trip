@@ -186,10 +186,12 @@ export class GameScene extends Phaser.Scene {
       emitting: false,
     }).setDepth(2.6);
 
-    // Scan sprite pixels to build per-row/per-col silhouette profiles for shaped collision
+    // Shaped collision silhouette. For an animated hero it's the AVERAGE outline of its frames
+    // (per-row mean of the left/right opaque edges, over the rows a majority of frames share); a
+    // single-frame hero (custom upload / static / procedural) uses just its own silhouette.
     this.hitboxScale    = 0.95;
-    this.charTopBounds  = this._spriteBounds(ctKey);
-    this.charSideBounds = this._spriteBounds(csKey);
+    this.charTopBounds  = this._averagedBounds(this._heroFrameKeys(SPRITE_KEYS.CHAR_TOP,  ctKey));
+    this.charSideBounds = this._averagedBounds(this._heroFrameKeys(SPRITE_KEYS.CHAR_SIDE, csKey));
     // Factor that renders the display texture at the 128px logical footprint: gameplay-texture-
     // width / display-texture-width. Display == the 128px frame-1 texture, so this is 1 (a higher-
     // res custom upload would scale down). All visual scaling multiplies by this.
@@ -410,6 +412,53 @@ export class GameScene extends Phaser.Scene {
       gapY: gy.center, gapYH: gy.width,
       passed: false,
     });
+  }
+
+  // The texture keys whose silhouettes define this view's collision: the bundled idle frames
+  // (base + _disp2..N) when it's the bundled hero, else just the resolved key (a single-frame
+  // custom upload / static / procedural hero — nothing to average).
+  _heroFrameKeys(baseKey, resolvedKey) {
+    if (resolvedKey !== baseKey) return [resolvedKey];
+    const keys = [baseKey];
+    for (let i = 2; i <= HERO_ANIM_FRAMES; i++) {
+      const dk = `${baseKey}_disp${i}`;
+      if (this.textures.exists(dk)) keys.push(dk);
+    }
+    return keys;
+  }
+
+  // AVERAGE silhouette across the given frame textures: per row, the mean of each frame's left/
+  // right opaque edge, INCLUDING the row only when a strict majority of frames have pixels there
+  // (so transient extremities don't enlarge the hitbox). Edges/broad-phase extents are rebuilt
+  // from the averaged profile. A single key just returns that frame's silhouette (no averaging).
+  _averagedBounds(keys) {
+    if (keys.length <= 1) return this._spriteBounds(keys[0]);
+    const per = keys.map((k) => this._spriteBounds(k));
+    const n = per.length;
+    const w = per[0].w, h = per[0].h;
+    const rowMinX = new Float32Array(h).fill(Infinity);
+    const rowMaxX = new Float32Array(h).fill(-Infinity);
+    for (let y = 0; y < h; y++) {
+      let cnt = 0, sumMin = 0, sumMax = 0;
+      for (let f = 0; f < n; f++) {
+        const lo = per[f].rowMinX[y];
+        if (isFinite(lo)) { cnt++; sumMin += lo; sumMax += per[f].rowMaxX[y]; }
+      }
+      if (cnt * 2 > n) { rowMinX[y] = sumMin / cnt; rowMaxX[y] = sumMax / cnt; } // strict majority
+    }
+    let topEdge = h, botEdge = -1, leftEdge = w, rightEdge = -1;
+    for (let y = 0; y < h; y++) {
+      if (rowMinX[y] < Infinity) {
+        if (y < topEdge) topEdge = y;
+        if (y > botEdge) botEdge = y;
+        if (rowMinX[y] < leftEdge)  leftEdge  = rowMinX[y];
+        if (rowMaxX[y] > rightEdge) rightEdge = rowMaxX[y];
+      }
+    }
+    if (botEdge < 0) return per[0]; // degenerate (no shared rows) — fall back to frame 1
+    const maxHalfW = Math.max(Math.abs(w / 2 - leftEdge), Math.abs(w / 2 - rightEdge));
+    const maxHalfH = Math.max(Math.abs(h / 2 - topEdge),  Math.abs(h / 2 - botEdge));
+    return { w, h, topEdge, botEdge, leftEdge, rightEdge, maxHalfW, maxHalfH, rowMinX, rowMaxX };
   }
 
   // Returns per-row X extents of non-transparent pixels (the only profile collision uses).

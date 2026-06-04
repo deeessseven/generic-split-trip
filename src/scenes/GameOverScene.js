@@ -38,23 +38,18 @@ export class GameOverScene extends Phaser.Scene {
       strokeThickness: Math.max(1, Math.round(3 * k)),
     }).setOrigin(0.5);
 
-    // Primary score
-    this.add.text(cx, cy - 55 * k, GT.scoreUnit.charAt(0).toUpperCase() + GT.scoreUnit.slice(1), {
-      fontSize: fp(16), fontFamily: 'Arial', color: '#90a4ae',
+    // This run: wall count (primary), then seconds survived below it.
+    this.add.text(cx, cy - 52 * k, `${score} ${GT.scoreUnit}`, {
+      fontSize: fp(38), fontFamily: '"Arial Black", Arial', color: '#ffffff',
     }).setOrigin(0.5);
-    this.add.text(cx, cy - 15 * k, String(score), {
-      fontSize: fp(40), fontFamily: '"Arial Black", Arial', color: '#ffffff',
-    }).setOrigin(0.5);
-
-    // Best score (localStorage)
-    const best = this._updateBest(score);
-    this.add.text(cx, cy + 35 * k, `${GT.scoreBest}: ${best}`, {
-      fontSize: fp(14), fontFamily: 'Arial', color: '#ffd54f',
+    this.add.text(cx, cy - 8 * k, `${time}${GT.scoreSurvived}`, {
+      fontSize: fp(22), fontFamily: 'Arial', color: '#b0bec5',
     }).setOrigin(0.5);
 
-    // Time survived
-    this.add.text(cx, cy + 65 * k, `${time}${GT.scoreSurvived}`, {
-      fontSize: fp(13), fontFamily: 'Arial', color: '#b0bec5',
+    // Best run (most walls; ties broken by more time) — shows both walls and seconds survived.
+    const best = this._updateBest(score, time);
+    this.add.text(cx, cy + 34 * k, `${GT.scoreBest}: ${best.walls} ${GT.scoreUnit}, ${best.time}${GT.scoreSurvived}`, {
+      fontSize: fp(16), fontFamily: 'Arial', color: '#ffd54f',
     }).setOrigin(0.5);
 
     // Buttons
@@ -67,15 +62,25 @@ export class GameOverScene extends Phaser.Scene {
     }, fp(16));
   }
 
-  _updateBest(score) {
+  // Best run = most walls, ties broken by more time. Stored as JSON { walls, time }; migrates the
+  // old walls-only key ('splittrip_best_walls'). Returns the best { walls, time }.
+  _updateBest(score, time) {
+    const key = 'splittrip_best';
+    let best = { walls: 0, time: 0 };
     try {
-      const key = 'splittrip_best_walls';
-      const prev = parseInt(localStorage.getItem(key), 10) || 0;
-      const best = Math.max(prev, score);
-      localStorage.setItem(key, String(best));
-      return best;
-    } catch {
-      return score;
+      const raw = localStorage.getItem(key);
+      if (raw) {
+        const p = JSON.parse(raw);
+        best = { walls: Number(p.walls) || 0, time: Number(p.time) || 0 };
+      } else {
+        const oldWalls = parseInt(localStorage.getItem('splittrip_best_walls'), 10);
+        if (oldWalls) best = { walls: oldWalls, time: 0 };
+      }
+    } catch { /* ignore */ }
+    if (score > best.walls || (score === best.walls && time > best.time)) {
+      best = { walls: score, time };
+      try { localStorage.setItem(key, JSON.stringify(best)); } catch { /* ignore */ }
     }
+    return best;
   }
 }

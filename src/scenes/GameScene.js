@@ -773,11 +773,16 @@ export class GameScene extends Phaser.Scene {
           if (Math.abs(dWY) < 0.5) {
             cwxL = wxL; cwxR = wxR; cwyL = wyL; cwyR = wyR;
           } else {
-            const tT = Math.max(0, (wallTop - wyL) / dWY);
-            const tB = Math.min(1, (wallBot - wyL) / dWY);
-            if (tT > tB) continue;
-            cwxL = wxL + tT * (wxR - wxL); cwyL = wyL + tT * dWY;
-            cwxR = wxL + tB * (wxR - wxL); cwyR = wyL + tB * dWY;
+            // Param range where the row's Y is inside [wallTop, wallBot]. dWY can be NEGATIVE
+            // (hero tilted left, sin<0), so order the two crossings before clamping — otherwise
+            // tT>tB skipped every row and the hero passed straight through walls while steering.
+            const t1 = (wallTop - wyL) / dWY;
+            const t2 = (wallBot - wyL) / dWY;
+            const tLo = Math.max(0, Math.min(t1, t2));
+            const tHi = Math.min(1, Math.max(t1, t2));
+            if (tLo > tHi) continue;
+            cwxL = wxL + tLo * (wxR - wxL); cwyL = wyL + tLo * dWY;
+            cwxR = wxL + tHi * (wxR - wxL); cwyR = wyL + tHi * dWY;
           }
           const rowMinWX = Math.min(cwxL, cwxR);
           const rowMaxWX = Math.max(cwxL, cwxR);

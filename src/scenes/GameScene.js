@@ -480,6 +480,9 @@ export class GameScene extends Phaser.Scene {
     if (this.isDying) return;
     this.isDying = true;
     this.isAlive = false;
+    // Freeze the hero idle animation on the current frame (safe no-op if it wasn't animating).
+    this.charTopSprite.stop();
+    this.charSideSprite.stop();
     AudioSystem.playCrash();
 
     if (hitX !== undefined) {

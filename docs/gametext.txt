@@ -1,10 +1,10 @@
 # gametext.txt — Generic Split Trip
-# Edit the values below to customise your variant.
+# Edit the values below to customize your variant.
 # Lines starting with # are comments and are ignored.
 # Use \n for a line break inside a value.
 
 # ── Identity ──────────────────────────────────────────────────────────────────
-gameTitle       = SPLIT TRIP
+gameTitle       = Adriana's Birthday Adventure
 gameSubtitle    = Control two dimensions — survive both views
 copyright       = © 2026 Split Trip
 
@@ -37,7 +37,7 @@ scoreBest       = Best
 scoreSurvived   = s survived
 
 # ── Game Over ─────────────────────────────────────────────────────────────────
-gameOverTitle   = GAME OVER
+gameOverTitle   = GAME OVER, but HAPPY BDAY SMALL DINO!
 btnPlayAgain    = PLAY AGAIN
 btnMainMenu     = MAIN MENU
 

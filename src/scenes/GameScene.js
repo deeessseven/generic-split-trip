@@ -18,7 +18,7 @@ import { addThumbHints } from '../thumbHints.js';
 // ── Debug flag ────────────────────────────────────────────────────────────────
 // Set to true to draw the pixel-accurate collision silhouette over each sprite.
 // Keep false in production — the black outline is visible to players.
-const DEBUG_OUTLINE = true;
+const DEBUG_OUTLINE = false;
 
 // Count of NEW games started this page load (incremented by noteNewGame from the PLAY /
 // PLAY AGAIN buttons — NOT in create(), so a resize-driven scene.restart() doesn't inflate it).

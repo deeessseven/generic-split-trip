@@ -6,6 +6,7 @@ import {
   WALL_THICKNESS, WALL_WIDTH,
   CHAR_TOPDOWN_Y_FRAC, CHAR_SIDE_X_FRAC,
   SPRITE_KEYS, GROUND_MARGIN,
+  HERO_ANIM_FRAMES, HERO_ANIM_FPS,
 } from '../constants.js';
 import { SpriteManager } from '../SpriteManager.js';
 import { GT } from '../data/GameText.js';
@@ -149,17 +150,16 @@ export class GameScene extends Phaser.Scene {
     this.debugGfx = DEBUG_OUTLINE ? this.add.graphics().setDepth(20) : null;
 
     // Character sprites (on top of obstacles and gap indicator).
-    // ctKey/csKey are the 128px gameplay textures — a gamma-correct (linear-light) high-quality
-    // downscale of the native art (RESAMPLE_MODE in imageResample.js) — used for BOTH collision
-    // (1 texel = 1 world px) and DISPLAY, shown 1:1 at the 128px footprint. That's sharper here than letting
-    // the GPU box-filter the 512px title texture down to 128; the 512px texture is still used by
-    // the menu's larger hero. topDisplayScale therefore resolves to 1 (128/128) below.
+    // ctKey/csKey are the 128px gameplay textures (frame 1 of the hero) — a gamma-correct
+    // (linear-light) downscale of the native art — used for BOTH collision (1 texel = 1 world px)
+    // and DISPLAY, shown 1:1 at the 128px footprint. The hero is a Sprite running a looped idle
+    // built from frame 1 + the *_disp2..N frames (bundled heroes only; an upload is single-frame).
+    // Collision uses frame 1 only, so the hitbox is static. The 512px _title texture still serves
+    // the menu's larger hero. topDisplayScale resolves to 1 (128/128) below.
     const ctKey = SpriteManager.resolveKey(this, SPRITE_KEYS.CHAR_TOP);
     const csKey = SpriteManager.resolveKey(this, SPRITE_KEYS.CHAR_SIDE);
-    const ctDisplay = ctKey;
-    const csDisplay = csKey;
-    this.charTopSprite  = this.add.image(this.charXPx, this.charTopY,  ctDisplay).setDepth(3);
-    this.charSideSprite = this.add.image(this.charSideX, this.charYPx, csDisplay).setDepth(3);
+    this.charTopSprite  = this._makeHero(this.charXPx, this.charTopY,  SPRITE_KEYS.CHAR_TOP,  ctKey, 'heroTopIdle');
+    this.charSideSprite = this._makeHero(this.charSideX, this.charYPx, SPRITE_KEYS.CHAR_SIDE, csKey, 'heroSideIdle');
 
     // Flap puff emitters (emit on demand from _onDown). angle is the emission direction
     // in degrees: 0=right, 90=down, 180=left, 270=up.
@@ -190,11 +190,11 @@ export class GameScene extends Phaser.Scene {
     this.hitboxScale    = 0.95;
     this.charTopBounds  = this._spriteBounds(ctKey);
     this.charSideBounds = this._spriteBounds(csKey);
-    // Factor that renders each (possibly higher-res) display texture at the 128px logical
-    // footprint: gameplay-texture-width / display-texture-width (= 0.25 for 128px vs 512px,
-    // or 1 if it fell back to the gameplay texture). All visual scaling multiplies by this.
-    this.topDisplayScale  = this.charTopBounds.w  / this.textures.getFrame(ctDisplay).realWidth;
-    this.sideDisplayScale = this.charSideBounds.w / this.textures.getFrame(csDisplay).realWidth;
+    // Factor that renders the display texture at the 128px logical footprint: gameplay-texture-
+    // width / display-texture-width. Display == the 128px frame-1 texture, so this is 1 (a higher-
+    // res custom upload would scale down). All visual scaling multiplies by this.
+    this.topDisplayScale  = this.charTopBounds.w  / this.textures.getFrame(ctKey).realWidth;
+    this.sideDisplayScale = this.charSideBounds.w / this.textures.getFrame(csKey).realWidth;
     this.charTopSprite.setScale(this.topDisplayScale);
     this.charSideSprite.setScale(this.sideDisplayScale);
 
@@ -281,6 +281,27 @@ export class GameScene extends Phaser.Scene {
     this.input.on('pointermove',      this._onMove, this);
     this.input.on('pointerup',        this._onUp,   this);
     this.input.on('pointerupoutside', this._onUp,   this);
+  }
+
+  // Create a hero Sprite at (x, y). For the bundled hero (dispKey === baseKey) with 2+ frames,
+  // build (once) and play a looped idle animation from frame 1 (baseKey) + baseKey_disp2..N. A
+  // custom upload (dispKey !== baseKey) is single-frame and stays static. Returns the Sprite.
+  _makeHero(x, y, baseKey, dispKey, animKey) {
+    const sprite = this.add.sprite(x, y, dispKey).setDepth(3);
+    if (dispKey === baseKey) {
+      const frames = [{ key: baseKey }];
+      for (let i = 2; i <= HERO_ANIM_FRAMES; i++) {
+        const dk = `${baseKey}_disp${i}`;
+        if (this.textures.exists(dk)) frames.push({ key: dk });
+      }
+      if (frames.length >= 2) {
+        if (!this.anims.exists(animKey)) {
+          this.anims.create({ key: animKey, frames, frameRate: HERO_ANIM_FPS, repeat: -1 });
+        }
+        sprite.play(animKey);
+      }
+    }
+    return sprite;
   }
 
   // ── Input handlers ─────────────────────────────────────────────────────────

@@ -32,6 +32,12 @@ export const CHAR_SIDE_X_FRAC    = 0.22; // X position in side panel (0=left, 1=
 // Side-view ground clearance (px from panel bottom where floor collision triggers)
 export const GROUND_MARGIN = 18;
 
+// In-game hero idle animation. Heroes are supplied as frames heroTop1..N.png / heroSide1..N.png
+// (frame 1 = collision/menu base). 2+ frames enable a looped idle at HERO_ANIM_FPS; 1 frame =
+// static; 0 frames = procedural fallback.
+export const HERO_ANIM_FRAMES = 4;
+export const HERO_ANIM_FPS    = 8;
+
 // Sprite texture keys
 export const SPRITE_KEYS = {
   CHAR_TOP:  'char_top',

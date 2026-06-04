@@ -1,14 +1,13 @@
-import { SPRITE_KEYS } from '../constants.js';
+import { SPRITE_KEYS, HERO_ANIM_FRAMES } from '../constants.js';
 import { SpriteManager } from '../SpriteManager.js';
 import { applyText } from '../data/GameText.js';
 import { resampleToCanvas } from '../imageResample.js';
 
-// Maps each sprite key to its file in public/sprites/.
-// Drop matching PNGs into that folder to replace the procedural defaults.
-// HIT_MARK is the "Collision Mark" (same thing): the stamp drawn where the hero crashes.
+// Maps each non-hero sprite key to its file in public/sprites/. (Heroes are frame-based — loaded
+// separately as heroTop1..N.png / heroSide1..N.png in preload().) Drop matching PNGs into that
+// folder to replace the procedural defaults. HIT_MARK is the "Collision Mark" (same thing): the
+// stamp drawn where the hero crashes.
 const SPRITE_FILES = {
-  [SPRITE_KEYS.CHAR_TOP]:  'sprites/heroTop.png',
-  [SPRITE_KEYS.CHAR_SIDE]: 'sprites/heroSide.png',
   [SPRITE_KEYS.BG_TOP]:    'sprites/bkgdTop.png',
   [SPRITE_KEYS.BG_SIDE]:   'sprites/bkgdSide.png',
   [SPRITE_KEYS.OBSTACLE]:  'sprites/wall.png',
@@ -35,6 +34,14 @@ export class BootScene extends Phaser.Scene {
     for (const [key, path] of Object.entries(SPRITE_FILES)) {
       this.load.image(key, path);
     }
+
+    // Hero animation frames: heroTop1..N.png / heroSide1..N.png (any square resolution). Frame 1
+    // is the canonical hero (collision + menu); 2+ frames enable the looped in-game idle. Missing
+    // files just loaderror (harmless) — 1 frame = static, 0 frames = procedural fallback.
+    for (let i = 1; i <= HERO_ANIM_FRAMES; i++) {
+      this.load.image(`${SPRITE_KEYS.CHAR_TOP}_anim${i}`,  `sprites/heroTop${i}.png`);
+      this.load.image(`${SPRITE_KEYS.CHAR_SIDE}_anim${i}`, `sprites/heroSide${i}.png`);
+    }
   }
 
   create() {
@@ -44,11 +51,16 @@ export class BootScene extends Phaser.Scene {
     // Drop any orphaned legacy full-resolution hero originals from older builds (one-time).
     SpriteManager.cleanupLegacyFull();
 
+    // Heroes are frame-based (heroTop1..N). A hero with NO frames falls back to procedural art.
+    for (const key of [SPRITE_KEYS.CHAR_TOP, SPRITE_KEYS.CHAR_SIDE]) {
+      if (!this.textures.exists(`${key}_anim1`)) this._missingSprites.add(key);
+    }
+
     // Generate procedural textures only for sprites not found in the folder
     this._generateDefaultTextures(this._missingSprites);
 
-    // Normalize bundled hero sprites into 128px (gameplay) + 512px (title) textures
-    this._normalizeCharSprites();
+    // Build hero textures from their frames (frame 1 = collision/menu base; 2..N = idle frames)
+    this._normalizeHeroFrames();
 
     // Normalize bundled/default backgrounds → 512px and the wall → 64px (matches uploads)
     this._normalizeTiledSprites();
@@ -118,30 +130,39 @@ export class BootScene extends Phaser.Scene {
     }
   }
 
-  // Bundled hero PNGs in public/sprites/ can be any resolution (e.g. 555×555, 840×840).
-  // We build a 512px pre-filtered display texture (key + '_title') and replace the gameplay/
-  // collision texture (char_top/char_side) with a 128px square (1 texel = 1 world px — the
-  // hero's logical footprint). This mirrors how user uploads are resized in SettingsScene.
-  // Procedural fallbacks (48px) are skipped.
-  _normalizeCharSprites() {
+  // Heroes are supplied as frames heroTop1..N.png / heroSide1..N.png (any square resolution).
+  // Frame 1 is the canonical hero: we build its 512px display texture (key + '_title', used by
+  // the menu) and its 128px gameplay/collision texture (key — 1 texel = 1 world px). Extra frames
+  // 2..N become 128px display textures (key + '_disp2'..) that GameScene cycles for the looped
+  // idle. Collision always uses frame 1, so the hitbox is static. A hero with no frames was added
+  // to _missingSprites above and gets procedural art instead. Mirrors uploads (SettingsScene).
+  _normalizeHeroFrames() {
     for (const key of [SPRITE_KEYS.CHAR_TOP, SPRITE_KEYS.CHAR_SIDE]) {
-      // Skip sprites that fell back to procedural generation (already small/fast)
-      if (this._missingSprites.has(key)) continue;
-      if (!this.textures.exists(key)) continue;
+      const frames = [];
+      for (let i = 1; i <= HERO_ANIM_FRAMES; i++) {
+        const fk = `${key}_anim${i}`;
+        if (this.textures.exists(fk)) frames.push(fk);
+      }
+      if (frames.length === 0) continue; // no frames → procedural (already generated)
 
-      const src = this.textures.get(key).getSourceImage();
-
-      // 512px pre-filtered display texture, added under key + '_title' (used for the title
-      // screen and for in-game display, downscaled to the 128px footprint).
+      // Frame 1 = canonical hero: 512px (menu) + 128px (gameplay + collision base).
+      const f1 = this.textures.get(frames[0]).getSourceImage();
       const titleKey = key + '_title';
       try { if (this.textures.exists(titleKey)) this.textures.remove(titleKey); } catch {}
-      this.textures.addCanvas(titleKey, resampleToCanvas(src, 512));
+      this.textures.addCanvas(titleKey, resampleToCanvas(f1, 512));
+      try { if (this.textures.exists(key)) this.textures.remove(key); } catch {}
+      this.textures.addCanvas(key, resampleToCanvas(f1, 128));
 
-      // 128px gameplay texture — replaces the native-resolution default key in place.
-      // This is the hero's logical/collision footprint (1 texel = 1 world px).
-      const small = resampleToCanvas(src, 128);
-      this.textures.remove(key);
-      this.textures.addCanvas(key, small);
+      // Extra frames → 128px display textures (key_disp2..; frame 1 is `key` itself).
+      for (let i = 1; i < frames.length; i++) {
+        const dispKey = `${key}_disp${i + 1}`;
+        const fsrc = this.textures.get(frames[i]).getSourceImage();
+        try { if (this.textures.exists(dispKey)) this.textures.remove(dispKey); } catch {}
+        this.textures.addCanvas(dispKey, resampleToCanvas(fsrc, 128));
+      }
+
+      // Free the raw native-resolution frame textures; only the 128/512 derivatives are used.
+      for (const fk of frames) this.textures.remove(fk);
     }
   }
 

@@ -1,4 +1,5 @@
 import { makeButton } from '../Button.js';
+import { fitText } from '../fitText.js';
 import { GT } from '../data/GameText.js';
 import { AudioSystem } from '../AudioSystem.js';
 import { relayoutOnResize } from '../responsive.js';
@@ -29,28 +30,31 @@ export class GameOverScene extends Phaser.Scene {
     this.add.rectangle(cx, cy, Math.round(360 * k), Math.round(300 * k), 0x0d1117, 0.95)
       .setStrokeStyle(2, 0xef5350, 0.8);
 
+    // Panel inner width that text must stay within (panel is 360*k wide).
+    const panelW = Math.round(360 * k) * 0.9;
+
     // Title
-    this.add.text(cx, cy - 115 * k, GT.gameOverTitle, {
+    fitText(this.add.text(cx, cy - 115 * k, GT.gameOverTitle, {
       fontSize: fp(44),
       fontFamily: '"Arial Black", Arial',
       color: '#ef5350',
       stroke: '#ffffff',
       strokeThickness: Math.max(1, Math.round(3 * k)),
-    }).setOrigin(0.5);
+    }).setOrigin(0.5), panelW);
 
     // This run: wall count (primary), then seconds survived below it.
-    this.add.text(cx, cy - 52 * k, `${score} ${GT.scoreUnit}`, {
+    fitText(this.add.text(cx, cy - 52 * k, `${score} ${GT.scoreUnit}`, {
       fontSize: fp(38), fontFamily: '"Arial Black", Arial', color: '#ffffff',
-    }).setOrigin(0.5);
-    this.add.text(cx, cy - 8 * k, `${time}${GT.scoreSurvived}`, {
+    }).setOrigin(0.5), panelW);
+    fitText(this.add.text(cx, cy - 8 * k, `${time}${GT.scoreSurvived}`, {
       fontSize: fp(22), fontFamily: 'Arial', color: '#b0bec5',
-    }).setOrigin(0.5);
+    }).setOrigin(0.5), panelW);
 
     // Best run (most walls; ties broken by more time) — shows both walls and seconds survived.
     const best = this._updateBest(score, time);
-    this.add.text(cx, cy + 34 * k, `${GT.scoreBest}: ${best.walls} ${GT.scoreUnit}, ${best.time}${GT.scoreSurvived}`, {
+    fitText(this.add.text(cx, cy + 34 * k, `${GT.scoreBest}: ${best.walls} ${GT.scoreUnit}, ${best.time}${GT.scoreSurvived}`, {
       fontSize: fp(16), fontFamily: 'Arial', color: '#ffd54f',
-    }).setOrigin(0.5);
+    }).setOrigin(0.5), panelW);
 
     // Buttons
     makeButton(this, cx - 90 * k, cy + 115 * k, Math.round(160 * k), Math.round(44 * k), GT.btnPlayAgain, 0x29b6f6, 0x0288d1, () => {

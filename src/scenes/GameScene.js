@@ -9,6 +9,7 @@ import {
   HERO_ANIM_FRAMES, HERO_ANIM_FPS,
 } from '../constants.js';
 import { SpriteManager } from '../SpriteManager.js';
+import { fitText } from '../fitText.js';
 import { GT } from '../data/GameText.js';
 import { AudioSystem } from '../AudioSystem.js';
 import { safeInsets } from '../safeArea.js';
@@ -266,14 +267,14 @@ export class GameScene extends Phaser.Scene {
     const centerNudge = Math.round(W * 0.01);
     const topViewShift = Math.round(W * 0.04);
     const topViewX = Math.max(2, cornerX + si.left - topViewShift + centerNudge);
-    this.add.text(topViewX, labelTopY, `${GT.labelTopView}\n${GT.labelTopHint}`, {
+    fitText(this.add.text(topViewX, labelTopY, `${GT.labelTopView}\n${GT.labelTopHint}`, {
       fontSize: '11px', fontFamily: 'Arial', color: '#eceff1',
       alpha: 0.7,
-    }).setDepth(6);
-    this.add.text(W - cornerX - si.right - centerNudge, labelTopY, `${GT.labelSideView}\n${GT.labelSideHint}`, {
+    }).setDepth(6), W * 0.45);
+    fitText(this.add.text(W - cornerX - si.right - centerNudge, labelTopY, `${GT.labelSideView}\n${GT.labelSideHint}`, {
       fontSize: '11px', fontFamily: 'Arial', color: '#eceff1', align: 'right',
       alpha: 0.7,
-    }).setOrigin(1, 0).setDepth(6);
+    }).setOrigin(1, 0).setDepth(6), W * 0.45);
 
     // First-time-only gesture hint (the menu thumbs); no per-game text messages.
     this._showStartThumbs();

@@ -1,6 +1,7 @@
 import { SPRITE_KEYS } from '../constants.js';
 import { SpriteManager } from '../SpriteManager.js';
 import { makeButton } from '../Button.js';
+import { fitText } from '../fitText.js';
 import { GT } from '../data/GameText.js';
 import { resampleToCanvas } from '../imageResample.js';
 import { relayoutOnResize } from '../responsive.js';
@@ -106,9 +107,9 @@ export class SettingsScene extends Phaser.Scene {
     this._previews[key] = preview;
 
     // Labels
-    this.add.text(x, y + 14 * ss, label, {
+    fitText(this.add.text(x, y + 14 * ss, label, {
       fontSize: fpx(24), fontFamily: 'Arial', color: '#cfd8dc', align: 'center',
-    }).setOrigin(0.5);
+    }).setOrigin(0.5), slotW * 0.92);
     this.add.text(x, y + 58 * ss, hint, {
       fontSize: linePx, fontFamily: 'Arial', color: '#546e7a',
     }).setOrigin(0.5);
@@ -246,11 +247,11 @@ export class SettingsScene extends Phaser.Scene {
   _showToast(msg) {
     const { width: W, height: H } = this.scale;
     const P = Math.min(1, H / 360);
-    const toast = this.add.text(W / 2, Math.round(H * 0.70), msg, {
+    const toast = fitText(this.add.text(W / 2, Math.round(H * 0.70), msg, {
       fontSize: `${Math.round(26 * P)}px`, fontFamily: 'Arial', color: '#ffffff',
       backgroundColor: '#263238',
       padding: { x: Math.round(12 * P), y: Math.round(8 * P) },
-    }).setOrigin(0.5).setDepth(20).setAlpha(0);
+    }).setOrigin(0.5).setDepth(20).setAlpha(0), W * 0.92);
     this.tweens.add({
       targets: toast,
       alpha: { from: 0, to: 1 },

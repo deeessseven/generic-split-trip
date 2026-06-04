@@ -5,6 +5,7 @@ import { GT } from '../data/GameText.js';
 import { AudioSystem } from '../AudioSystem.js';
 import { safeInsets } from '../safeArea.js';
 import { relayoutOnResize } from '../responsive.js';
+import { fitText } from '../fitText.js';
 import { buildThumbTexture, addThumbHints } from '../thumbHints.js';
 import { GameScene } from './GameScene.js';
 
@@ -49,9 +50,9 @@ export class MenuScene extends Phaser.Scene {
     const topTipY = Math.round(Math.min(W, H) * 0.04) + si.top;
     let tipsBottom = topTipY;
     const panelTip = (centerX, label, desc) => {
-      const l = this.add.text(centerX, topTipY, label, {
+      const l = fitText(this.add.text(centerX, topTipY, label, {
         fontSize: px(22), fontFamily: '"Arial Black", Arial', color: '#29b6f6',
-      }).setOrigin(0.5, 0);
+      }).setOrigin(0.5, 0), W * 0.46);
       const d = this.add.text(centerX, topTipY + l.height + Math.round(3 * s), desc, {
         fontSize: px(20), fontFamily: 'Arial', color: '#cfd8dc',
         align: 'center', wordWrap: { width: W * 0.46 },
@@ -77,9 +78,9 @@ export class MenuScene extends Phaser.Scene {
     const pillW = Math.max(measurePill('Music: '), measurePill('Sound FX: ')) + Math.round(24 * pillUi);
     this._audioToggle(cx, musicCY, 'Music: ',    () => AudioSystem.isMusicEnabled(), (v) => AudioSystem.setMusicEnabled(v), pillUi, pillW);
     this._audioToggle(cx, soundCY, 'Sound FX: ', () => AudioSystem.isSfxEnabled(),   (v) => AudioSystem.setSfxEnabled(v), pillUi, pillW);
-    this.add.text(cx, copyrightY, GT.copyright, {
+    fitText(this.add.text(cx, copyrightY, GT.copyright, {
       fontSize: px(15), fontFamily: 'Arial', color: '#607089',
-    }).setOrigin(0.5, 1);
+    }).setOrigin(0.5, 1), W * 0.9);
 
     // ── Center column fit-scale: shrink the doubled column to the free band if needed ──
     // Measure the column's REAL height at full scale s (title + SURVIVE built off-screen and
@@ -129,14 +130,15 @@ export class MenuScene extends Phaser.Scene {
       color: '#ffffff', stroke: '#29b6f6', strokeThickness: Math.max(3, Math.round(8 * f)),
     }).setOrigin(0.5).setPadding(Math.round(16 * f));
     title.setShadow(0, 0, '#29b6f6', Math.round(18 * f), true, true);
+    fitText(title, W * 0.92); // keep a long custom title within the screen width
 
     // SURVIVE tip as two centered lines: "SURVIVE:" over the description.
-    const survLabel = this.add.text(cx, 0, GT.tipSurviveLabel + ':', {
+    const survLabel = fitText(this.add.text(cx, 0, GT.tipSurviveLabel + ':', {
       fontSize: fpx(45), fontFamily: '"Arial Black", Arial', color: '#29b6f6',
-    }).setOrigin(0.5, 0);
-    const survDesc = this.add.text(cx, 0, GT.tipSurviveDesc, {
+    }).setOrigin(0.5, 0), W * 0.8);
+    const survDesc = fitText(this.add.text(cx, 0, GT.tipSurviveDesc, {
       fontSize: fpx(45), fontFamily: 'Arial', color: '#cfd8dc', align: 'center',
-    }).setOrigin(0.5, 0);
+    }).setOrigin(0.5, 0), W * 0.8);
 
     const gap = Math.round(14 * f);
     const titleH = title.height;

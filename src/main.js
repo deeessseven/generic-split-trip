@@ -7,6 +7,12 @@ import { GameOverScene } from './scenes/GameOverScene.js';
 import { SettingsScene } from './scenes/SettingsScene.js';
 import { GAME_W, GAME_H } from './constants.js';
 import { AudioSystem } from './AudioSystem.js';
+import { maybeShowIosInstallHint } from './iosHint.js';
+
+// iPhone Safari has no Fullscreen API, so the only way to true fullscreen is "Add to Home
+// Screen". Show a one-time, dismissible hint telling the user how. No-ops on every other
+// platform and can never block a game tap (the banner is pointer-events:none).
+maybeShowIosInstallHint();
 
 // Audio contexts start suspended until a user gesture — unlock (and start music) on tap.
 document.addEventListener('pointerdown', () => AudioSystem.unlock(), { capture: true });
@@ -175,7 +181,13 @@ game.events.on('ready', () => {
       const sw = window.innerWidth, sh = window.innerHeight;
       const gw = sm.width,        gh = sm.height;
       for (const ptr of pointers) {
-        if (!ptr?.active || !ptr.event) continue;
+        // Do NOT skip on !ptr.active. Phaser's touchend sets pointer.active=false BEFORE
+        // updateInputPlugins(TOUCH_END) runs (see Pointer.touchend / InputManager.onTouchEnd),
+        // so an `!active` guard dropped the finger-LIFT — the very event that fires a button's
+        // 'pointerup'. In CSS-rotated portrait that left the lift uncorrected, so every menu/PLAY
+        // tap missed its target (the bug only showed with auto-rotate OFF = portrait). A usable
+        // event is all we need; the inner logic already `continue`s when coords are absent.
+        if (!ptr?.event) continue;
         const e = ptr.event;
         let rx, ry;
         if (e.changedTouches?.length > 0) {

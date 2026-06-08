@@ -124,6 +124,7 @@ export const AudioSystem = {
   musicEnabled: true,
   sfxEnabled: true,
   _inited: false,
+  _kicked: false, // true once a real source node has played in a gesture (iOS unlock)
   _musicOn: false,
   _timer: null,
   _evIdx: 0,
@@ -182,6 +183,20 @@ export const AudioSystem = {
     this.init();
     if (!this.ctx) return;
     if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
+    // iOS Safari does NOT truly unlock Web Audio from resume() alone — an actual source node must
+    // PLAY inside the user-gesture call stack. Kick a one-sample silent buffer (once) so the
+    // context becomes genuinely audible; without this, music/SFX stay silent on iOS even though
+    // ctx.state reads "running". Cheap and harmless on every other browser.
+    if (!this._kicked) {
+      try {
+        const buf = this.ctx.createBuffer(1, 1, this.ctx.sampleRate);
+        const src = this.ctx.createBufferSource();
+        src.buffer = buf;
+        src.connect(this.ctx.destination);
+        src.start(0);
+        this._kicked = true;
+      } catch { /* ignore */ }
+    }
     if (this.musicEnabled && !this._musicOn) this.startMusic();
   },
 

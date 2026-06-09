@@ -27,9 +27,6 @@ export const Flow = {
   // intents fall back to the defaults, so a variant only lists the transitions it changes.
   configure(overrides) { routes = { ...DEFAULT_ROUTES, ...(overrides || {}) }; },
 
-  // The scene key an intent currently resolves to (variant override wins, else default).
-  target(intent) { return routes[intent]; },
-
   // Start the scene mapped to `intent`, forwarding optional data (e.g. the game-over payload).
   // Identical to this.scene.start(key, data) once the intent is resolved.
   go(scene, intent, data) {

@@ -6,6 +6,7 @@
     "dev": "vite",
     "build": "vite build",
     "build:variants": "node scripts/build-variants.mjs",
+    "test": "node scripts/test-relayout.mjs",
     "preview": "vite preview",
     "cap:sync": "npx cap sync",
     "cap:android": "npx cap open android",

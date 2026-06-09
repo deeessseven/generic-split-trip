@@ -6,14 +6,15 @@
 // __VARIANT_ID__ — so each build contains only its own variant's code, and the base build is left
 // byte-for-byte the current game.
 //
-// Optional content overrides: if a variant wants different text/sprites, drop a gametext.txt and/or
-// sprites/ under variants/<id>/ (repo root) and they are overlaid after that variant's build.
-// adrianas-split-trip uses base content, so it has no override folder.
+// Optional content overrides under variants/<id>/ (repo root), overlaid after that variant's build:
+//   - gametext.txt : APPENDED onto the base gametext (applyText: later lines win), so the file only
+//                    needs the variant's NEW/overridden keys — base text keeps inheriting.
+//   - sprites/     : copied over the base sprites (only the files you provide are replaced).
 //
 // Usage:  npm run build:variants
 
 import { execSync } from 'node:child_process';
-import { existsSync, readdirSync, statSync, cpSync } from 'node:fs';
+import { existsSync, readdirSync, statSync, cpSync, readFileSync, appendFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -35,11 +36,15 @@ for (const id of ids) {
   console.log(`▶ variant ${id} → docs/${id}/`);
   execSync('npm run build', { stdio: 'inherit', cwd: ROOT, env: { ...process.env, VITE_VARIANT: id } });
 
-  // Optional content overlay (omit to inherit base text/sprites — adrianas does).
+  // Optional content overlay (omit a file to inherit base text/sprites).
   const ov = join(CONTENT_OVERRIDES, id);
   if (existsSync(ov)) {
     const gametext = join(ov, 'gametext.txt');
-    if (existsSync(gametext)) cpSync(gametext, join(DOCS, id, 'gametext.txt'));
+    if (existsSync(gametext)) {
+      // Append the variant's keys onto the base gametext.txt (vite already copied the base one);
+      // applyText reads top-to-bottom and later lines win, so these add to / override the base.
+      appendFileSync(join(DOCS, id, 'gametext.txt'), '\n' + readFileSync(gametext, 'utf8'));
+    }
     const sprites = join(ov, 'sprites');
     if (existsSync(sprites)) cpSync(sprites, join(DOCS, id, 'sprites'), { recursive: true });
   }

@@ -28,9 +28,12 @@ export const Flow = {
   configure(overrides) { routes = { ...DEFAULT_ROUTES, ...(overrides || {}) }; },
 
   // Start the scene mapped to `intent`, forwarding optional data (e.g. the game-over payload).
-  // Identical to this.scene.start(key, data) once the intent is resolved.
+  // A route may be a scene-key STRING, or a FUNCTION (data) => sceneKey for conditional routing
+  // (e.g. a variant that only shows a milestone scene when score >= N, else the normal screen).
+  // Base uses only string routes, so this is identical to this.scene.start(key, data) for it.
   go(scene, intent, data) {
-    const key = routes[intent];
+    let key = routes[intent];
+    if (typeof key === 'function') key = key(data);
     if (!key) { console.warn('Flow: unknown intent', intent); return; }
     scene.scene.start(key, data);
   },

@@ -1,0 +1,27 @@
+# ── adrianas-split-trip: birthday celebration text ──────────────────────────────
+# This file is APPENDED onto the base gametext.txt at build time (npm run build:variants),
+# so it only needs the celebration keys — everything else is inherited from the base game.
+# Edit freely. Use \n for a line break. Lines starting with # are comments.
+#
+# Tokens you can use in the View 2 (milestone) lines:
+#   {N}       -> the number below (celebN), e.g. 13
+#   {Nth}     -> the ordinal below (celebNth), e.g. 13th
+#   {walls}   -> walls passed in that run (live)
+#   {seconds} -> seconds survived in that run (live)
+
+# ── View 1: celebration shown right after tapping PLAY (before the game starts) ──
+celebTitle    = HAPPY BIRTHDAY\nSMALL DINO!
+celebMsg1     = Adriana, today is all about YOU.
+celebMsg2     = Wishing my favorite Small Dino the silliest, happiest, most roar-some birthday ever!
+celebMsg3     = Love always, your Funcle David
+celebTapStart = Tap anywhere to START THE GAME
+
+# ── View 2: celebration after a crash, ONLY when you pass {N} or more walls ──
+# (celebN is both the displayed number AND the threshold. To change the birthday, edit BOTH
+#  celebN and celebNth — ordinals like 13th/21st are irregular, so they're set by hand.)
+celebN               = 13
+celebNth             = 13th
+milestoneTitle       = HAPPY {Nth} BIRTHDAY\nSMALL DINO!
+milestoneMsg1        = You smashed {walls} walls and survived {seconds}s — incredible!
+milestoneMsg2        = {Nth} birthday AND past your {N}-wall milestone. Funcle David is SO proud of you!
+milestoneTapContinue = Tap anywhere to continue

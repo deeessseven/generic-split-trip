@@ -49,6 +49,22 @@ export const GT = {
   storyLine1:       '',
   storyLine2:       '',
   storyLine3:       '',
+
+  // ── Celebration scenes (variant-only; empty in base, filled by a variant's gametext.txt) ──
+  // View 1 — shown after PLAY, before gameplay.
+  celebTitle:       '',
+  celebMsg1:        '',
+  celebMsg2:        '',
+  celebMsg3:        '',
+  celebTapStart:    '',
+  // View 2 — shown after a crash IF walls passed >= celebN. Lines may use the tokens
+  // {N} {Nth} {walls} {seconds}: N=celebN, Nth=celebNth, walls=this run's walls, seconds=survived.
+  celebN:           '',  // number, e.g. "13" — also the crash threshold
+  celebNth:         '',  // ordinal, e.g. "13th"
+  milestoneTitle:   '',
+  milestoneMsg1:    '',
+  milestoneMsg2:    '',
+  milestoneTapContinue: '',
 };
 
 export function applyText(raw) {

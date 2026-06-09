@@ -1,18 +1,29 @@
-// adrianas-split-trip — SAME engine, SAME text (gametext.txt), SAME sprites as the base game.
-// It differs from base only by the NEW VIEWS you add here. Until you add one, this variant is
-// identical to base.
-//
-// To add a view (e.g. a story screen before gameplay):
-//   1. Create ./scenes/StoryScene.js — `export class StoryScene extends Phaser.Scene` with
-//      super('StoryScene'). Use relayoutOnResize(this), read GT.* for text, makeButton(...) for
-//      buttons (copy SettingsScene as a skeleton). End it with Flow.go(this, 'storyDone').
-//   2. Import it here and list it in `scenes`.
-//   3. Splice it into the flow via `routes` (see example below).
-//
-// import { StoryScene } from './scenes/StoryScene.js';
-//
+// adrianas-split-trip — Adriana's birthday edition. Same engine + sprites as the base game; adds
+// two celebration views. All their text lives in this variant's gametext.txt (variants/
+// adrianas-split-trip/gametext.txt), which is appended onto the base gametext at build time. The
+// base game registers none of this and is unaffected.
+import { GT } from '../../data/GameText.js';
+import { CelebrationScene } from './scenes/CelebrationScene.js';
+import { MilestoneCelebrationScene } from './scenes/MilestoneCelebrationScene.js';
+
 export default {
   id: 'adrianas-split-trip',
-  scenes: [],   // e.g. [StoryScene]
-  routes: {},   // e.g. { play: 'StoryScene', storyDone: 'GameScene' }
+  scenes: [CelebrationScene, MilestoneCelebrationScene],
+  routes: {
+    // View 1: PLAY (from the title menu only) → birthday celebration → tap → the game.
+    // PLAY AGAIN keeps the default (straight to GameScene), so it skips the intro celebration.
+    play: 'CelebrationScene',
+    startGame: 'GameScene',
+
+    // View 2: on a crash, show the milestone celebration ONLY if this run passed >= celebN walls;
+    // otherwise the normal Game Over screen. The data ({ score, time }) flows through either way.
+    gameOver: (data) => {
+      const n = parseInt(GT.celebN, 10);
+      return data && Number.isFinite(n) && data.score >= n
+        ? 'MilestoneCelebrationScene'
+        : 'GameOverScene';
+    },
+    // The milestone's "tap to continue" → the normal Game Over screen (carrying the score).
+    afterMilestone: 'GameOverScene',
+  },
 };

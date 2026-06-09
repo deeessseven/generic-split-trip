@@ -1,16 +1,7 @@
-// Build-time variant selection. __VARIANT_ID__ is replaced with a string literal by Vite at build
-// time (see vite.config.js `define`), set from the VITE_VARIANT env var (default 'base'). Because
-// it's a compile-time constant, the ternary below is constant-folded and the UNMATCHED variant's
-// import (and all of its scene code) is tree-shaken out — so the base build contains zero variant
-// code, and each variant build contains only its own.
-//
-// To add a variant: create ./<id>/variant.js, import it here, and add a branch to the ternary.
-import base from './base/variant.js';
-import adrianas from './adrianas-split-trip/variant.js';
+// The active variant's manifest. '@active-variant' is a Vite alias that resolves at build time to
+// exactly one variant's variant.js (see vite.config.js) — the selected VITE_VARIANT, or base when
+// unset. Importing only the one means the other variants' scene code is never in this build's
+// bundle: the base build is free of variant code, each variant build carries only its own.
+import variant from '@active-variant';
 
-/* global __VARIANT_ID__ */
-const ID = __VARIANT_ID__;
-
-export const variant =
-  ID === 'adrianas-split-trip' ? adrianas :
-  base;
+export { variant };

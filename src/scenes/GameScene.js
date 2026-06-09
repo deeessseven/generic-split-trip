@@ -49,12 +49,14 @@ export class GameScene extends Phaser.Scene {
   }
 
   create() {
-    // Re-fit on viewport change. This is REQUIRED on first launch: the first Play tap triggers
-    // the fullscreen / address-bar transition, which grows the viewport AFTER create() has already
-    // built the panels at the pre-fullscreen size — without this, the first run renders in a
-    // smaller box with dark bars on the right/bottom. (A mid-run rotation also restarts here; a
-    // no-wipe version of that would need an in-place re-flow, not removing this call.)
-    relayoutOnResize(this);
+    // Re-fit on viewport change, but ONLY while the run is fresh. The first Play tap triggers the
+    // fullscreen / address-bar transition, which grows the viewport right after create() built the
+    // panels at the pre-fullscreen size — that re-fit is REQUIRED (else the first run shows dark
+    // bars on the right/bottom). The transition fires sub-second, before any wall, so the veto
+    // below still allows it. A LATER resize (mid-run rotation) is vetoed so it can't restart and
+    // wipe progress. (A run already in progress keeps its layout; eliminating the bars there too
+    // would need an in-place re-flow, a larger change.)
+    relayoutOnResize(this, () => this.wallsPassed === 0 && this.elapsedTime < 3);
     const W = this.scale.width;
     const H = this.scale.height;
 

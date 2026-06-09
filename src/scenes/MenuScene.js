@@ -129,6 +129,7 @@ export class MenuScene extends Phaser.Scene {
     const title = this.add.text(cx, 0, GT.gameTitle, {
       fontSize: fpx(138), fontFamily: '"Arial Black", Arial, sans-serif',
       color: '#ffffff', stroke: '#29b6f6', strokeThickness: Math.max(3, Math.round(8 * f)),
+      align: 'center', // center each line of a multi-line title (gametext \n)
     }).setOrigin(0.5).setPadding(Math.round(16 * f));
     title.setShadow(0, 0, '#29b6f6', Math.round(18 * f), true, true);
     fitText(title, W * 0.92); // keep a long custom title within the screen width

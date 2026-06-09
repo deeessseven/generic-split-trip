@@ -41,6 +41,7 @@ export class GameOverScene extends Phaser.Scene {
       color: '#ef5350',
       stroke: '#ffffff',
       strokeThickness: Math.max(1, Math.round(3 * k)),
+      align: 'center', // center each line of a multi-line game-over title (gametext \n)
     }).setOrigin(0.5), panelW);
 
     // This run: wall count (primary), then seconds survived below it.

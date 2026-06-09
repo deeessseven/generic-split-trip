@@ -9,6 +9,10 @@
 #   {walls}   -> walls passed in that run (live)
 #   {seconds} -> seconds survived in that run (live)
 
+# ── Variant identity (the base game is now generic, so re-assert Adriana's branding here) ──
+gameTitle     = Adriana's Birthday\nAdventure
+gameOverTitle = GAME OVER, but\nHAPPY BDAY SMALL DINO!
+
 # ── View 1: celebration shown right after tapping PLAY (before the game starts) ──
 celebTitle    = HAPPY BIRTHDAY\nSMALL DINO!
 celebMsg1     = Adriana, today is all about YOU.

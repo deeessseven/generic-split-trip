@@ -5,6 +5,7 @@ import { fitText } from '../fitText.js';
 import { GT } from '../data/GameText.js';
 import { resampleToCanvas } from '../imageResample.js';
 import { relayoutOnResize } from '../responsive.js';
+import { Flow } from '../Flow.js';
 
 export class SettingsScene extends Phaser.Scene {
   constructor() { super('SettingsScene'); }
@@ -52,7 +53,7 @@ export class SettingsScene extends Phaser.Scene {
     const backY  = H - Math.round(H * 0.02) - backH / 2;
     const backTop = backY - backH / 2;
     makeButton(this, cx, backY, backW, backH, GT.btnBack, 0x37474f, 0x263238, () => {
-      this.scene.start('MenuScene');
+      Flow.go(this, 'settingsBack');
     }, `${backFs}px`);
 
     // ── Slot grid: one row, sized to fill the band between header and footer ──

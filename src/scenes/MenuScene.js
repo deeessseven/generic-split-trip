@@ -7,6 +7,7 @@ import { safeInsets } from '../safeArea.js';
 import { relayoutOnResize } from '../responsive.js';
 import { fitText } from '../fitText.js';
 import { buildThumbTexture, addThumbHints } from '../thumbHints.js';
+import { Flow } from '../Flow.js';
 import { GameScene } from './GameScene.js';
 
 export class MenuScene extends Phaser.Scene {
@@ -178,12 +179,12 @@ export class MenuScene extends Phaser.Scene {
       .on('pointerover', () => drawPlay(0x0288d1))
       .on('pointerout',  () => drawPlay(0x29b6f6))
       .on('pointerdown', () => drawPlay(0x0288d1))
-      .on('pointerup',   () => { GameScene.noteNewGame(); this.scene.start('GameScene'); });
+      .on('pointerup',   () => { GameScene.noteNewGame(); Flow.go(this, 'play'); });
     yy += playH + gap;
 
     const setY = yy + setH / 2;
     makeButton(this, cx, setY, setW, setH, GT.settingsTitle, 0x37474f, 0x263238, () => {
-      this.scene.start('SettingsScene');
+      Flow.go(this, 'settings');
     }, fpx(44));
 
     // Classy entrance: a quick fade from the dark background.

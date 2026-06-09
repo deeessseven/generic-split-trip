@@ -1,0 +1,55 @@
+# gametext.txt — Generic Split Trip
+# Edit the values below to customize your variant.
+# Lines starting with # are comments and are ignored.
+# Use \n for a line break inside a value.
+
+# ── Identity ──────────────────────────────────────────────────────────────────
+gameTitle       = Adriana's Birthday\nAdventure
+gameSubtitle    = Control two dimensions — survive both views
+copyright       = © 2026 Split Trip
+
+# ── Hero / story (leave blank if unused) ──────────────────────────────────────
+heroName        =
+heroDescription =
+storyLine1      =
+storyLine2      =
+storyLine3      =
+
+# ── Menu tips ─────────────────────────────────────────────────────────────────
+tipLeftLabel    = LEFT PANEL
+tipLeftDesc     = ←→ Drag finger left/right to steer (top-down view)
+tipRightLabel   = RIGHT PANEL
+tipRightDesc    = Tap to fly up — release and you fall (side view)
+tipSurviveLabel = SURVIVE
+tipSurviveDesc  = Go through the gaps in both panels
+
+# ── In-game labels ────────────────────────────────────────────────────────────
+labelTopView    = TOP VIEW
+labelTopHint    = ← drag →
+labelSideView   = SIDE VIEW
+labelSideHint   = tap to rise
+hintSteer       = ↔ Drag to steer
+hintRise        = Tap to rise ↑
+
+# ── Score ─────────────────────────────────────────────────────────────────────
+scoreUnit       = walls
+scoreBest       = Best
+scoreSurvived   = s survived
+
+# ── Game Over ─────────────────────────────────────────────────────────────────
+gameOverTitle   = GAME OVER, but\nHAPPY BDAY SMALL DINO!
+btnPlayAgain    = PLAY AGAIN
+btnMainMenu     = MAIN MENU
+
+# ── Settings ──────────────────────────────────────────────────────────────────
+settingsTitle    = CUSTOMIZE SPRITES
+settingsSubtitle = Tap to upload a custom image — tap [reset] to restore default
+slotCharTop      = Character\nTop View
+slotCharSide     = Character\nSide View
+slotBgTop        = Background\nTop View
+slotBgSide       = Background\nSide View
+slotObstacle     = Obstacle\nTexture
+slotHitMark      = Collision\nMark
+btnBack          = BACK
+toastSpriteSaved = Sprite saved! It will apply next game.
+toastUploadError = Could not read that image — try another file.

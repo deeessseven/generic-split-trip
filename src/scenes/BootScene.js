@@ -2,6 +2,7 @@ import { SPRITE_KEYS, HERO_ANIM_FRAMES } from '../constants.js';
 import { SpriteManager } from '../SpriteManager.js';
 import { applyText } from '../data/GameText.js';
 import { resampleToCanvas } from '../imageResample.js';
+import { Flow } from '../Flow.js';
 
 // Maps each non-hero sprite key to its file in public/sprites/. (Heroes are frame-based — loaded
 // separately as heroTop1..N.png / heroSide1..N.png in preload().) Drop matching PNGs into that
@@ -68,7 +69,7 @@ export class BootScene extends Phaser.Scene {
     // Generate decorative FX textures (vignette, parallax dots, particle) once
     this._generateFXTextures();
 
-    this.scene.start('MenuScene');
+    Flow.go(this, 'boot');
   }
 
   // Procedural textures used by GameScene effects. Generated once at boot (global texture

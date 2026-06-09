@@ -3,6 +3,7 @@ import { fitText } from '../fitText.js';
 import { GT } from '../data/GameText.js';
 import { AudioSystem } from '../AudioSystem.js';
 import { relayoutOnResize } from '../responsive.js';
+import { Flow } from '../Flow.js';
 import { GameScene } from './GameScene.js';
 
 export class GameOverScene extends Phaser.Scene {
@@ -59,10 +60,10 @@ export class GameOverScene extends Phaser.Scene {
     // Buttons
     makeButton(this, cx - 90 * k, cy + 115 * k, Math.round(160 * k), Math.round(44 * k), GT.btnPlayAgain, 0x29b6f6, 0x0288d1, () => {
       GameScene.noteNewGame();
-      this.scene.start('GameScene');
+      Flow.go(this, 'playAgain');
     }, fp(16));
     makeButton(this, cx + 90 * k, cy + 115 * k, Math.round(160 * k), Math.round(44 * k), GT.btnMainMenu, 0x37474f, 0x263238, () => {
-      this.scene.start('MenuScene');
+      Flow.go(this, 'mainMenu');
     }, fp(16));
   }
 

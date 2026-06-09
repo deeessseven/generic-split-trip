@@ -15,6 +15,7 @@ import { AudioSystem } from '../AudioSystem.js';
 import { safeInsets } from '../safeArea.js';
 import { relayoutOnResize } from '../responsive.js';
 import { addThumbHints } from '../thumbHints.js';
+import { Flow } from '../Flow.js';
 
 // ── Debug flag ────────────────────────────────────────────────────────────────
 // Set to true to draw the pixel-accurate collision silhouette over each sprite.
@@ -555,7 +556,7 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.shake(400, 0.018);
     this.cameras.main.flash(250, 255, 60, 60, false);
     this.time.delayedCall(900, () => {
-      this.scene.start('GameOverScene', {
+      Flow.go(this, 'gameOver', {
         score: this.wallsPassed,
         time:  Math.floor(this.elapsedTime),
       });

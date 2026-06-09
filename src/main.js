@@ -8,6 +8,11 @@ import { SettingsScene } from './scenes/SettingsScene.js';
 import { GAME_W, GAME_H } from './constants.js';
 import { AudioSystem } from './AudioSystem.js';
 import { maybeShowIosInstallHint } from './iosHint.js';
+import { Flow } from './Flow.js';
+import { variant } from './variants/registry.js';
+
+// Install the active variant's scene-transition overrides (none for base → default flow).
+Flow.configure(variant.routes);
 
 // iPhone Safari has no Fullscreen API, so the only way to true fullscreen is "Add to Home
 // Screen". Show a one-time, dismissible hint telling the user how. No-ops on every other
@@ -71,7 +76,9 @@ const config = {
   input: {
     activePointers: 4, // support multi-touch (left + right panel simultaneously)
   },
-  scene: [BootScene, MenuScene, GameScene, GameOverScene, SettingsScene],
+  // Core scenes first (BootScene must stay first — Phaser auto-starts it), then any extra scenes
+  // the active variant adds. Base contributes none, so the array is unchanged for the base game.
+  scene: [BootScene, MenuScene, GameScene, GameOverScene, SettingsScene, ...(variant.scenes || [])],
 };
 
 // Sharpen ALL text game-wide: render every Text object's internal canvas at the device pixel

@@ -6,11 +6,11 @@
 //
 // To add a variant: create ./<id>/variant.js, import it here, and add a branch to the ternary.
 import base from './base/variant.js';
-import andrianas from './andrianas-split-trip/variant.js';
+import adrianas from './adrianas-split-trip/variant.js';
 
 /* global __VARIANT_ID__ */
 const ID = __VARIANT_ID__;
 
 export const variant =
-  ID === 'andrianas-split-trip' ? andrianas :
+  ID === 'adrianas-split-trip' ? adrianas :
   base;

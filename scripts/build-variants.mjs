@@ -8,7 +8,7 @@
 //
 // Optional content overrides: if a variant wants different text/sprites, drop a gametext.txt and/or
 // sprites/ under variants/<id>/ (repo root) and they are overlaid after that variant's build.
-// andrianas-split-trip uses base content, so it has no override folder.
+// adrianas-split-trip uses base content, so it has no override folder.
 //
 // Usage:  npm run build:variants
 
@@ -35,7 +35,7 @@ for (const id of ids) {
   console.log(`▶ variant ${id} → docs/${id}/`);
   execSync('npm run build', { stdio: 'inherit', cwd: ROOT, env: { ...process.env, VITE_VARIANT: id } });
 
-  // Optional content overlay (omit to inherit base text/sprites — andrianas does).
+  // Optional content overlay (omit to inherit base text/sprites — adrianas does).
   const ov = join(CONTENT_OVERRIDES, id);
   if (existsSync(ov)) {
     const gametext = join(ov, 'gametext.txt');

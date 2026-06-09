@@ -1,4 +1,4 @@
-// andrianas-split-trip — SAME engine, SAME text (gametext.txt), SAME sprites as the base game.
+// adrianas-split-trip — SAME engine, SAME text (gametext.txt), SAME sprites as the base game.
 // It differs from base only by the NEW VIEWS you add here. Until you add one, this variant is
 // identical to base.
 //
@@ -12,7 +12,7 @@
 // import { StoryScene } from './scenes/StoryScene.js';
 //
 export default {
-  id: 'andrianas-split-trip',
+  id: 'adrianas-split-trip',
   scenes: [],   // e.g. [StoryScene]
   routes: {},   // e.g. { play: 'StoryScene', storyDone: 'GameScene' }
 };

@@ -33,15 +33,28 @@ window.addEventListener('blur',  () => AudioSystem.pauseForBackground());
 window.addEventListener('focus', () => AudioSystem.resumeFromBackground());
 window.addEventListener('pagehide', () => AudioSystem.pauseForBackground());
 
-// On tap, enter fullscreen (hides the address bar) and lock to landscape-primary so device
-// rotation has no effect. Triggered on pointerUP (finger-lift): Android Chrome honors the
+// iOS (iPhone/iPadOS) Safari: never request the Fullscreen API. On iPhone it's a no-op; on iPad it
+// enters real fullscreen, which makes Safari pop its intrusive "It looks like you are typing while
+// in full screen / Stay in Full Screen?" banner mid-gameplay — a web page cannot suppress that.
+// The game already fills the dynamic viewport (100dvh/dvw) without fullscreen; true fullscreen on
+// iOS comes from "Add to Home Screen" (see iosHint.js), which never triggers this banner.
+const IS_IOS = (() => {
+  try {
+    const ua = navigator.userAgent || '';
+    return /iP(hone|od|ad)/.test(ua) ||
+      (/Macintosh/.test(ua) && typeof navigator.maxTouchPoints === 'number' && navigator.maxTouchPoints > 1);
+  } catch { return false; }
+})();
+
+// On tap (non-iOS), enter fullscreen (hides the address bar) and lock to landscape-primary so the
+// device rotation has no effect. Triggered on pointerUP (finger-lift): Android Chrome honors the
 // fullscreen API far more reliably on the completed gesture than on touch-start, which is why
 // the first touch-start attempt used to fail with a TypeError. Retry on EVERY tap (no "achieved"
 // latch) so a manual exit gets re-corrected, with a `pending` guard so overlapping requests
 // can't collide into a TypeError. capture:true fires before Phaser handles the same event.
 let fsPending = false;
 document.addEventListener('pointerup', function () {
-  if (document.fullscreenElement || fsPending) return;
+  if (IS_IOS || document.fullscreenElement || fsPending) return;
   const el = document.documentElement;
   const req = el.requestFullscreen?.bind(el) || el.webkitRequestFullscreen?.bind(el);
   const lockOrientation = () => { try { screen.orientation?.lock('landscape-primary').catch(() => {}); } catch (e) { /* */ } };

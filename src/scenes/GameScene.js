@@ -13,7 +13,6 @@ import { fitText } from '../fitText.js';
 import { GT } from '../data/GameText.js';
 import { AudioSystem } from '../AudioSystem.js';
 import { safeInsets } from '../safeArea.js';
-import { relayoutOnResize } from '../responsive.js';
 import { addThumbHints } from '../thumbHints.js';
 import { Flow } from '../Flow.js';
 
@@ -49,7 +48,14 @@ export class GameScene extends Phaser.Scene {
   }
 
   create() {
-    relayoutOnResize(this);
+    // Unlike the menu/settings/game-over scenes, GameScene deliberately does NOT call
+    // relayoutOnResize(): a mid-run resize (iOS Safari address-bar change, or an in-browser
+    // rotation where the chrome differs per orientation) would restart the scene and WIPE the
+    // player's progress. We keep the run going instead. The canvas still refits to the viewport
+    // (reconcile loop in main.js + camera.resize), so the game stays full-screen; the internal
+    // layout (computed below from W/H) is frozen for the run, so collision stays consistent with
+    // the visuals. In standalone/native (locked landscape) the size never changes mid-run, so
+    // there is no visible effect at all.
     const W = this.scale.width;
     const H = this.scale.height;
 

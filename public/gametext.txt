@@ -4,7 +4,7 @@
 # Use \n for a line break inside a value.
 
 # ── Identity ──────────────────────────────────────────────────────────────────
-gameTitle       = Adriana's Birthday\nAdventure
+gameTitle       = Split Trip
 gameSubtitle    = Control two dimensions — survive both views
 copyright       = © 2026 Split Trip
 
@@ -37,7 +37,7 @@ scoreBest       = Best
 scoreSurvived   = s survived
 
 # ── Game Over ─────────────────────────────────────────────────────────────────
-gameOverTitle   = GAME OVER, but\nHAPPY BDAY SMALL DINO!
+gameOverTitle   = GAME OVER
 btnPlayAgain    = PLAY AGAIN
 btnMainMenu     = MAIN MENU
 

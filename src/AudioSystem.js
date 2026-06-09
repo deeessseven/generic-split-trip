@@ -255,6 +255,11 @@ export const AudioSystem = {
     this._beat = 60 / cfg.bpm;
     this._loopBeats = cfg.loopBeats;
     const begin = () => {
+      // Already running — don't double-schedule. Two begin()s can race: the sync `running` path
+      // and the async resume().then(begin) path, or duplicate resume/visibility/focus events. A
+      // second setInterval would orphan the first (leak) and schedule the song twice (doubled
+      // notes). _musicOn and _timer are always set/cleared together (here and in stopMusic).
+      if (this._musicOn || this._timer) return;
       if (!this.musicEnabled || this._trackName !== track) return; // switched while resuming
       this._musicOn = true;
       this._evIdx = 0;

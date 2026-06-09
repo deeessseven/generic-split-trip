@@ -1,10 +1,11 @@
-# gametext.txt — Generic Split Trip
-# Edit the values below to customize your variant.
-# Lines starting with # are comments and are ignored.
-# Use \n for a line break inside a value.
+# gametext.txt — Adriana's Split Trip (COMPLETE variant gametext)
+# A full copy of the base Split Trip gametext with Adriana's overrides applied inline,
+# plus the celebration keys at the bottom. Edit ANY value below to customize Adriana's game.
+# At build time this REPLACES the base gametext for the adrianas-split-trip variant.
+# Lines starting with # are comments. Use \n for a line break inside a value.
 
 # ── Identity ──────────────────────────────────────────────────────────────────
-gameTitle       = Split Trip
+gameTitle       = Adriana's Birthday\nAdventure
 gameSubtitle    = Control two dimensions — survive both views
 copyright       = © 2026 Split Trip
 
@@ -37,7 +38,7 @@ scoreBest       = Best
 scoreSurvived   = s survived
 
 # ── Game Over ─────────────────────────────────────────────────────────────────
-gameOverTitle   = GAME OVER
+gameOverTitle   = GAME OVER, but\nHAPPY BDAY SMALL DINO!
 btnPlayAgain    = PLAY AGAIN
 btnMainMenu     = MAIN MENU
 
@@ -54,20 +55,12 @@ btnBack          = BACK
 toastSpriteSaved = Sprite saved! It will apply next game.
 toastUploadError = Could not read that image — try another file.
 
-# ── adrianas-split-trip: birthday celebration text ──────────────────────────────
-# This file is APPENDED onto the base gametext.txt at build time (npm run build:variants),
-# so it only needs the celebration keys — everything else is inherited from the base game.
-# Edit freely. Use \n for a line break. Lines starting with # are comments.
-#
-# Tokens you can use in the View 2 (milestone) lines:
-#   {N}       -> the number below (celebN), e.g. 13
-#   {Nth}     -> the ordinal below (celebNth), e.g. 13th
-#   {walls}   -> walls passed in that run (live)
-#   {seconds} -> seconds survived in that run (live)
-
-# ── Variant identity (the base game is now generic, so re-assert Adriana's branding here) ──
-gameTitle     = Adriana's Birthday\nAdventure
-gameOverTitle = GAME OVER, but\nHAPPY BDAY SMALL DINO!
+# ═════════════════════════════════════════════════════════════════════════════
+# adrianas-split-trip — celebration scenes (View 1 + View 2)
+# Everything ABOVE is the full base gametext (edit freely). Below are the celebration keys.
+# Tokens for the milestone (View 2) lines:
+#   {N} -> celebN number   {Nth} -> celebNth ordinal   {walls} -> walls passed   {seconds} -> seconds survived
+# ═════════════════════════════════════════════════════════════════════════════
 
 # ── View 1: celebration shown right after tapping PLAY (before the game starts) ──
 celebTitle    = HAPPY BIRTHDAY\nSMALL DINO!

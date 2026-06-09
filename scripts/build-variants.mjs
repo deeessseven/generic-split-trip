@@ -7,14 +7,15 @@
 // byte-for-byte the current game.
 //
 // Optional content overrides under variants/<id>/ (repo root), overlaid after that variant's build:
-//   - gametext.txt : APPENDED onto the base gametext (applyText: later lines win), so the file only
-//                    needs the variant's NEW/overridden keys — base text keeps inheriting.
+//   - gametext.txt : a COMPLETE gametext (full base copy + the variant's overrides/additions). If
+//                    present it REPLACES the base gametext.txt in docs/<id>/, so the variant has one
+//                    fully-editable file (identity, tips, labels, celebration text — everything).
 //   - sprites/     : copied over the base sprites (only the files you provide are replaced).
 //
 // Usage:  npm run build:variants
 
 import { execSync } from 'node:child_process';
-import { existsSync, readdirSync, statSync, cpSync, readFileSync, appendFileSync } from 'node:fs';
+import { existsSync, readdirSync, statSync, cpSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -41,9 +42,8 @@ for (const id of ids) {
   if (existsSync(ov)) {
     const gametext = join(ov, 'gametext.txt');
     if (existsSync(gametext)) {
-      // Append the variant's keys onto the base gametext.txt (vite already copied the base one);
-      // applyText reads top-to-bottom and later lines win, so these add to / override the base.
-      appendFileSync(join(DOCS, id, 'gametext.txt'), '\n' + readFileSync(gametext, 'utf8'));
+      // The variant's gametext.txt is a complete file — REPLACE the base gametext vite copied in.
+      cpSync(gametext, join(DOCS, id, 'gametext.txt'));
     }
     const sprites = join(ov, 'sprites');
     if (existsSync(sprites)) cpSync(sprites, join(DOCS, id, 'sprites'), { recursive: true });

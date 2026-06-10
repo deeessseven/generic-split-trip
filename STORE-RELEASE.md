@@ -79,3 +79,55 @@ Version + Build, then Product → Archive → Distribute App. Requires the **App
   (and `/<variant>/privacy.html` per variant). Edit the contact email in `public/privacy.html`.
 - Data safety (Play) / App Privacy (Apple): **No data collected** — offline, local-save only.
 - Screenshots (per device size), descriptions, 1024px icon, age rating (mild/none → Everyone).
+
+---
+
+# ▶ Google Play — base "Split Trip" first release (current setup)
+
+The Android project was generated (`npx cap add android`) with `applicationId com.dacquery.splittrip`
+and release signing wired to a gitignored `android/key.properties`. Web build → `www/` via
+`npm run build:app`.
+
+> ⚠ The generated project uses **AGP 8.2.1 / Gradle 8.2.1 / compileSdk 34** (Capacitor 6 defaults).
+> Google Play requires targeting **API ≥35**, but AGP 8.2.1 does NOT support compileSdk 35/36. So
+> bump it the SAFE way in **Android Studio → Help → "AGP Upgrade Assistant"** (raises AGP + Gradle
+> together), then set `compileSdkVersion`/`targetSdkVersion` to **36** in `android/variables.gradle`
+> and install SDK Platform 36 if prompted. Do this once before submitting; the Upgrade Assistant
+> verifies the combo so you don't hand-edit mismatched versions.
+
+## One-time machine setup
+- **Android Studio Gradle JDK = `jbr-21`** (not system Java 25).
+- SDK Manager: install **Android 16 / API 36**.
+
+## 1. Upload key (you choose the password — keep it OUT of git)
+```
+keytool -genkey -v -keystore splittrip-upload.keystore -alias splittripupload \
+  -keyalg RSA -keysize 2048 -validity 10000
+```
+Store the `.keystore` outside the repo; record the password in a local note only.
+
+## 2. Create `android/key.properties` (gitignored — never commit)
+```
+storeFile=C:\\Users\\dshen\\Desktop\\AI\\keystores\\splittrip-upload.keystore
+storePassword=YOUR_PASSWORD
+keyAlias=splittripupload
+keyPassword=YOUR_PASSWORD
+```
+
+## 3. Build the signed AAB
+```
+npm run build:app          # base → www/
+npx cap sync android
+```
+Then **Android Studio → Build → Generate Signed App Bundle** (pick the keystore, `release`).
+Output: `android/app/build/outputs/bundle/release/app-release.aab`. Bump `versionCode` per upload.
+
+## 4. Play Console
+Same as the Boba Quest flow: create app (Game, Free) → App content (privacy URL above,
+**Data safety = no data**, content rating, ads = No) → store listing (512 icon, 1024×500 feature
+graphic, screenshots, descriptions) → **Play App Signing** → **Internal testing** to smoke-test →
+**Closed testing (≥12 testers, ≥14 days — required for a young personal account; START ASAP)** →
+Production.
+
+> Edge-to-edge note: targetSdk ≥35 enforces edge-to-edge. Split Trip already handles safe-area
+> insets (see `src/safeArea.js`), but verify on a notched device during testing.

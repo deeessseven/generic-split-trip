@@ -3,3 +3,8 @@ dist/
 # Lean per-app build for Capacitor native store apps (scripts/build-app.mjs) — never committed
 www/
 .gstack/
+
+# Android signing secrets — NEVER commit (keep keystore + password locally, outside git)
+android/key.properties
+*.keystore
+*.jks

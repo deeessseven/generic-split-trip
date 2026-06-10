@@ -4,6 +4,7 @@
 import Phaser from 'phaser';
 import { SpriteManager } from '../../../SpriteManager.js';
 import { HERO_ANIM_FRAMES, HERO_ANIM_FPS } from '../../../constants.js';
+import { fitText } from '../../../fitText.js';
 
 const COLORS = [0xff5252, 0xffd740, 0x69f0ae, 0x40c4ff, 0xe040fb, 0xffab40, 0xffffff];
 
@@ -28,6 +29,25 @@ export function makeAnimatedHero(scene, charKey, x, y, size, animKey, depth = 0)
     hero.play(animKey);
   }
   return hero;
+}
+
+// Dynamic vertical layout for a celebration text column. The title is pinned to the top of the
+// column and the tap prompt to the bottom; the message is centered in the gap between them. Each is
+// font-shrunk (via fitText) to fit the column width AND its available height, computed from the
+// other elements' measured sizes — so any-length gametext fits with no overlap or cutoff, and no
+// fixed offsets. `x` = column center; `top`/`bottom` = vertical bounds; `gap` = spacing; `w` = width.
+export function fitTextColumn(title, message, tap, x, top, bottom, gap, w) {
+  tap.setOrigin(0.5, 1).setPosition(x, bottom);
+  fitText(tap, w);
+  // Title at the top, capped to ~half the column so it can never crowd out the message.
+  title.setOrigin(0.5, 0).setPosition(x, top);
+  fitText(title, w, (bottom - top) * 0.5);
+  if (message) {
+    const mTop = title.y + title.height + gap;
+    const mBot = (tap.y - tap.height) - gap;
+    fitText(message, w, Math.max(20, mBot - mTop));
+    message.setOrigin(0.5, 0.5).setPosition(x, Math.round((mTop + mBot) / 2));
+  }
 }
 
 // One-time 8×8 white square texture for confetti (tinted per-particle below).

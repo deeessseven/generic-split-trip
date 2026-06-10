@@ -40,8 +40,8 @@ hintRise        = Tap to rise ↑
 #     7 8 9   back / bottom row
 #   (columns: 1/4/7 = left, 2/5/8 = center, 3/6/9 = right). 5 = dead center.
 # Side view (1-5): left-to-right across the hero. 1 = leftmost, 3 = center, 5 = rightmost.
-cloudTopPos     = 8
-cloudSidePos    = 2
+cloudTopPos     = 2
+cloudSidePos    = 3
 
 # ── Score ─────────────────────────────────────────────────────────────────────
 scoreUnit       = walls

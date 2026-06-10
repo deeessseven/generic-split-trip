@@ -159,6 +159,18 @@ export class GameScene extends Phaser.Scene {
     this._debugOutline = String(GT.debugOutline).trim() === 'true';
     this.debugGfx = this._debugOutline ? this.add.graphics().setDepth(20) : null;
 
+    // Flap-puff ("cloud") placement, configurable via gametext. parseInt → garbage/empty
+    // falls back to the default rather than 0; result is clamped to its valid range.
+    // Top: 1..9 as a 3×3 grid over the opaque sprite (1-3 front/top, 4-6 middle, 7-9
+    // back/bottom; cols left/center/right). 8 = back-center = the legacy position.
+    // Side: 1..5 horizontally across the opaque width (1=left, 3=center, 5=right).
+    const clampPos = (v, lo, hi, def) => {
+      const n = parseInt(v, 10);
+      return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : def;
+    };
+    this._cloudTopPos  = clampPos(GT.cloudTopPos,  1, 9, 8);
+    this._cloudSidePos = clampPos(GT.cloudSidePos, 1, 5, 2);
+
     // Character sprites (on top of obstacles and gap indicator).
     // ctKey/csKey are the 128px gameplay textures (frame 1 of the hero) — a gamma-correct
     // (linear-light) downscale of the native art — used for BOTH collision (1 texel = 1 world px)
@@ -348,29 +360,34 @@ export class GameScene extends Phaser.Scene {
 
   // Flap thrust: one puff per view, fired together.
   _emitFlapPuffs() {
-    // Side: one soft puff, 1/3 from the left of the opaque width, and raised from the
+    // Side: one soft puff at cloudSidePos (1..5) across the opaque width, and raised from the
     // bottom-most opaque pixel by 1/5 of the (untilted) opaque height. Adaptive per sprite,
     // untilted (ignores the flap tilt). Tracks the ±15% visual scale.
     if (this.flapFX) {
       const sb = this.charSideBounds;
       const sc = this.charSideSprite.scaleX / this.sideDisplayScale; // logical (128px→world) scale, minus the display-texture factor
       const cx = sb.w / 2, cy = sb.h / 2;
-      const px = (2 * sb.leftEdge + sb.rightEdge) / 3;
+      const px = sb.leftEdge + (sb.rightEdge - sb.leftEdge) * (this._cloudSidePos - 1) / 4;
       const py = sb.botEdge - (sb.botEdge - sb.topEdge) / 5; // up 1/5 of the opaque height
       const ex = this.charSideX + (px - cx) * sc;
       const ey = this.charYPx   + (py - cy) * sc;
       this.flapFX.emitParticleAt(ex, ey, 1);
     }
-    // Top: one extra-large soft poof from the middle of the bottom 1/3 of the opaque pixels.
+    // Top: one extra-large soft poof at cloudTopPos (1..9), a 3×3 grid over the opaque pixels.
     if (this.topFlapFX) {
       const tb = this.charTopBounds;
       const tcx = tb.w / 2, tcy = tb.h / 2;
       const th = this.topAngle * Math.PI / 180;
       const cos = Math.cos(th), sin = Math.sin(th);
-      const row = Math.round(tb.botEdge - (tb.botEdge - tb.topEdge) / 6); // middle of bottom 1/3
+      // Row band → scanline at the center of the top/middle/bottom third (0=front, 1=middle,
+      // 2=back). Default 8 → band 2 → botEdge-(botEdge-topEdge)/6, the legacy middle-of-bottom-1/3.
+      const band = Math.floor((this._cloudTopPos - 1) / 3);
+      const col  = (this._cloudTopPos - 1) % 3; // 0=left, 1=center, 2=right
+      const rowY = tb.topEdge + (tb.botEdge - tb.topEdge) * (2 * band + 1) / 6;
+      const row  = Math.min(tb.h - 1, Math.max(0, Math.round(rowY)));
       const lx = isFinite(tb.rowMinX[row]) ? tb.rowMinX[row] : tb.leftEdge;
       const rx = isFinite(tb.rowMaxX[row]) ? tb.rowMaxX[row] : tb.rightEdge;
-      const px = (lx + rx) / 2;
+      const px = col === 0 ? lx : col === 2 ? rx : (lx + rx) / 2;
       const ex = this.charXPx  + (px - tcx) * cos - (row - tcy) * sin;
       const ey = this.charTopY + (px - tcx) * sin + (row - tcy) * cos;
       this.topFlapFX.emitParticleAt(ex, ey, 1);

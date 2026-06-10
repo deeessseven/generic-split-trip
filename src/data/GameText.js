@@ -66,6 +66,11 @@ export const GT = {
   milestoneMsg2:    '',
   milestoneTapContinue: '',
 
+  // ── Flap puff ("cloud") placement ───────────────────────────────────────────
+  // Where the soft white flap puff appears, per view. Stored as strings; parsed to ints.
+  cloudTopPos:      '8',  // 1..9 grid over the top-view hero: 1-3 front, 4-6 middle, 7-9 back; cols L/C/R. 5=center, 8=back-center (default)
+  cloudSidePos:     '2',  // 1..5 across the side-view hero's width: 1=left, 3=center, 5=right
+
   // ── Debug ─────────────────────────────────────────────────────────────────
   debugOutline:     'false',  // 'true' draws the collision silhouette over sprites (per variant)
 };

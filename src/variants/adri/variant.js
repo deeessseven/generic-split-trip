@@ -1,13 +1,13 @@
-// adri-split-trip — Adriana's birthday edition. Same engine + sprites as the base game; adds
+// adri — Adriana's birthday edition. Same engine + sprites as the base game; adds
 // two celebration views. All their text lives in this variant's gametext.txt (variants/
-// adri-split-trip/gametext.txt), which is appended onto the base gametext at build time. The
+// adri/gametext.txt), which is appended onto the base gametext at build time. The
 // base game registers none of this and is unaffected.
 import { GT } from '../../data/GameText.js';
 import { CelebrationScene } from './scenes/CelebrationScene.js';
 import { MilestoneCelebrationScene } from './scenes/MilestoneCelebrationScene.js';
 
 export default {
-  id: 'adri-split-trip',
+  id: 'adri',
   scenes: [CelebrationScene, MilestoneCelebrationScene],
   routes: {
     // View 1: PLAY (from the title menu only) → birthday celebration → tap → the game.

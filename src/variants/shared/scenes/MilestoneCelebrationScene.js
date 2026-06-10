@@ -53,7 +53,7 @@ export class MilestoneCelebrationScene extends Phaser.Scene {
 
     // ── Hero (Small Dino) ──
     const heroKey = SpriteManager.resolveTitleKey(this, SPRITE_KEYS.CHAR_SIDE);
-    const heroSize = Math.max(90, Math.min(W * 0.32, H * 0.28, 300));
+    const heroSize = 512;  // full native size of the 512px title hero sprite
     const heroY = title.y + title.height + heroSize * 0.5 + Math.round(12 * s);
     const hero = this.add.image(cx, heroY, heroKey).setDisplaySize(heroSize, heroSize).setDepth(15);
     this.tweens.add({ targets: hero, angle: { from: -5, to: 5 }, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });

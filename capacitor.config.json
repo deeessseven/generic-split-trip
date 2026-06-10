@@ -1,7 +1,7 @@
 {
-  "appId": "com.splittrip.game",
+  "appId": "com.dacquery.splittrip",
   "appName": "Split Trip",
-  "webDir": "docs",
+  "webDir": "www",
   "plugins": {
     "SplashScreen": {
       "launchAutoHide": true,

@@ -1,3 +1,5 @@
 node_modules/
 dist/
+# Lean per-app build for Capacitor native store apps (scripts/build-app.mjs) — never committed
+www/
 .gstack/

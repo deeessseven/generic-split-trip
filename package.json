@@ -7,11 +7,12 @@
     "dev": "vite",
     "build": "vite build",
     "build:variants": "node scripts/build-variants.mjs",
+    "build:app": "node scripts/build-app.mjs",
     "test": "node scripts/test-relayout.mjs",
     "preview": "vite preview",
-    "cap:sync": "npx cap sync",
-    "cap:android": "npx cap open android",
-    "cap:ios": "npx cap open ios"
+    "cap:sync": "npm run build:app && npx cap sync",
+    "cap:android": "npm run build:app && npx cap sync && npx cap open android",
+    "cap:ios": "npm run build:app && npx cap sync && npx cap open ios"
   },
   "dependencies": {
     "phaser": "^3.88.0"

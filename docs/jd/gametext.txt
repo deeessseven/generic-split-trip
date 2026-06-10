@@ -90,5 +90,6 @@ milestoneMsg1        = {Nth} month AND at least a {N}-wall milestone.
 milestoneMsg2        = You passed {walls} walls and survived {seconds}s — Incredible!\nI am SO proud of you and of us!\nKI SUH NUN!\n\nLove,\nYour David
 milestoneTapContinue = Tap anywhere to continue
 
-# ── Debug (temporary) ──
+# ── Debug ─────────────────────────────────────────────────────────────────────
+# Set to true to draw the black collision outline over the heroes (for tuning hitboxes).
 debugOutline = false

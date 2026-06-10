@@ -89,3 +89,7 @@ milestoneTitle       = HAPPY {Nth} BIRTHDAY\nSMALL DINO!
 milestoneMsg1        = {Nth} birthday AND at least a {N}-wall milestone.
 milestoneMsg2        = You passed {walls} walls and survived {seconds}s — Incredible!\nFuncle David is SO proud of you!
 milestoneTapContinue = Tap anywhere to continue
+
+# ── Debug ─────────────────────────────────────────────────────────────────────
+# Set to true to draw the black collision outline over the heroes (for tuning hitboxes).
+debugOutline = false

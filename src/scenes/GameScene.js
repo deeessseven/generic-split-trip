@@ -99,9 +99,11 @@ export class GameScene extends Phaser.Scene {
     this.wallsPassed   = 0;
 
     // ── Seeded RNG ────────────────────────────────────────────────────────────
-    // INTENTIONAL: the fixed seed makes every run use the identical wall layout, so
-    // all players face the same course (fair for score comparison / practice). To get
-    // randomized layouts instead, seed with something variable (e.g. Date.now()).
+    // INTENTIONAL: the fixed seed makes the gap CENTERS identical on every run, so a given hero
+    // on a given screen size always faces the same course (fair for score comparison / practice).
+    // The gap WIDTHS still vary with the hero's measured opaque size (see _spawnObstacle), and
+    // edge-snapping is done in pixels — so a custom-uploaded hero or a different screen resolution
+    // produces a slightly different layout. To fully randomize, seed with a variable (e.g. Date.now()).
     this.rng = new Phaser.Math.RandomDataGenerator(['splittrip-v1']);
 
     // ── Top-view sprite rotation ──────────────────────────────────────────────

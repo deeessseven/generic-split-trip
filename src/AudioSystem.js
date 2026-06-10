@@ -218,7 +218,13 @@ export const AudioSystem = {
     if (typeof document !== 'undefined' && document.hidden) return; // still hidden — stay paused
     if (this._master) this._master.gain.value = 0.5;
     if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
-    if (this.musicEnabled) this.startMusic();
+    if (!this.musicEnabled) return;
+    // On the game-over screen the looping theme is suppressed and the short sad tune was
+    // hard-cut by pauseForBackground — replay it so returning to the foreground there isn't
+    // silent. playGameOver() hard-cuts any prior voices first, so a focus + visibilitychange
+    // double-fire still yields one clean tune. Otherwise resume the current loop track.
+    if (this._musicSuppressed) this.playGameOver();
+    else this.startMusic();
   },
 
   setMusicEnabled(on) {

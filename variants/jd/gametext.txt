@@ -74,10 +74,10 @@ toastUploadError = Could not read that image — try another file.
 # ═════════════════════════════════════════════════════════════════════════════
 
 # ── View 1: celebration shown right after tapping PLAY (before the game starts) ──
-celebTitle    = HAPPY 12 MONTHS!\nMISS BRUIN BEAR!
+celebTitle    = HAPPY 12 MONTHS,\nMISS BRUIN BEAR!
 celebMsg1     = Jackie, I cannot believe we met 1 year ago.\nTime really flies when we're having fun.
 celebMsg2     = It's been so wonderful having you in my life.\nI feel so lucky to be with you.
-celebMsg3     = I can't wait to spend countless more years with you!\nI LOVE YOU! ─David
+celebMsg3     = I can't wait to spend countless more years with you!\nI LOVE YOU!\n─David
 celebTapStart = Tap anywhere to START THE GAME
 
 # ── View 2: celebration after a crash, ONLY when you pass {N} or more walls ──
@@ -85,9 +85,9 @@ celebTapStart = Tap anywhere to START THE GAME
 #  celebN and celebNth — ordinals like 13th/21st are irregular, so they're set by hand.)
 celebN               = 12
 celebNth             = 12th
-milestoneTitle       = HAPPY {Nth} MONTH\nPrincess (of Pflugerville)!
-milestoneMsg1        = {N} months AND at least a {N}-wall milestone.
-milestoneMsg2        = You passed {walls} walls and survived {seconds}s — Incredible!\nI am SO proud of you and of us!\nKI SUH NUN!\nLove, Your David
+milestoneTitle       = HAPPY {N} MONTHS,\nPrincess (of Pflugerville)!
+milestoneMsg1        = {Nth} month AND at least a {N}-wall milestone.
+milestoneMsg2        = You passed {walls} walls and survived {seconds}s — Incredible!\nI am SO proud of you and of us!\nKI SUH NUN!\n\nLove,\nYour David
 milestoneTapContinue = Tap anywhere to continue
 
 # ── Debug (temporary) ──

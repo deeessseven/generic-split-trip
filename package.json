@@ -2,6 +2,7 @@
   "name": "generic-split-trip",
   "version": "1.0.0",
   "description": "Dual-view obstacle dodger — top-down + side view split screen",
+  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

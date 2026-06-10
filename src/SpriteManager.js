@@ -90,6 +90,12 @@ export const SpriteManager = {
     return defaultKey;
   },
 
+  // Remove a texture if it exists; silent no-op on absence or any error. Centralizes the
+  // exists + remove + try/catch dance used wherever a derived texture is rebuilt or reset.
+  dropTexture(scene, key) {
+    try { if (scene.textures.exists(key)) scene.textures.remove(key); } catch { /* ignore */ }
+  },
+
   // ── Preloaders ────────────────────────────────────────────────────────────
 
   /** Load all custom gameplay sprites (128px for CHAR keys) into the Phaser loader.
@@ -99,9 +105,7 @@ export const SpriteManager = {
       const dataURL = SpriteManager.load(key);
       if (!dataURL) continue;
       const customKey = key + '_custom';
-      try {
-        if (scene.textures.exists(customKey)) scene.textures.remove(customKey);
-      } catch { /* ignore */ }
+      SpriteManager.dropTexture(scene, customKey);
       scene.load.image(customKey, dataURL);
     }
   },
@@ -113,9 +117,7 @@ export const SpriteManager = {
       const dataURL = SpriteManager.loadTitle(key);
       if (!dataURL) continue;
       const titleKey = key + '_title_custom';
-      try {
-        if (scene.textures.exists(titleKey)) scene.textures.remove(titleKey);
-      } catch { /* ignore */ }
+      SpriteManager.dropTexture(scene, titleKey);
       scene.load.image(titleKey, dataURL);
     }
   },

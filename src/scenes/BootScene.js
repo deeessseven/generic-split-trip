@@ -149,9 +149,9 @@ export class BootScene extends Phaser.Scene {
       // Frame 1 = canonical hero: 512px (menu) + 128px (gameplay + collision base).
       const f1 = this.textures.get(frames[0]).getSourceImage();
       const titleKey = key + '_title';
-      try { if (this.textures.exists(titleKey)) this.textures.remove(titleKey); } catch {}
+      SpriteManager.dropTexture(this, titleKey);
       this.textures.addCanvas(titleKey, resampleToCanvas(f1, 512));
-      try { if (this.textures.exists(key)) this.textures.remove(key); } catch {}
+      SpriteManager.dropTexture(this, key);
       this.textures.addCanvas(key, resampleToCanvas(f1, 128));
 
       // Extra frames → 128px gameplay textures (key_disp2..) AND 512px display textures (key_title2..)
@@ -159,10 +159,10 @@ export class BootScene extends Phaser.Scene {
       for (let i = 1; i < frames.length; i++) {
         const fsrc = this.textures.get(frames[i]).getSourceImage();
         const dispKey = `${key}_disp${i + 1}`;
-        try { if (this.textures.exists(dispKey)) this.textures.remove(dispKey); } catch {}
+        SpriteManager.dropTexture(this, dispKey);
         this.textures.addCanvas(dispKey, resampleToCanvas(fsrc, 128));
         const titleKeyN = `${key}_title${i + 1}`;
-        try { if (this.textures.exists(titleKeyN)) this.textures.remove(titleKeyN); } catch {}
+        SpriteManager.dropTexture(this, titleKeyN);
         this.textures.addCanvas(titleKeyN, resampleToCanvas(fsrc, 512));
       }
 

@@ -132,11 +132,11 @@ export class SettingsScene extends Phaser.Scene {
     resetTxt.on('pointerup', () => {
       SpriteManager.remove(key);
       const customKey = key + '_custom';
-      try { if (this.textures.exists(customKey)) this.textures.remove(customKey); } catch {}
+      SpriteManager.dropTexture(this, customKey);
       if (SpriteManager.isCharKey(key)) {
         SpriteManager.removeTitle(key);
         const titleKey = key + '_title_custom';
-        try { if (this.textures.exists(titleKey)) this.textures.remove(titleKey); } catch {}
+        SpriteManager.dropTexture(this, titleKey);
       }
       preview.setTexture(key);
     });
@@ -204,8 +204,8 @@ export class SettingsScene extends Phaser.Scene {
 
     const customKey = key + '_custom';
     const titleKey  = key + '_title_custom';
-    try { if (this.textures.exists(customKey)) this.textures.remove(customKey); } catch {}
-    try { if (this.textures.exists(titleKey))  this.textures.remove(titleKey);  } catch {}
+    SpriteManager.dropTexture(this, customKey);
+    SpriteManager.dropTexture(this, titleKey);
 
     // Wait for both textures to load before updating the preview
     let loaded = 0;
@@ -236,7 +236,7 @@ export class SettingsScene extends Phaser.Scene {
     const dataURL = resampleToCanvas(img, size, 'triangle').toDataURL('image/png');
     SpriteManager.save(key, dataURL);
     const customKey = key + '_custom';
-    try { if (this.textures.exists(customKey)) this.textures.remove(customKey); } catch {}
+    SpriteManager.dropTexture(this, customKey);
     this.textures.once('addtexture-' + customKey, () => {
       const preview = this._previews[key];
       if (preview) preview.setTexture(customKey);

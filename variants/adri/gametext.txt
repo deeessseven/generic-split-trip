@@ -32,6 +32,17 @@ labelSideHint   = tap to rise
 hintSteer       = ↔ Drag to steer
 hintRise        = Tap to rise ↑
 
+# ── Flap puff ("cloud") placement ───────────────────────────────────────────────
+# Where the soft white flap puff shows up under the hero, per view.
+# Top view (1-9): a 3x3 grid over the top-down hero.
+#     1 2 3   front / top row
+#     4 5 6   middle row
+#     7 8 9   back / bottom row
+#   (columns: 1/4/7 = left, 2/5/8 = center, 3/6/9 = right). 5 = dead center.
+# Side view (1-5): left-to-right across the hero. 1 = leftmost, 3 = center, 5 = rightmost.
+cloudTopPos     = 8
+cloudSidePos    = 2
+
 # ── Score ─────────────────────────────────────────────────────────────────────
 scoreUnit       = walls
 scoreBest       = Best

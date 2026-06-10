@@ -154,12 +154,16 @@ export class BootScene extends Phaser.Scene {
       try { if (this.textures.exists(key)) this.textures.remove(key); } catch {}
       this.textures.addCanvas(key, resampleToCanvas(f1, 128));
 
-      // Extra frames → 128px display textures (key_disp2..; frame 1 is `key` itself).
+      // Extra frames → 128px gameplay textures (key_disp2..) AND 512px display textures (key_title2..)
+      // so large views (the celebration scenes) can animate every frame crisply. Frame 1 = key/_title.
       for (let i = 1; i < frames.length; i++) {
-        const dispKey = `${key}_disp${i + 1}`;
         const fsrc = this.textures.get(frames[i]).getSourceImage();
+        const dispKey = `${key}_disp${i + 1}`;
         try { if (this.textures.exists(dispKey)) this.textures.remove(dispKey); } catch {}
         this.textures.addCanvas(dispKey, resampleToCanvas(fsrc, 128));
+        const titleKeyN = `${key}_title${i + 1}`;
+        try { if (this.textures.exists(titleKeyN)) this.textures.remove(titleKeyN); } catch {}
+        this.textures.addCanvas(titleKeyN, resampleToCanvas(fsrc, 512));
       }
 
       // Free the raw native-resolution frame textures; only the 128/512 derivatives are used.

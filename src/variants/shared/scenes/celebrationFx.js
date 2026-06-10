@@ -2,8 +2,33 @@
 // falling confetti, and a {token} substitution helper. Procedural — reuses the global 'st_particle'
 // texture (made in BootScene) plus a tiny generated confetti square, so no image assets are needed.
 import Phaser from 'phaser';
+import { SpriteManager } from '../../../SpriteManager.js';
+import { HERO_ANIM_FRAMES, HERO_ANIM_FPS } from '../../../constants.js';
 
 const COLORS = [0xff5252, 0xffd740, 0x69f0ae, 0x40c4ff, 0xe040fb, 0xffab40, 0xffffff];
+
+// Build a hero Sprite at full title-resolution (512px frames), animating frames 1..N (looped, at
+// HERO_ANIM_FPS) when this is the bundled multi-frame hero; a custom single-frame upload stays
+// static. `charKey` is SPRITE_KEYS.CHAR_SIDE or CHAR_TOP. Returns the Sprite.
+export function makeAnimatedHero(scene, charKey, x, y, size, animKey, depth = 0) {
+  const titleKey = SpriteManager.resolveTitleKey(scene, charKey);
+  const frameKeys = [titleKey];
+  // Only the bundled default hero (`<charKey>_title`) has 512px frames 2..N; uploads are 1 frame.
+  if (titleKey === `${charKey}_title`) {
+    for (let i = 2; i <= HERO_ANIM_FRAMES; i++) {
+      const k = `${charKey}_title${i}`;
+      if (scene.textures.exists(k)) frameKeys.push(k);
+    }
+  }
+  const hero = scene.add.sprite(x, y, frameKeys[0]).setDisplaySize(size, size).setDepth(depth);
+  if (frameKeys.length >= 2) {
+    if (!scene.anims.exists(animKey)) {
+      scene.anims.create({ key: animKey, frames: frameKeys.map((k) => ({ key: k })), frameRate: HERO_ANIM_FPS, repeat: -1 });
+    }
+    hero.play(animKey);
+  }
+  return hero;
+}
 
 // One-time 8×8 white square texture for confetti (tinted per-particle below).
 function ensureConfettiTexture(scene) {

@@ -66,7 +66,7 @@ toastUploadError = Could not read that image — try another file.
 celebTitle    = HAPPY 12 MONTHS!\nMISS BRUIN BEAR!
 celebMsg1     = Jackie, I cannot believe we met 1 year ago.\nTime really flies when we're having fun.
 celebMsg2     = It's been so wonderful having you in my life.\nI feel so lucky to be with you.
-celebMsg3     = I can't wait to spend countless more years with you!\nLove, Your David
+celebMsg3     = I can't wait to spend countless more years with you!\nI LOVE YOU
 celebTapStart = Tap anywhere to START THE GAME
 
 # ── View 2: celebration after a crash, ONLY when you pass {N} or more walls ──
@@ -76,7 +76,7 @@ celebN               = 12
 celebNth             = 12th
 milestoneTitle       = HAPPY {Nth} MONTH\nPrincess (of Pflugerville)!
 milestoneMsg1        = You surpassed {walls} walls and survived {seconds}s — incredible!
-milestoneMsg2        = {Nth} month AND achieved a {N}-wall milestone. I (David) am SO proud of you and of us!
+milestoneMsg2        = {N} months AND achieved a {N}-wall milestone.\nI (David) am SO proud of you and of us!\nKI SUH NUN!\nLove, Your David
 milestoneTapContinue = Tap anywhere to continue
 
 # ── Debug (temporary) ──

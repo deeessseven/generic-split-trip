@@ -65,6 +65,9 @@ export const GT = {
   milestoneMsg1:    '',
   milestoneMsg2:    '',
   milestoneTapContinue: '',
+
+  // ── Debug ─────────────────────────────────────────────────────────────────
+  debugOutline:     'false',  // 'true' draws the collision silhouette over sprites (per variant)
 };
 
 export function applyText(raw) {

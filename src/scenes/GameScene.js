@@ -18,9 +18,9 @@ import { addThumbHints } from '../thumbHints.js';
 import { Flow } from '../Flow.js';
 
 // ── Debug flag ────────────────────────────────────────────────────────────────
-// Set to true to draw the pixel-accurate collision silhouette over each sprite.
-// Keep false in production — the black outline is visible to players.
-const DEBUG_OUTLINE = false;
+// Per-variant debug collision outline, toggled via gametext (debugOutline = true/false).
+// Draws the pixel-accurate collision silhouette over each sprite (visible to players).
+// Computed per scene as this._debugOutline in create() (GT is applied at boot).
 
 // Count of NEW games started this page load (incremented by noteNewGame from the PLAY /
 // PLAY AGAIN buttons — NOT in create(), so a resize-driven scene.restart() doesn't inflate it).
@@ -155,8 +155,9 @@ export class GameScene extends Phaser.Scene {
     );
     this._obstacleTileIdx = 0;
 
-    // Debug collision outline — only created when DEBUG_OUTLINE is enabled
-    this.debugGfx = DEBUG_OUTLINE ? this.add.graphics().setDepth(20) : null;
+    // Debug collision outline — enabled per-variant via gametext (debugOutline = true)
+    this._debugOutline = String(GT.debugOutline).trim() === 'true';
+    this.debugGfx = this._debugOutline ? this.add.graphics().setDepth(20) : null;
 
     // Character sprites (on top of obstacles and gap indicator).
     // ctKey/csKey are the 128px gameplay textures (frame 1 of the hero) — a gamma-correct
@@ -912,8 +913,8 @@ export class GameScene extends Phaser.Scene {
 
     // ── Debug collision outlines ─────────────────────────────────────────────
     // Draws the pixel-accurate silhouette used for collision detection.
-    // To enable: set DEBUG_OUTLINE = true at the top of this file.
-    if (DEBUG_OUTLINE) {
+    // To enable: set debugOutline = true in the variant's gametext.txt.
+    if (this._debugOutline) {
       this.debugGfx.clear();
       this.debugGfx.lineStyle(2, 0x000000, 1);
 

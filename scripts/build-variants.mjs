@@ -28,9 +28,13 @@ const CONTENT_OVERRIDES = join(ROOT, 'variants'); // optional per-variant text/s
 console.log('▶ base → docs/');
 execSync('npm run build', { stdio: 'inherit', cwd: ROOT });
 
-// 2. Every variant under src/variants/ except base → docs/<id>/ (emptyOutDir false leaves docs/).
+// 2. Every variant under src/variants/ that has a variant.js → docs/<id>/ (emptyOutDir false leaves
+//    docs/). Excludes base and helper folders like shared/ (which hold only reusable scenes).
 const ids = readdirSync(SRC_VARIANTS).filter(
-  (id) => id !== 'base' && statSync(join(SRC_VARIANTS, id)).isDirectory(),
+  (id) =>
+    id !== 'base' &&
+    statSync(join(SRC_VARIANTS, id)).isDirectory() &&
+    existsSync(join(SRC_VARIANTS, id, 'variant.js')),
 );
 
 for (const id of ids) {

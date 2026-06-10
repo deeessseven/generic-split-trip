@@ -3,8 +3,8 @@
 // adri/gametext.txt), which is appended onto the base gametext at build time. The
 // base game registers none of this and is unaffected.
 import { GT } from '../../data/GameText.js';
-import { CelebrationScene } from './scenes/CelebrationScene.js';
-import { MilestoneCelebrationScene } from './scenes/MilestoneCelebrationScene.js';
+import { CelebrationScene } from '../shared/scenes/CelebrationScene.js';
+import { MilestoneCelebrationScene } from '../shared/scenes/MilestoneCelebrationScene.js';
 
 export default {
   id: 'adri',

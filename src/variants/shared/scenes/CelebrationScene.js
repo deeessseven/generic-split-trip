@@ -45,20 +45,21 @@ export class CelebrationScene extends Phaser.Scene {
     fitText(title, W * 0.92);
     this.tweens.add({ targets: title, scale: 1.04, duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
 
-    // ── Hero (Small Dino) ──
+    // ── Hero — full-size, behind everything (text overlays it) ──
     const heroKey = SpriteManager.resolveTitleKey(this, SPRITE_KEYS.CHAR_SIDE);
     const heroSize = 512;  // full native size of the 512px title hero sprite
-    const heroY = title.y + title.height + heroSize * 0.5 + Math.round(14 * s);
-    const hero = this.add.image(cx, heroY, heroKey).setDisplaySize(heroSize, heroSize).setDepth(15);
-    this.tweens.add({ targets: hero, y: heroY - Math.round(10 * s), duration: 1100, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    const hero = this.add.image(cx, H / 2, heroKey).setDisplaySize(heroSize, heroSize).setDepth(-2);
+    this.tweens.add({ targets: hero, y: H / 2 - Math.round(10 * s), duration: 1100, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
 
-    // ── Message (msg1..3, non-empty lines joined) ──
+    // ── Message — overlaid on the hero, in the lower-middle (msg1..3 joined) ──
     const msg = [GT.celebMsg1, GT.celebMsg2, GT.celebMsg3].filter((l) => l && l.trim()).join('\n');
     if (msg) {
-      const msgText = this.add.text(cx, heroY + heroSize * 0.5 + Math.round(18 * s), msg, {
+      const msgText = this.add.text(cx, H * 0.62, msg, {
         fontSize: px(22), fontFamily: 'Arial', color: '#e6fbff', align: 'center',
         wordWrap: { width: W * 0.86 }, lineSpacing: Math.round(6 * s),
-      }).setOrigin(0.5, 0).setDepth(20);
+        stroke: '#1a0a2e', strokeThickness: Math.max(3, Math.round(5 * s)),
+      }).setOrigin(0.5, 0.5).setDepth(20);
+      msgText.setShadow(0, Math.round(2 * s), '#000000', Math.round(7 * s), false, true);
       fitText(msgText, W * 0.92);
     }
 

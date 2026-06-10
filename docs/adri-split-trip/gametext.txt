@@ -1,7 +1,7 @@
 # gametext.txt — Adriana's Split Trip (COMPLETE variant gametext)
 # A full copy of the base Split Trip gametext with Adriana's overrides applied inline,
 # plus the celebration keys at the bottom. Edit ANY value below to customize Adriana's game.
-# At build time this REPLACES the base gametext for the adrianas-split-trip variant.
+# At build time this REPLACES the base gametext for the adri-split-trip variant.
 # Lines starting with # are comments. Use \n for a line break inside a value.
 
 # ── Identity ──────────────────────────────────────────────────────────────────
@@ -56,7 +56,7 @@ toastSpriteSaved = Sprite saved! It will apply next game.
 toastUploadError = Could not read that image — try another file.
 
 # ═════════════════════════════════════════════════════════════════════════════
-# adrianas-split-trip — celebration scenes (View 1 + View 2)
+# adri-split-trip — celebration scenes (View 1 + View 2)
 # Everything ABOVE is the full base gametext (edit freely). Below are the celebration keys.
 # Tokens for the milestone (View 2) lines:
 #   {N} -> celebN number   {Nth} -> celebNth ordinal   {walls} -> walls passed   {seconds} -> seconds survived

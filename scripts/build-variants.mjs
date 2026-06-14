@@ -12,21 +12,54 @@
 //                    fully-editable file (identity, tips, labels, celebration text — everything).
 //   - sprites/     : copied over the base sprites (only the files you provide are replaced).
 //
+// Per-variant Home Screen / install icon + title (derived, not overlaid):
+//   - icon          : built from the variant's heroSide1.png (or base) → docs/<id>/apple-touch-icon.png
+//                     + icon-192/512.png  (see scripts/make-icons.mjs).
+//   - install label : the variant's gametext `gameTitle` baked into the manifest name/short_name
+//                     (Android install label). The web tab + iOS label come from gametext at runtime
+//                     (GameText.js applyText), so they update without a rebuild; the Android install
+//                     name is baked here and only changes on a rebuild.
+//
 // Usage:  npm run build:variants
 
 import { execSync } from 'node:child_process';
-import { existsSync, readdirSync, statSync, cpSync } from 'node:fs';
+import { existsSync, readdirSync, statSync, cpSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { makeIcons } from './make-icons.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DOCS = join(ROOT, 'docs');
+const PUBLIC = join(ROOT, 'public');
 const SRC_VARIANTS = join(ROOT, 'src', 'variants');
 const CONTENT_OVERRIDES = join(ROOT, 'variants'); // optional per-variant text/sprite overrides
+
+// Read `gameTitle` from a gametext.txt, collapsing the in-game \n two-line marker to one line.
+function readGameTitle(gametextPath) {
+  if (!existsSync(gametextPath)) return null;
+  const m = readFileSync(gametextPath, 'utf8').match(/^\s*gameTitle\s*=\s*(.+?)\s*$/m);
+  return m ? m[1].replace(/\\n/g, ' ').replace(/\s+/g, ' ').trim() : null;
+}
+
+// Bake a title into the (content-hashed) manifest vite emitted under docs<...>/assets/.
+function patchManifestName(docsDir, title) {
+  const assets = join(docsDir, 'assets');
+  if (!existsSync(assets)) return;
+  const file = readdirSync(assets).find((f) => /^manifest-.*\.json$/.test(f));
+  if (!file) return;
+  const p = join(assets, file);
+  const m = JSON.parse(readFileSync(p, 'utf8'));
+  m.name = title;
+  m.short_name = title;
+  writeFileSync(p, JSON.stringify(m, null, 2) + '\n');
+}
 
 // 1. Base build → docs/ (emptyOutDir true clears any stale variant subfolders first).
 console.log('▶ base → docs/');
 execSync('npm run build', { stdio: 'inherit', cwd: ROOT });
+// Base icons come from public/ (committed, built from public/sprites/heroSide1.png). Bake base title.
+const baseTitle = readGameTitle(join(PUBLIC, 'gametext.txt'));
+if (baseTitle) patchManifestName(DOCS, baseTitle);
 
 // 2. Every variant under src/variants/ that has a variant.js → docs/<id>/ (emptyOutDir false leaves
 //    docs/). Excludes base and helper folders like shared/ (which hold only reusable scenes).
@@ -41,8 +74,8 @@ for (const id of ids) {
   console.log(`▶ variant ${id} → docs/${id}/`);
   execSync('npm run build', { stdio: 'inherit', cwd: ROOT, env: { ...process.env, VITE_VARIANT: id } });
 
-  // Optional content overlay (omit a file to inherit base text/sprites).
   const ov = join(CONTENT_OVERRIDES, id);
+  // Optional content overlay (omit a file to inherit base text/sprites).
   if (existsSync(ov)) {
     const gametext = join(ov, 'gametext.txt');
     if (existsSync(gametext)) {
@@ -52,6 +85,17 @@ for (const id of ids) {
     const sprites = join(ov, 'sprites');
     if (existsSync(sprites)) cpSync(sprites, join(DOCS, id, 'sprites'), { recursive: true });
   }
+
+  // Home Screen / install icon from this variant's heroSide1.png (falls back to base).
+  const heroSrc = existsSync(join(ov, 'sprites', 'heroSide1.png'))
+    ? join(ov, 'sprites', 'heroSide1.png')
+    : join(PUBLIC, 'sprites', 'heroSide1.png');
+  makeIcons(heroSrc, join(DOCS, id));
+
+  // Android install label = this variant's gameTitle (falls back to base).
+  const title = readGameTitle(join(ov, 'gametext.txt')) || baseTitle;
+  if (title) patchManifestName(join(DOCS, id), title);
+
   console.log(`✓ ${id}`);
 }
 

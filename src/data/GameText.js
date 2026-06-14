@@ -87,4 +87,12 @@ export function applyText(raw) {
     // Own-property check only, so inherited names (toString, constructor, ...) can't be clobbered.
     if (Object.prototype.hasOwnProperty.call(GT, key)) GT[key] = val.replace(/\\n/g, '\n');
   }
+  // Reflect the configured title into the browser tab AND the iOS "Add to Home Screen" label.
+  // gametext may use \n for an in-game two-line title; collapse to one line for these.
+  if (typeof document !== 'undefined' && GT.gameTitle) {
+    const t = GT.gameTitle.replace(/\s*\n\s*/g, ' ').trim();
+    document.title = t;
+    const meta = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+    if (meta) meta.setAttribute('content', t);
+  }
 }

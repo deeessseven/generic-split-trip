@@ -7,6 +7,7 @@ import { GameOverScene } from './scenes/GameOverScene.js';
 import { SettingsScene } from './scenes/SettingsScene.js';
 import { GAME_W, GAME_H } from './constants.js';
 import { AudioSystem } from './AudioSystem.js';
+import { enableIOSAudioThroughMuteSwitch } from './iosAudioUnmute.js';
 import { maybeShowIosInstallHint } from './iosHint.js';
 import { Flow } from './Flow.js';
 import { variant } from './variants/registry.js';
@@ -21,6 +22,10 @@ maybeShowIosInstallHint();
 
 // Audio contexts start suspended until a user gesture — unlock (and start music) on tap.
 document.addEventListener('pointerdown', () => AudioSystem.unlock(), { capture: true });
+
+// iOS-only: keep a silent <audio> loop alive so the game's Web Audio plays even when the
+// hardware mute (orange ring) switch is on. No-op on Android/desktop. See iosAudioUnmute.js.
+enableIOSAudioThroughMuteSwitch();
 
 // Stop the music whenever the page leaves view (tab switch, minimize, screen lock, app
 // switch); resume when it returns. visibilitychange covers most cases; blur/focus also

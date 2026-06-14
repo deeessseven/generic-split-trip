@@ -24,8 +24,9 @@ maybeShowIosInstallHint();
 document.addEventListener('pointerdown', () => AudioSystem.unlock(), { capture: true });
 
 // iOS-only: keep a silent <audio> loop alive so the game's Web Audio plays even when the
-// hardware mute (orange ring) switch is on. No-op on Android/desktop. See iosAudioUnmute.js.
-enableIOSAudioThroughMuteSwitch();
+// hardware mute (orange ring) switch is on. Pass the live context so the holder's session
+// switch can't leave it stuck suspended. No-op on Android/desktop. See iosAudioUnmute.js.
+enableIOSAudioThroughMuteSwitch(() => AudioSystem.ctx);
 
 // Stop the music whenever the page leaves view (tab switch, minimize, screen lock, app
 // switch); resume when it returns. visibilitychange covers most cases; blur/focus also

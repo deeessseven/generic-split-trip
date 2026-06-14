@@ -109,4 +109,19 @@ export function enableIOSAudioThroughMuteSwitch(getContexts) {
   // the OS while still hidden — the game suspends its audio on purpose there.
   document.addEventListener('visibilitychange', () => { if (!document.hidden) kick(); });
   tag.addEventListener('pause', () => { if (!document.hidden) kick(); });
+
+  // WeChat in-app browser: Web Audio stays "interrupted"/silent until WeChat's JS bridge is
+  // ready and an invoke runs — even with a gesture. The getNetworkType invoke is a harmless
+  // no-op whose side effect is unlocking audio playback. This is why players opening the game
+  // via WeChat can get NO sound at all (independent of the mute switch); see the comment block
+  // up top. Fires without needing a tap, so audio can start as soon as WeChat allows it.
+  if (/MicroMessenger/i.test(navigator.userAgent || '')) {
+    const wechatUnlock = () => {
+      const bridge = window.WeixinJSBridge;
+      if (!bridge) return;
+      try { bridge.invoke('getNetworkType', {}, () => kick()); } catch { kick(); }
+    };
+    if (window.WeixinJSBridge) wechatUnlock();
+    else document.addEventListener('WeixinJSBridgeReady', wechatUnlock, false);
+  }
 }

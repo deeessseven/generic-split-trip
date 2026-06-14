@@ -1,4 +1,5 @@
-// Make the game's audio play through the iPhone/iPad hardware mute (orange ring) switch.
+// Make the game's audio play through the iPhone/iPad hardware mute (orange ring) switch, and
+// unlock audio inside the WeChat in-app browser.
 //
 // Why this is needed:
 //   iOS routes Web Audio (which is ALL of this game's sound) through the "ambient" audio
@@ -18,9 +19,11 @@
 //   plays — even with the mute switch OFF. To prevent that, after the holder starts we re-resume
 //   the game's context (and keep it resumed while the page is visible).
 //
-// Notes:
-//   • iOS-only. No-op on Android/desktop (no such switch; they respect Web Audio directly), so
-//     the Capacitor/Android build is unaffected.
+// Scope:
+//   • The silent-<audio> holder is iOS-ONLY (only iOS has a mute switch to defeat). No-op on
+//     Android/desktop Safari/Chrome, so the Capacitor/Android build is unaffected.
+//   • The WeChat bridge unlock runs in the WeChat in-app browser on ANY platform (WeChat
+//     throttles Web Audio until its JS bridge fires on Android too).
 //   • The clip is digital silence, so nothing is ever actually heard from the tag itself.
 
 function isIOS() {
@@ -33,8 +36,8 @@ function isIOS() {
 }
 
 // Build ~1s of 16-bit mono 44.1kHz PCM silence and hand back a blob URL. 16-bit/44.1k is the
-// most universally decodable WAV format on iOS (the earlier 8-bit/8kHz clip could fail to
-// decode, which leaves the audio session in a bad state). Generated at runtime — no asset file.
+// most universally decodable WAV format on iOS (an 8-bit/8kHz clip could fail to decode, which
+// leaves the audio session in a bad state). Generated at runtime — no asset file.
 function makeSilentWavUrl() {
   const sampleRate = 44100;
   const numSamples = sampleRate;          // 1 second
@@ -67,7 +70,10 @@ let _installed = false;
 export function enableIOSAudioThroughMuteSwitch(getContexts) {
   if (_installed) return;
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
-  if (!isIOS()) return;
+
+  const ios = isIOS();
+  const isWeChat = /MicroMessenger/i.test(navigator.userAgent || '');
+  if (!ios && !isWeChat) return; // nothing to defeat on plain Android/desktop
   _installed = true;
 
   const resumeContexts = () => {
@@ -80,42 +86,45 @@ export function enableIOSAudioThroughMuteSwitch(getContexts) {
     }
   };
 
-  const tag = document.createElement('audio');
-  tag.setAttribute('playsinline', '');
-  tag.setAttribute('webkit-playsinline', '');
-  tag.loop = true;
-  tag.preload = 'auto';
-  tag.volume = 1;                   // content is silence; a muted tag may not flip the session
-  tag.controls = false;
-  try { tag.disableRemotePlayback = true; } catch { /* not supported everywhere */ }
-  tag.src = makeSilentWavUrl();
-
-  // Starting the holder can suspend the game's context; resume it once the holder is actually
-  // playing, and again shortly after, so we win the race regardless of iOS's timing.
-  tag.addEventListener('playing', () => { resumeContexts(); setTimeout(resumeContexts, 250); });
-
+  // The silent looping holder (iOS only). kick() plays it when present and keeps the game's
+  // context resumed; it is cheap and idempotent, safe to call on every gesture.
+  let tag = null;
   const kick = () => {
-    const p = tag.play();
-    if (p && p.catch) p.catch(() => {});
+    if (tag) { const p = tag.play(); if (p && p.catch) p.catch(() => {}); }
     resumeContexts();
-    setTimeout(resumeContexts, 250);
   };
 
-  // Web Audio unlock requires a gesture anyway; play the holder in that same gesture.
-  for (const e of ['touchend', 'pointerup', 'mousedown', 'keydown']) {
-    document.addEventListener(e, kick, { capture: true, passive: true });
-  }
-  // iOS pauses the tag when backgrounded; revive it (and the context) on return. Never fight
-  // the OS while still hidden — the game suspends its audio on purpose there.
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) kick(); });
-  tag.addEventListener('pause', () => { if (!document.hidden) kick(); });
+  if (ios) {
+    tag = document.createElement('audio');
+    tag.setAttribute('playsinline', '');
+    tag.setAttribute('webkit-playsinline', '');
+    tag.loop = true;
+    tag.preload = 'auto';
+    tag.volume = 1;                   // content is silence; a muted tag may not flip the session
+    tag.controls = false;
+    try { tag.disableRemotePlayback = true; } catch { /* not supported everywhere */ }
+    tag.src = makeSilentWavUrl();
 
-  // WeChat in-app browser: Web Audio stays "interrupted"/silent until WeChat's JS bridge is
-  // ready and an invoke runs — even with a gesture. The getNetworkType invoke is a harmless
-  // no-op whose side effect is unlocking audio playback. This is why players opening the game
-  // via WeChat can get NO sound at all (independent of the mute switch); see the comment block
-  // up top. Fires without needing a tap, so audio can start as soon as WeChat allows it.
-  if (/MicroMessenger/i.test(navigator.userAgent || '')) {
+    // Starting the holder can suspend the game's context; resume it once the holder is actually
+    // playing, and again shortly after, so we win the race regardless of iOS's timing.
+    tag.addEventListener('playing', () => { resumeContexts(); setTimeout(resumeContexts, 250); });
+    // iOS pauses the tag when backgrounded; revive it (and the context) on return. Never fight
+    // the OS while still hidden — the game suspends its audio on purpose there.
+    tag.addEventListener('pause', () => { if (!document.hidden) kick(); });
+
+    // Web Audio unlock requires a gesture anyway; play the holder in that same gesture.
+    for (const e of ['touchend', 'pointerup', 'mousedown', 'keydown']) {
+      document.addEventListener(e, kick, { capture: true, passive: true });
+    }
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) kick(); });
+  }
+
+  // WeChat in-app browser (iOS AND Android): Web Audio stays "interrupted"/silent until WeChat's
+  // JS bridge is ready and an invoke runs — even with a gesture. The getNetworkType invoke is a
+  // harmless no-op whose side effect unlocks audio playback. This is why players opening the game
+  // via WeChat can get NO sound at all (independent of the mute switch). Fires without needing a
+  // tap, so audio can start as soon as WeChat allows it.
+  if (isWeChat) {
     const wechatUnlock = () => {
       const bridge = window.WeixinJSBridge;
       if (!bridge) return;

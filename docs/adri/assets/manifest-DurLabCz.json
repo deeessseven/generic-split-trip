@@ -1,12 +1,16 @@
 {
   "name": "Adriana's Birthday Adventure",
   "short_name": "Adriana's Birthday Adventure",
+  "description": "Control two dimensions — survive both views.",
   "start_url": "../",
   "scope": "../",
   "display": "fullscreen",
   "orientation": "landscape",
   "background_color": "#1a1a2e",
   "theme_color": "#1a1a2e",
+  "categories": [
+    "games"
+  ],
   "icons": [
     {
       "src": "../icon-192.png",
@@ -19,6 +23,18 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
+    },
+    {
+      "src": "../icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "../icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

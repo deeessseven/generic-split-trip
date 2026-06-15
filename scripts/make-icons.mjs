@@ -160,13 +160,38 @@ function encodePNG(width, height, rgba) {
   return Buffer.concat([sig, chunk('IHDR', ihdr), chunk('IDAT', idatData), chunk('IEND', Buffer.alloc(0))]);
 }
 
+// Build a maskable variant: the hero scaled into the center safe zone (~80%) on the solid
+// background, so Android's adaptive-icon crop only eats the padding, never the character.
+function padToMaskable(square, side, bg, scale = 0.8) {
+  const inner = Math.max(1, Math.round(side * scale));
+  const innerImg = resize(square, side, side, inner, inner);
+  const out = Buffer.alloc(side * side * 4);
+  for (let i = 0; i < side * side; i++) { const d = i * 4; out[d] = bg[0]; out[d + 1] = bg[1]; out[d + 2] = bg[2]; out[d + 3] = 255; }
+  const off = Math.floor((side - inner) / 2);
+  for (let yy = 0; yy < inner; yy++) for (let xx = 0; xx < inner; xx++) {
+    const s = (yy * inner + xx) * 4, a = innerImg[s + 3] / 255;
+    const d = ((off + yy) * side + (off + xx)) * 4;
+    out[d]     = Math.round(innerImg[s]     * a + bg[0] * (1 - a));
+    out[d + 1] = Math.round(innerImg[s + 1] * a + bg[1] * (1 - a));
+    out[d + 2] = Math.round(innerImg[s + 2] * a + bg[2] * (1 - a));
+    out[d + 3] = 255;
+  }
+  return out;
+}
+
 // ── API ───────────────────────────────────────────────────────────────────────
-// Composite srcSpritePng over the background color and write the icon set into outDir.
+// Composite srcSpritePng over the background color and write the icon set (incl. maskable
+// variants icon-maskable-192/512.png) into outDir.
 export function makeIcons(srcSpritePng, outDir, bg = BG) {
   const { width, height, rgba } = decodePNG(readFileSync(srcSpritePng));
   const { rgba: square, side } = containOnBg(rgba, width, height, bg);
   for (const [name, size] of OUTPUTS) {
     writeFileSync(join(outDir, name), encodePNG(size, size, resize(square, side, side, size, size)));
+  }
+  // Maskable (Android adaptive icon): hero at ~80% on the same background.
+  const mask = padToMaskable(square, side, bg);
+  for (const size of [192, 512]) {
+    writeFileSync(join(outDir, `icon-maskable-${size}.png`), encodePNG(size, size, resize(mask, side, side, size, size)));
   }
   return { side };
 }

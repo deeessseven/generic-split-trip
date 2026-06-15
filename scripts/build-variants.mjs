@@ -57,7 +57,9 @@ function patchManifestName(docsDir, title) {
 // 1. Base build → docs/ (emptyOutDir true clears any stale variant subfolders first).
 console.log('▶ base → docs/');
 execSync('npm run build', { stdio: 'inherit', cwd: ROOT });
-// Base icons come from public/ (committed, built from public/sprites/heroSide1.png). Bake base title.
+// Regenerate base icons from current source (so a base-art change can't leave a stale base icon),
+// then bake the base title into the manifest.
+makeIcons(join(PUBLIC, 'sprites', 'heroSide1.png'), DOCS);
 const baseTitle = readGameTitle(join(PUBLIC, 'gametext.txt'));
 if (baseTitle) patchManifestName(DOCS, baseTitle);
 

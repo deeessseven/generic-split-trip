@@ -234,7 +234,7 @@ export const AudioSystem = {
     this.musicEnabled = on;
     try { localStorage.setItem('splittrip_music', on ? 'on' : 'off'); } catch { /* ignore */ }
     if (on) this.startMusic(); else this.stopMusic();
-    syncIOSAudioHolder(); // start/stop the iOS mute-switch holder with audio (controls the media bubble)
+    syncIOSAudioHolder(); // re-assert the iOS playback audio session (mute-switch override)
   },
 
   setSfxEnabled(on) {

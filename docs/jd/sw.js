@@ -12,7 +12,7 @@
 // If anything goes wrong (offline + uncached, unsupported API), it fails exactly as it would with
 // no service worker at all.
 
-const VERSION = '1781487770985';
+const VERSION = '1781496712909';
 const CACHE = `app-${VERSION}`;
 const SCOPE_PATH = new URL(self.registration.scope).pathname;
 

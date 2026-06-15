@@ -63,11 +63,15 @@ function makeSilentWavUrl() {
 }
 
 let _installed = false;
+let _syncHolder = null; // set once installed; lets the game start/stop the holder on audio toggles
 
 // getContexts: optional () => (AudioContext | AudioContext[] | null). The game's live audio
-// context(s) — re-resumed after the silent holder starts so iOS's session switch can't leave
-// them stuck suspended.
-export function enableIOSAudioThroughMuteSwitch(getContexts) {
+//   context(s) — re-resumed after the silent holder starts so iOS's session switch can't leave
+//   them stuck suspended.
+// isAudioWanted: optional () => boolean. The holder only plays while the game actually wants
+//   sound (music or SFX on); when it returns false the holder pauses, so iOS drops the Now Playing
+//   / Dynamic Island media bubble while the game is silent. Defaults to always-on.
+export function enableIOSAudioThroughMuteSwitch(getContexts, isAudioWanted) {
   if (_installed) return;
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
 
@@ -75,6 +79,8 @@ export function enableIOSAudioThroughMuteSwitch(getContexts) {
   const isWeChat = /MicroMessenger/i.test(navigator.userAgent || '');
   if (!ios && !isWeChat) return; // nothing to defeat on plain Android/desktop
   _installed = true;
+
+  const wanted = typeof isAudioWanted === 'function' ? isAudioWanted : () => true;
 
   const resumeContexts = () => {
     if (!getContexts || document.hidden) return;
@@ -86,13 +92,19 @@ export function enableIOSAudioThroughMuteSwitch(getContexts) {
     }
   };
 
-  // The silent looping holder (iOS only). kick() plays it when present and keeps the game's
-  // context resumed; it is cheap and idempotent, safe to call on every gesture.
+  // The silent looping holder (iOS only). syncHolder() plays it while audio is wanted and pauses
+  // it otherwise (so the iOS media bubble only shows when the game wants sound), and always keeps
+  // the game's context resumed (also covers Android WeChat, where there is no tag). Cheap and
+  // idempotent — safe to call on every gesture and on every audio toggle.
   let tag = null;
-  const kick = () => {
-    if (tag) { const p = tag.play(); if (p && p.catch) p.catch(() => {}); }
+  const syncHolder = () => {
+    if (tag) {
+      if (wanted()) { const p = tag.play(); if (p && p.catch) p.catch(() => {}); }
+      else { try { tag.pause(); } catch { /* */ } }
+    }
     resumeContexts();
   };
+  _syncHolder = syncHolder;
 
   if (ios) {
     tag = document.createElement('audio');
@@ -110,13 +122,13 @@ export function enableIOSAudioThroughMuteSwitch(getContexts) {
     tag.addEventListener('playing', () => { resumeContexts(); setTimeout(resumeContexts, 250); });
     // iOS pauses the tag when backgrounded; revive it (and the context) on return. Never fight
     // the OS while still hidden — the game suspends its audio on purpose there.
-    tag.addEventListener('pause', () => { if (!document.hidden) kick(); });
+    tag.addEventListener('pause', () => { if (!document.hidden) syncHolder(); });
 
-    // Web Audio unlock requires a gesture anyway; play the holder in that same gesture.
+    // Web Audio unlock requires a gesture anyway; sync the holder in that same gesture.
     for (const e of ['touchend', 'pointerup', 'mousedown', 'keydown']) {
-      document.addEventListener(e, kick, { capture: true, passive: true });
+      document.addEventListener(e, syncHolder, { capture: true, passive: true });
     }
-    document.addEventListener('visibilitychange', () => { if (!document.hidden) kick(); });
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) syncHolder(); });
   }
 
   // WeChat in-app browser (iOS AND Android): Web Audio stays "interrupted"/silent until WeChat's
@@ -128,9 +140,16 @@ export function enableIOSAudioThroughMuteSwitch(getContexts) {
     const wechatUnlock = () => {
       const bridge = window.WeixinJSBridge;
       if (!bridge) return;
-      try { bridge.invoke('getNetworkType', {}, () => kick()); } catch { kick(); }
+      try { bridge.invoke('getNetworkType', {}, () => syncHolder()); } catch { syncHolder(); }
     };
     if (window.WeixinJSBridge) wechatUnlock();
     else document.addEventListener('WeixinJSBridgeReady', wechatUnlock, false);
   }
+}
+
+// Call this after the game enables/disables music or SFX so the silent holder starts/stops with
+// audio — which is what makes the iOS Now Playing / Dynamic Island media bubble appear only while
+// the game wants sound, and disappear when the player mutes. No-op off iOS and before install.
+export function syncIOSAudioHolder() {
+  if (_syncHolder) _syncHolder();
 }

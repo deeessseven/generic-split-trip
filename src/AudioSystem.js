@@ -1,5 +1,3 @@
-import { syncIOSAudioHolder } from './iosAudioUnmute.js';
-
 // Procedural audio (Web Audio API) — no asset files.
 //  • A warm, gentle "adventure" theme: soft pad + bass + a melodic lead over an 8-bar
 //    loop (I–V–vi–IV in C major). Triangle/sine voices through a lowpass bus with smooth
@@ -234,14 +232,12 @@ export const AudioSystem = {
     this.musicEnabled = on;
     try { localStorage.setItem('splittrip_music', on ? 'on' : 'off'); } catch { /* ignore */ }
     if (on) this.startMusic(); else this.stopMusic();
-    syncIOSAudioHolder(); // re-assert the iOS playback audio session (mute-switch override)
   },
 
   setSfxEnabled(on) {
     this.init();
     this.sfxEnabled = on;
     try { localStorage.setItem('splittrip_sfx', on ? 'on' : 'off'); } catch { /* ignore */ }
-    syncIOSAudioHolder();
   },
 
   // ── Music loop ──────────────────────────────────────────────────────────────

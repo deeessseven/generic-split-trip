@@ -13,15 +13,23 @@
 // no service worker at all.
 
 const VERSION = '__SW_VERSION__';
-const CACHE = `app-${VERSION}`;
 const SCOPE_PATH = new URL(self.registration.scope).pathname;
+// Cache Storage is shared across the whole ORIGIN, so the cache name is namespaced by this
+// worker's scope. On activate we purge ONLY this scope's own older versions (and legacy
+// un-namespaced "app-*" caches from before this change) — never another game/variant's cache
+// that lives on the same origin. The "@/scope/" suffix can't prefix-collide (e.g. "@/quest/"
+// is not a suffix of "@/quest/dj/").
+const SCOPE_TAG = '@' + SCOPE_PATH;
+const CACHE = VERSION + SCOPE_TAG;
 
 self.addEventListener('install', () => self.skipWaiting());
 
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
     const keys = await caches.keys();
-    await Promise.all(keys.map((k) => (k === CACHE ? null : caches.delete(k))));
+    await Promise.all(keys.map((k) =>
+      (k !== CACHE && (k.endsWith(SCOPE_TAG) || k.startsWith('app-'))) ? caches.delete(k) : null,
+    ));
     await self.clients.claim();
   })());
 });

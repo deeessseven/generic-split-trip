@@ -27,7 +27,6 @@ function isIOS() {
 }
 
 let _installed = false;
-let _resync = null;
 
 // getContexts: optional () => (AudioContext | AudioContext[] | null). The game's live audio
 // context(s) — resumed on gesture / when the page returns to the foreground.
@@ -60,7 +59,6 @@ export function enableIOSAudioThroughMuteSwitch(getContexts) {
   };
 
   const sync = () => { setPlaybackSession(); resumeContexts(); };
-  _resync = sync;
 
   if (ios) {
     setPlaybackSession();
@@ -83,10 +81,4 @@ export function enableIOSAudioThroughMuteSwitch(getContexts) {
     if (window.WeixinJSBridge) wechatUnlock();
     else document.addEventListener('WeixinJSBridgeReady', wechatUnlock, false);
   }
-}
-
-// Re-assert the iOS playback session and resume the game's context. The game calls this after
-// toggling music/SFX. Safe no-op off iOS and before enableIOSAudioThroughMuteSwitch has run.
-export function syncIOSAudioHolder() {
-  if (_resync) _resync();
 }

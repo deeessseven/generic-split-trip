@@ -8,6 +8,7 @@ import { SettingsScene } from './scenes/SettingsScene.js';
 import { GAME_W, GAME_H } from './constants.js';
 import { AudioSystem } from './AudioSystem.js';
 import { enableIOSAudioThroughMuteSwitch } from './iosAudioUnmute.js';
+import './registerSW.js';
 import { maybeShowIosInstallHint } from './iosHint.js';
 import { Flow } from './Flow.js';
 import { variant } from './variants/registry.js';

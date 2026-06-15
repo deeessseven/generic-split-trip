@@ -33,6 +33,13 @@ const DOCS = join(ROOT, 'docs');
 const PUBLIC = join(ROOT, 'public');
 const SRC_VARIANTS = join(ROOT, 'src', 'variants');
 const CONTENT_OVERRIDES = join(ROOT, 'variants'); // optional per-variant text/sprite overrides
+const SW_VERSION = String(Date.now()); // stamped into each deployed sw.js → a redeploy purges old caches
+
+// Stamp the build version into a folder's service worker (replaces the __SW_VERSION__ placeholder).
+function stampSW(dir) {
+  const p = join(dir, 'sw.js');
+  if (existsSync(p)) writeFileSync(p, readFileSync(p, 'utf8').replace(/__SW_VERSION__/g, SW_VERSION));
+}
 
 // Read `gameTitle` from a gametext.txt, collapsing the in-game \n two-line marker to one line.
 function readGameTitle(gametextPath) {
@@ -60,6 +67,7 @@ execSync('npm run build', { stdio: 'inherit', cwd: ROOT });
 // Regenerate base icons from current source (so a base-art change can't leave a stale base icon),
 // then bake the base title into the manifest.
 makeIcons(join(PUBLIC, 'sprites', 'heroSide1.png'), DOCS);
+stampSW(DOCS);
 const baseTitle = readGameTitle(join(PUBLIC, 'gametext.txt'));
 if (baseTitle) patchManifestName(DOCS, baseTitle);
 
@@ -93,6 +101,7 @@ for (const id of ids) {
     ? join(ov, 'sprites', 'heroSide1.png')
     : join(PUBLIC, 'sprites', 'heroSide1.png');
   makeIcons(heroSrc, join(DOCS, id));
+  stampSW(join(DOCS, id));
 
   // Android install label = this variant's gameTitle (falls back to base).
   const title = readGameTitle(join(ov, 'gametext.txt')) || baseTitle;

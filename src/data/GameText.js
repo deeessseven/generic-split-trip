@@ -31,6 +31,11 @@ export const GT = {
   btnMainMenu:      'MAIN MENU',
 
   // ── Settings ──────────────────────────────────────────────────────────────
+  // Toggle for the "Customize Sprites" button (main menu) AND its upload page (SettingsScene).
+  // 'true' shows the button and lets players open the page to upload custom image sprites;
+  // 'false' hides the button and disables the page. Flip this in a game's gametext.txt to easily
+  // enable/disable custom sprite uploads.
+  showCustomizeSprites: 'false',
   settingsTitle:    'CUSTOMIZE SPRITES',
   settingsSubtitle: 'Tap to upload a custom image — tap [reset] to restore default',
   slotCharTop:      'Character\nTop View',

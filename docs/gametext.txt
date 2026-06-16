@@ -53,6 +53,9 @@ btnPlayAgain    = PLAY AGAIN
 btnMainMenu     = MAIN MENU
 
 # ── Settings ──────────────────────────────────────────────────────────────────
+# Show/hide the "Customize Sprites" button and its upload page.
+# true = show the button + allow custom sprite uploads, false = hide button + disable page.
+showCustomizeSprites = false
 settingsTitle    = CUSTOMIZE SPRITES
 settingsSubtitle = Tap to upload a custom image — tap [reset] to restore default
 slotCharTop      = Character\nTop View

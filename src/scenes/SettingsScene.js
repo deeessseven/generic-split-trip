@@ -11,6 +11,10 @@ export class SettingsScene extends Phaser.Scene {
   constructor() { super('SettingsScene'); }
 
   create() {
+    // Page is disabled when gametext's showCustomizeSprites is off — bounce back to the menu so the
+    // custom-sprite upload page can't be reached even if this scene is started directly.
+    if (String(GT.showCustomizeSprites).trim() !== 'true') { Flow.go(this, 'settingsBack'); return; }
+
     relayoutOnResize(this);
     const { width: W, height: H } = this.scale;
     const cx = W / 2, cy = H / 2;

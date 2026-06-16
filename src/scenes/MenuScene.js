@@ -97,8 +97,12 @@ export class MenuScene extends Phaser.Scene {
     const mSurv = this.add.text(0, -9999, GT.tipSurviveLabel + ':\n' + GT.tipSurviveDesc, {
       fontSize: `${Math.round(45 * s)}px`, fontFamily: '"Arial Black", Arial', align: 'center',
     }).setOrigin(0.5, 0);
+    // gametext showCustomizeSprites toggles the "Customize Sprites" button + its upload page
+    // (SettingsScene). When off, the button is not drawn and its height is dropped from the
+    // column measurements below so the remaining column (Title → SURVIVE → PLAY) stays centered.
+    const showCustomize = String(GT.showCustomizeSprites).trim() === 'true';
     const colAtS = mTitle.height + gapS + mSurv.height + Math.round(gapS * 1.5)
-                 + Math.round(144 * s) + gapS + Math.round(92 * s); // + PLAY + Customize heights
+                 + Math.round(144 * s) + (showCustomize ? gapS + Math.round(92 * s) : 0); // + PLAY (+ Customize)
     mTitle.destroy(); mSurv.destroy();
     const fit = Phaser.Math.Clamp((band - Math.round(12 * s)) / colAtS, 0.35, 1);
     const f = s * fit;                                      // column scale
@@ -145,7 +149,7 @@ export class MenuScene extends Phaser.Scene {
     const gap = Math.round(14 * f);
     const titleH = title.height;
     const survH = survLabel.height + survDesc.height;
-    const colTotal = titleH + gap + survH + Math.round(gap * 1.5) + playH + gap + setH;
+    const colTotal = titleH + gap + survH + Math.round(gap * 1.5) + playH + (showCustomize ? gap + setH : 0);
     // Centered in the band, then nudged up ~20px (dynamic) so the title/SURVIVE sit higher.
     let yy = Math.max(tipsBottom + Math.round(6 * s), (tipsBottom + pillsTop) / 2 - colTotal / 2 - Math.round(20 * s));
 
@@ -183,10 +187,13 @@ export class MenuScene extends Phaser.Scene {
       .on('pointerup',   () => { GameScene.noteNewGame(); Flow.go(this, 'play'); });
     yy += playH + gap;
 
-    const setY = yy + setH / 2;
-    makeButton(this, cx, setY, setW, setH, GT.settingsTitle, 0x37474f, 0x263238, () => {
-      Flow.go(this, 'settings');
-    }, fpx(44));
+    // Customize Sprites button — only when gametext's showCustomizeSprites is on (see colAtS above).
+    if (showCustomize) {
+      const setY = yy + setH / 2;
+      makeButton(this, cx, setY, setW, setH, GT.settingsTitle, 0x37474f, 0x263238, () => {
+        Flow.go(this, 'settings');
+      }, fpx(44));
+    }
 
     // Classy entrance: a quick fade from the dark background.
     this.cameras.main.fadeIn(350, 9, 9, 18);

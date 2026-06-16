@@ -7,7 +7,7 @@
 # ── Identity ──────────────────────────────────────────────────────────────────
 gameTitle       = Adriana's Birthday\nAdventure
 gameSubtitle    = Control two dimensions — survive both views
-copyright       = © 2026 Split Trip
+# copyright is auto-generated from gameTitle as "© 2026 <Title>" — no need to set it here.
 
 # ── Hero / story (leave blank if unused) ──────────────────────────────────────
 heroName        =

@@ -2,6 +2,7 @@ export const GT = {
   // ── Identity ──────────────────────────────────────────────────────────────
   gameTitle:        'SPLIT TRIP',
   gameSubtitle:     'Control two dimensions — survive both views',
+  // Auto-generated from gameTitle in applyText() as "© 2026 <Title>"; this is just the fallback.
   copyright:        '© 2026 Split Trip',
 
   // ── Menu tips ─────────────────────────────────────────────────────────────
@@ -92,10 +93,15 @@ export function applyText(raw) {
     // Own-property check only, so inherited names (toString, constructor, ...) can't be clobbered.
     if (Object.prototype.hasOwnProperty.call(GT, key)) GT[key] = val.replace(/\\n/g, '\n');
   }
+  // Collapse a multi-line gametext title (\n) to a single line for places that need one line.
+  const t = (GT.gameTitle || '').replace(/\s*\n\s*/g, ' ').trim();
+
+  // Copyright auto-follows the game's title: "© <year> <Title>". This keeps each variant's menu
+  // copyright in sync with its own title — no separate per-game copyright field to maintain.
+  if (t) GT.copyright = `© 2026 ${t}`;
+
   // Reflect the configured title into the browser tab AND the iOS "Add to Home Screen" label.
-  // gametext may use \n for an in-game two-line title; collapse to one line for these.
-  if (typeof document !== 'undefined' && GT.gameTitle) {
-    const t = GT.gameTitle.replace(/\s*\n\s*/g, ' ').trim();
+  if (typeof document !== 'undefined' && t) {
     document.title = t;
     const meta = document.querySelector('meta[name="apple-mobile-web-app-title"]');
     if (meta) meta.setAttribute('content', t);

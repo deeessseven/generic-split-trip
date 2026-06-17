@@ -82,12 +82,12 @@ export class MenuScene extends Phaser.Scene {
     const copyrightTxt = fitText(this.add.text(cx, copyrightY, GT.copyright, {
       fontSize: px(15), fontFamily: 'Arial', color: '#607089',
     }).setOrigin(0.5, 1), W * 0.9);
-    // Small version number sitting just above the copyright (build-time __APP_VERSION__).
+    // Small version number sitting just to the left of the copyright (build-time __APP_VERSION__).
     const appVersion = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '';
     if (appVersion) {
-      this.add.text(cx, copyrightTxt.y - copyrightTxt.height - Math.round(2 * s), `v${appVersion}`, {
+      this.add.text(copyrightTxt.x - copyrightTxt.width / 2 - Math.round(6 * s), copyrightY, `v${appVersion}`, {
         fontSize: px(11), fontFamily: 'Arial', color: '#4a5a72',
-      }).setOrigin(0.5, 1);
+      }).setOrigin(1, 1);
     }
 
     // ── Center column fit-scale: shrink the doubled column to the free band if needed ──

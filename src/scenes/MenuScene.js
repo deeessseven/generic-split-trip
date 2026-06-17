@@ -86,7 +86,7 @@ export class MenuScene extends Phaser.Scene {
     const appVersion = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '';
     if (appVersion) {
       this.add.text(copyrightTxt.x - copyrightTxt.width / 2 - Math.round(6 * s), copyrightY, `v${appVersion}`, {
-        fontSize: px(11), fontFamily: 'Arial', color: '#4a5a72',
+        fontSize: px(15), fontFamily: 'Arial', color: '#607089',
       }).setOrigin(1, 1);
     }
 

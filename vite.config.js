@@ -1,5 +1,10 @@
 import { defineConfig } from 'vite';
 import { fileURLToPath } from 'node:url';
+import { readFileSync } from 'node:fs';
+
+// Single source of truth for the app version shown on the title screen (and anywhere else):
+// package.json's "version". Bump it there and every build — base AND variants — picks it up.
+const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
 
 // Build-time variant selection. With no VITE_VARIANT (the normal `npm run build`), this is the
 // base game: outDir 'docs', emptyOutDir true. With VITE_VARIANT=<id> (used by
@@ -23,6 +28,10 @@ const activeVariant = fileURLToPath(new URL(
 
 export default defineConfig({
   base: './',
+  define: {
+    // Replaced inline at build time; referenced as the global __APP_VERSION__ in app code.
+    __APP_VERSION__: JSON.stringify(pkg.version),
+  },
   resolve: {
     alias: {
       '@active-variant': activeVariant,

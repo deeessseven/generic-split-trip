@@ -1,5 +1,5 @@
-# gametext.txt — Adriana's Split Trip (COMPLETE variant gametext)
-# A full copy of the base Split Trip gametext with Adriana's overrides applied inline,
+# gametext.txt — Adriana's Double Flap (COMPLETE variant gametext)
+# A full copy of the base Double Flap gametext with Adriana's overrides applied inline,
 # plus the celebration keys at the bottom. Edit ANY value below to customize Adriana's game.
 # At build time this REPLACES the base gametext for the adri variant.
 # Lines starting with # are comments. Use \n for a line break inside a value.

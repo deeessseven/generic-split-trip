@@ -1,5 +1,5 @@
-# gametext.txt — JD's Split Trip (COMPLETE variant gametext)
-# A full copy of the base Split Trip gametext with JD's overrides applied inline,
+# gametext.txt — JD's Double Flap (COMPLETE variant gametext)
+# A full copy of the base Double Flap gametext with JD's overrides applied inline,
 # plus the celebration keys at the bottom. Edit ANY value below to customize JD's game.
 # At build time this REPLACES the base gametext for the jd variant.
 # Lines starting with # are comments. Use \n for a line break inside a value.

@@ -104,7 +104,7 @@ export class GameScene extends Phaser.Scene {
     // The gap WIDTHS still vary with the hero's measured opaque size (see _spawnObstacle), and
     // edge-snapping is done in pixels — so a custom-uploaded hero or a different screen resolution
     // produces a slightly different layout. To fully randomize, seed with a variable (e.g. Date.now()).
-    this.rng = new Phaser.Math.RandomDataGenerator(['splittrip-v1']);
+    this.rng = new Phaser.Math.RandomDataGenerator(['doubleflap-v1']);
 
     // ── Top-view sprite rotation ──────────────────────────────────────────────
     this.topAngle     = 0;

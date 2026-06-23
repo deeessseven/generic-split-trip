@@ -145,8 +145,8 @@ export const AudioSystem = {
     if (this._inited) return;
     this._inited = true;
     try {
-      this.musicEnabled = localStorage.getItem('splittrip_music') !== 'off';
-      this.sfxEnabled   = localStorage.getItem('splittrip_sfx')   !== 'off';
+      this.musicEnabled = localStorage.getItem('doubleflap_music') !== 'off';
+      this.sfxEnabled   = localStorage.getItem('doubleflap_sfx')   !== 'off';
     } catch { /* ignore */ }
     try {
       const AC = window.AudioContext || window.webkitAudioContext;
@@ -230,14 +230,14 @@ export const AudioSystem = {
   setMusicEnabled(on) {
     this.init();
     this.musicEnabled = on;
-    try { localStorage.setItem('splittrip_music', on ? 'on' : 'off'); } catch { /* ignore */ }
+    try { localStorage.setItem('doubleflap_music', on ? 'on' : 'off'); } catch { /* ignore */ }
     if (on) this.startMusic(); else this.stopMusic();
   },
 
   setSfxEnabled(on) {
     this.init();
     this.sfxEnabled = on;
-    try { localStorage.setItem('splittrip_sfx', on ? 'on' : 'off'); } catch { /* ignore */ }
+    try { localStorage.setItem('doubleflap_sfx', on ? 'on' : 'off'); } catch { /* ignore */ }
   },
 
   // ── Music loop ──────────────────────────────────────────────────────────────

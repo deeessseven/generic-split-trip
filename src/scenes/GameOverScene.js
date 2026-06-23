@@ -69,9 +69,9 @@ export class GameOverScene extends Phaser.Scene {
   }
 
   // Best run = most walls, ties broken by more time. Stored as JSON { walls, time }; migrates the
-  // old walls-only key ('splittrip_best_walls'). Returns the best { walls, time }.
+  // old walls-only key ('doubleflap_best_walls'). Returns the best { walls, time }.
   _updateBest(score, time) {
-    const key = 'splittrip_best';
+    const key = 'doubleflap_best';
     let best = { walls: 0, time: 0 };
     try {
       const raw = localStorage.getItem(key);
@@ -79,7 +79,7 @@ export class GameOverScene extends Phaser.Scene {
         const p = JSON.parse(raw);
         best = { walls: Number(p.walls) || 0, time: Number(p.time) || 0 };
       } else {
-        const oldWalls = parseInt(localStorage.getItem('splittrip_best_walls'), 10);
+        const oldWalls = parseInt(localStorage.getItem('doubleflap_best_walls'), 10);
         if (oldWalls) best = { walls: oldWalls, time: 0 };
       }
     } catch { /* ignore */ }

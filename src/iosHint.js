@@ -20,7 +20,7 @@ export function maybeShowIosInstallHint() {
     const standalone = window.navigator.standalone === true ||
       (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
     if (standalone) return;
-    if (localStorage.getItem('splittrip_ios_hint') === 'dismissed') return;
+    if (localStorage.getItem('doubleflap_ios_hint') === 'dismissed') return;
   } catch { return; }
 
   const banner = document.createElement('div');
@@ -50,7 +50,7 @@ export function maybeShowIosInstallHint() {
   ].join(';');
 
   const dismiss = () => {
-    try { localStorage.setItem('splittrip_ios_hint', 'dismissed'); } catch { /* ignore */ }
+    try { localStorage.setItem('doubleflap_ios_hint', 'dismissed'); } catch { /* ignore */ }
     banner.remove();
   };
   close.addEventListener('click', dismiss);

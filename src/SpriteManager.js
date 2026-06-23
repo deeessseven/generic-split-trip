@@ -1,7 +1,7 @@
 import { SPRITE_KEYS } from './constants.js';
 
-const PREFIX       = 'splittrip_sprite_';
-const TITLE_PREFIX = 'splittrip_sprite_title_';
+const PREFIX       = 'doubleflap_sprite_';
+const TITLE_PREFIX = 'doubleflap_sprite_title_';
 
 // Keys that get two stored sizes: 128px for gameplay collision, 512px for title display.
 const CHAR_KEYS = new Set([SPRITE_KEYS.CHAR_TOP, SPRITE_KEYS.CHAR_SIDE]);
@@ -57,13 +57,13 @@ export const SpriteManager = {
     return CHAR_KEYS.has(key);
   },
 
-  // One-time cleanup of the legacy full-resolution hero originals (splittrip_sprite_full_*).
+  // One-time cleanup of the legacy full-resolution hero originals (doubleflap_sprite_full_*).
   // That path was removed (display uses the 512px texture); drop any leftovers so they don't
   // keep eating localStorage for users who uploaded a hero before the change. removeItem on a
   // missing key is a harmless no-op.
   cleanupLegacyFull() {
     for (const key of [SPRITE_KEYS.CHAR_TOP, SPRITE_KEYS.CHAR_SIDE]) {
-      try { localStorage.removeItem('splittrip_sprite_full_' + key); } catch { /* ignore */ }
+      try { localStorage.removeItem('doubleflap_sprite_full_' + key); } catch { /* ignore */ }
     }
   },
 

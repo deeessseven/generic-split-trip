@@ -1,9 +1,9 @@
 export const GT = {
   // ── Identity ──────────────────────────────────────────────────────────────
-  gameTitle:        'SPLIT TRIP',
+  gameTitle:        'Double Flap',
   gameSubtitle:     'Control two dimensions — survive both views',
   // Auto-generated from gameTitle in applyText() as "© 2026 <Title>"; this is just the fallback.
-  copyright:        '© 2026 Split Trip',
+  copyright:        '© 2026 Double Flap',
 
   // ── Menu tips ─────────────────────────────────────────────────────────────
   tipLeftLabel:     'LEFT PANEL',

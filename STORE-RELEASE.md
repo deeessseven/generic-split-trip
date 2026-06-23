@@ -1,4 +1,4 @@
-# Store Release Guide — Split Trip
+# Store Release Guide — Double Flap
 
 How to ship a store app (Apple App Store + Google Play) from this repo. GitHub Pages is separate
 and unaffected (it serves `docs/`, rebuilt with `npm run build:variants`).
@@ -17,7 +17,7 @@ The personalized variants (adri, jd, …) stay on GitHub Pages only unless you d
 
 ### App ID scheme (permanent — choose each leaf carefully)
 Namespace `com.dacquery.*`, unique leaf per app:
-- Split Trip (base) → `com.dacquery.splittrip`  ← current default in `capacitor.config.json`
+- Double Flap (base) → `com.dacquery.splittrip`  ← current default in `capacitor.config.json`
 - A themed/birthday store edition → `com.dacquery.<name>`
 
 The same ID must be used on **both** stores for a given app and can never change once published.
@@ -82,7 +82,7 @@ Version + Build, then Product → Archive → Distribute App. Requires the **App
 
 ---
 
-# ▶ Google Play — base "Split Trip" first release (current setup)
+# ▶ Google Play — base "Double Flap" first release (current setup)
 
 The Android project was generated (`npx cap add android`) with `applicationId com.dacquery.splittrip`
 and release signing wired to a gitignored `android/key.properties`. Web build → `www/` via
@@ -129,5 +129,5 @@ graphic, screenshots, descriptions) → **Play App Signing** → **Internal test
 **Closed testing (≥12 testers, ≥14 days — required for a young personal account; START ASAP)** →
 Production.
 
-> Edge-to-edge note: targetSdk ≥35 enforces edge-to-edge. Split Trip already handles safe-area
+> Edge-to-edge note: targetSdk ≥35 enforces edge-to-edge. Double Flap already handles safe-area
 > insets (see `src/safeArea.js`), but verify on a notched device during testing.

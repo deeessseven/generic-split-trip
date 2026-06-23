@@ -1,10 +1,10 @@
-# gametext.txt — Generic Split Trip
+# gametext.txt — Double Flap (base)
 # Edit the values below to customize your variant.
 # Lines starting with # are comments and are ignored.
 # Use \n for a line break inside a value.
 
 # ── Identity ──────────────────────────────────────────────────────────────────
-gameTitle       = Split Trip
+gameTitle       = Double Flap
 gameSubtitle    = Control two dimensions — survive both views
 # copyright is auto-generated from gameTitle as "© 2026 <Title>" — no need to set it here.
 

@@ -17,7 +17,7 @@ The personalized variants (adri, jd, …) stay on GitHub Pages only unless you d
 
 ### App ID scheme (permanent — choose each leaf carefully)
 Namespace `com.dacquery.*`, unique leaf per app:
-- Double Flap (base) → `com.dacquery.splittrip`  ← current default in `capacitor.config.json`
+- Double Flap (base) → `com.dacquery.doubleflap`  ← current default in `capacitor.config.json`
 - A themed/birthday store edition → `com.dacquery.<name>`
 
 The same ID must be used on **both** stores for a given app and can never change once published.
@@ -39,7 +39,7 @@ Produces a lean `www/` (one variant) with that variant's gametext + sprites over
 **Never commit keystore passwords.** Keep them in a local file outside the repo. Generate a fresh
 **upload** key per app:
 ```
-keytool -genkey -v -keystore splittrip-upload.keystore -alias splittripupload \
+keytool -genkey -v -keystore doubleflap-upload.keystore -alias doubleflapupload \
   -keyalg RSA -keysize 2048 -validity 10000
 ```
 At Play Console → Release → Setup → App signing, enroll in **Play App Signing** and register this
@@ -84,7 +84,7 @@ Version + Build, then Product → Archive → Distribute App. Requires the **App
 
 # ▶ Google Play — base "Double Flap" first release (current setup)
 
-The Android project was generated (`npx cap add android`) with `applicationId com.dacquery.splittrip`
+The Android project was generated (`npx cap add android`) with `applicationId com.dacquery.doubleflap`
 and release signing wired to a gitignored `android/key.properties`. Web build → `www/` via
 `npm run build:app`.
 
@@ -101,16 +101,16 @@ and release signing wired to a gitignored `android/key.properties`. Web build �
 
 ## 1. Upload key (you choose the password — keep it OUT of git)
 ```
-keytool -genkey -v -keystore splittrip-upload.keystore -alias splittripupload \
+keytool -genkey -v -keystore doubleflap-upload.keystore -alias doubleflapupload \
   -keyalg RSA -keysize 2048 -validity 10000
 ```
 Store the `.keystore` outside the repo; record the password in a local note only.
 
 ## 2. Create `android/key.properties` (gitignored — never commit)
 ```
-storeFile=C:\\Users\\dshen\\Desktop\\AI\\keystores\\splittrip-upload.keystore
+storeFile=C:\\Users\\dshen\\Desktop\\AI\\keystores\\doubleflap-upload.keystore
 storePassword=YOUR_PASSWORD
-keyAlias=splittripupload
+keyAlias=doubleflapupload
 keyPassword=YOUR_PASSWORD
 ```
 

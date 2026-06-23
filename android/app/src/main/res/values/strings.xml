@@ -2,6 +2,6 @@
 <resources>
     <string name="app_name">Double Flap</string>
     <string name="title_activity_main">Double Flap</string>
-    <string name="package_name">com.dacquery.splittrip</string>
-    <string name="custom_url_scheme">com.dacquery.splittrip</string>
+    <string name="package_name">com.dacquery.doubleflap</string>
+    <string name="custom_url_scheme">com.dacquery.doubleflap</string>
 </resources>

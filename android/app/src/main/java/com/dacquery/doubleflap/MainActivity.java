@@ -1,4 +1,4 @@
-package com.dacquery.splittrip;
+package com.dacquery.doubleflap;
 
 import com.getcapacitor.BridgeActivity;
 

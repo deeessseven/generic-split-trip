@@ -49,6 +49,22 @@ export const GT = {
   toastSpriteSaved: 'Sprite saved! It will apply next game.',
   toastUploadError: 'Could not read that image — try another file.',
 
+  // ── Leaderboard ─────────────────────────────────────────────────────────────
+  leaderboardTitle: 'LEADERBOARD',
+  leaderboardBtn:   'Leaderboard',
+  lbLoading:        'Loading…',
+  lbEmpty:          'No scores yet — be the first!',
+  lbHeaderName:     'NAME',
+  lbHeaderWalls:    'WALLS',
+  lbHeaderTime:     'TIME',
+  lbNamePrompt:     'You made the Top 10!',
+  lbNameSub:        'Enter a name for the leaderboard:',
+  lbNameSubmit:     'Submit',
+  lbNameSkip:       'Skip',
+  lbNewRank:        'New high score — rank #', // followed by the number
+  lbSubmitted:      'Score submitted!',
+  lbPendingNote:    'Saved — will post when you’re back online',
+
   // ── Story / variant identity (empty by default — fill in gametext.txt) ────
   heroName:         '',
   heroDescription:  '',

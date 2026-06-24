@@ -4,4 +4,4 @@
 // leaderboard UI and behaves byte-for-byte as it did before (local best only). Once you've
 // deployed the Worker, paste its URL here (NO trailing slash), e.g.:
 //   export const LEADERBOARD_URL = 'https://doubleflap-leaderboard.yourname.workers.dev';
-export const LEADERBOARD_URL = '';
+export const LEADERBOARD_URL = 'https://doubleflap-leaderboard.deeessseven.workers.dev';

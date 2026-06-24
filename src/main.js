@@ -5,6 +5,7 @@ import { MenuScene }     from './scenes/MenuScene.js';
 import { GameScene }     from './scenes/GameScene.js';
 import { GameOverScene } from './scenes/GameOverScene.js';
 import { SettingsScene } from './scenes/SettingsScene.js';
+import { LeaderboardScene } from './scenes/LeaderboardScene.js';
 import { GAME_W, GAME_H } from './constants.js';
 import { AudioSystem } from './AudioSystem.js';
 import { enableIOSAudioThroughMuteSwitch } from './iosAudioUnmute.js';
@@ -103,7 +104,7 @@ const config = {
   },
   // Core scenes first (BootScene must stay first — Phaser auto-starts it), then any extra scenes
   // the active variant adds. Base contributes none, so the array is unchanged for the base game.
-  scene: [BootScene, MenuScene, GameScene, GameOverScene, SettingsScene, ...(variant.scenes || [])],
+  scene: [BootScene, MenuScene, GameScene, GameOverScene, SettingsScene, LeaderboardScene, ...(variant.scenes || [])],
 };
 
 // Sharpen ALL text game-wide: render every Text object's internal canvas at the device pixel

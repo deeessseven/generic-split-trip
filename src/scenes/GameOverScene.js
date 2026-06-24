@@ -5,6 +5,8 @@ import { AudioSystem } from '../AudioSystem.js';
 import { relayoutOnResize } from '../responsive.js';
 import { Flow } from '../Flow.js';
 import { GameScene } from './GameScene.js';
+import { Leaderboard } from '../leaderboard.js';
+import { promptName } from '../nameEntry.js';
 
 export class GameOverScene extends Phaser.Scene {
   constructor() { super('GameOverScene'); }
@@ -27,8 +29,11 @@ export class GameOverScene extends Phaser.Scene {
     // Dim overlay
     this.add.rectangle(cx, cy, W, H, 0x000000, 0.72);
 
+    // When the leaderboard is enabled the panel grows to fit a result line + a Leaderboard button.
+    const lbOn = Leaderboard.enabled();
+
     // Panel
-    this.add.rectangle(cx, cy, Math.round(360 * k), Math.round(300 * k), 0x0d1117, 0.95)
+    this.add.rectangle(cx, cy, Math.round(360 * k), Math.round((lbOn ? 360 : 300) * k), 0x0d1117, 0.95)
       .setStrokeStyle(2, 0xef5350, 0.8);
 
     // Panel inner width that text must stay within (panel is 360*k wide).
@@ -58,14 +63,38 @@ export class GameOverScene extends Phaser.Scene {
       fontSize: fp(16), fontFamily: 'Arial', color: '#ffd54f',
     }).setOrigin(0.5), panelW);
 
+    // Leaderboard: a result line + a Leaderboard button, and (if this run made the Top 10) a
+    // name prompt → submit. Only when a Worker URL is configured; otherwise the panel is unchanged.
+    if (lbOn) {
+      const resultTxt = this.add.text(cx, cy + 62 * k, '', {
+        fontSize: fp(16), fontFamily: '"Arial Black", Arial', color: '#ffd54f', align: 'center',
+      }).setOrigin(0.5);
+      fitText(resultTxt, panelW);
+      makeButton(this, cx, cy + 96 * k, Math.round(220 * k), Math.round(40 * k),
+        GT.leaderboardBtn, 0x18617a, 0x124b5f, () => Flow.go(this, 'leaderboard'), fp(15));
+      if (Leaderboard.qualifies(score, time)) this._handleQualify(score, time, resultTxt);
+    }
+
     // Buttons
-    makeButton(this, cx - 90 * k, cy + 115 * k, Math.round(160 * k), Math.round(44 * k), GT.btnPlayAgain, 0x29b6f6, 0x0288d1, () => {
+    const navY = (lbOn ? 150 : 115) * k;
+    makeButton(this, cx - 90 * k, cy + navY, Math.round(160 * k), Math.round(44 * k), GT.btnPlayAgain, 0x29b6f6, 0x0288d1, () => {
       GameScene.noteNewGame();
       Flow.go(this, 'playAgain');
     }, fp(16));
-    makeButton(this, cx + 90 * k, cy + 115 * k, Math.round(160 * k), Math.round(44 * k), GT.btnMainMenu, 0x37474f, 0x263238, () => {
+    makeButton(this, cx + 90 * k, cy + navY, Math.round(160 * k), Math.round(44 * k), GT.btnMainMenu, 0x37474f, 0x263238, () => {
       Flow.go(this, 'mainMenu');
     }, fp(16));
+  }
+
+  // Qualifying run → prompt for a name → submit. Updates the result line with the rank, or a
+  // "saved offline" note if the submit had to be queued. Guards against the scene being gone.
+  async _handleQualify(score, time, resultTxt) {
+    const name = await promptName(Leaderboard.lastName());
+    if (name == null) return; // player skipped
+    const res = await Leaderboard.submit(name, score, time);
+    if (!this.scene.isActive() || !resultTxt.active) return;
+    if (res.ok) resultTxt.setText(res.rank ? `${GT.lbNewRank}${res.rank}` : GT.lbSubmitted);
+    else resultTxt.setText(GT.lbPendingNote);
   }
 
   // Best run = most walls, ties broken by more time. Stored as JSON { walls, time }; migrates the

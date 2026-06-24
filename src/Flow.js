@@ -18,6 +18,8 @@ const DEFAULT_ROUTES = {
   mainMenu:     'MenuScene',     // GameOverScene MAIN MENU
   settings:     'SettingsScene', // MenuScene settings button
   settingsBack: 'MenuScene',     // SettingsScene BACK
+  leaderboard:     'LeaderboardScene', // menu / game-over Leaderboard button
+  leaderboardBack: 'MenuScene',        // LeaderboardScene BACK
 };
 
 let routes = { ...DEFAULT_ROUTES };

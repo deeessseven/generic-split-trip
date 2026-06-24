@@ -9,6 +9,7 @@ import { fitText } from '../fitText.js';
 import { buildThumbTexture, addThumbHints } from '../thumbHints.js';
 import { Flow } from '../Flow.js';
 import { GameScene } from './GameScene.js';
+import { Leaderboard } from '../leaderboard.js';
 
 export class MenuScene extends Phaser.Scene {
   constructor() { super('MenuScene'); }
@@ -79,6 +80,19 @@ export class MenuScene extends Phaser.Scene {
     const pillW = Math.max(measurePill('Music: '), measurePill('Sound FX: ')) + Math.round(24 * pillUi);
     this._audioToggle(cx, musicCY, 'Music: ',    () => AudioSystem.isMusicEnabled(), (v) => AudioSystem.setMusicEnabled(v), pillUi, pillW);
     this._audioToggle(cx, soundCY, 'Sound FX: ', () => AudioSystem.isSfxEnabled(),   (v) => AudioSystem.setSfxEnabled(v), pillUi, pillW);
+
+    // Leaderboard button sits just above the audio pills (only when a Worker URL is configured).
+    // It joins the bottom "cluster", so `clusterTop` (used for the center-column band below) moves
+    // up to include it — keeping the title/PLAY column from overlapping it.
+    let clusterTop = pillsTop;
+    if (Leaderboard.enabled()) {
+      const lbH = Math.round(34 * s);
+      const lbW = Math.min(Math.round(260 * s), Math.round(W * 0.7));
+      const lbCY = pillsTop - Math.round(10 * s) - lbH / 2;
+      makeButton(this, cx, lbCY, lbW, lbH, GT.leaderboardBtn, 0x18617a, 0x124b5f,
+        () => Flow.go(this, 'leaderboard'), `${Math.round(15 * s)}px`);
+      clusterTop = lbCY - lbH / 2;
+    }
     const copyrightTxt = fitText(this.add.text(cx, copyrightY, GT.copyright, {
       fontSize: px(15), fontFamily: 'Arial', color: '#607089',
     }).setOrigin(0.5, 1), W * 0.9);
@@ -95,7 +109,7 @@ export class MenuScene extends Phaser.Scene {
     // discarded), then derive the fit from that instead of a hardcoded estimate. The column
     // scales ~linearly with f, so fit = band/colAtS guarantees PLAY/Customize never spill onto
     // the bottom pills — which the old estimate (+ 0.5 floor) failed to prevent on short screens.
-    const band = pillsTop - tipsBottom;
+    const band = clusterTop - tipsBottom;
     const gapS = Math.round(14 * s);
     const mTitle = this.add.text(0, -9999, GT.gameTitle, {
       fontSize: `${Math.round(138 * s)}px`, fontFamily: '"Arial Black", Arial, sans-serif',
@@ -158,7 +172,7 @@ export class MenuScene extends Phaser.Scene {
     const survH = survLabel.height + survDesc.height;
     const colTotal = titleH + gap + survH + Math.round(gap * 1.5) + playH + (showCustomize ? gap + setH : 0);
     // Centered in the band, then nudged up ~20px (dynamic) so the title/SURVIVE sit higher.
-    let yy = Math.max(tipsBottom + Math.round(6 * s), (tipsBottom + pillsTop) / 2 - colTotal / 2 - Math.round(20 * s));
+    let yy = Math.max(tipsBottom + Math.round(6 * s), (tipsBottom + clusterTop) / 2 - colTotal / 2 - Math.round(20 * s));
 
     title.setY(yy + titleH / 2);
     this.tweens.add({ targets: title, scale: 1.025, duration: 2600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });

@@ -274,7 +274,7 @@ export class GameScene extends Phaser.Scene {
     const scoreDivX = W / 2;
     this.scoreWallsTxt = this.add.text(scoreDivX - 12, 6, `0 ${GT.scoreUnit}`, scoreStyle).setOrigin(1, 0).setDepth(6);
     this.add.text(scoreDivX, 6, '|', scoreStyle).setOrigin(0.5, 0).setDepth(6);
-    this.scoreTimeTxt = this.add.text(scoreDivX + 12, 6, '0s', scoreStyle).setOrigin(0, 0).setDepth(6);
+    this.scoreTimeTxt = this.add.text(scoreDivX + 12, 6, '0.00s', scoreStyle).setOrigin(0, 0).setDepth(6);
 
     // Panel labels. The screen may have rounded corners and/or a notch/cutout that clips the
     // corners. Vertical inset is small (labels sit near the top edge); horizontal inset is
@@ -585,7 +585,7 @@ export class GameScene extends Phaser.Scene {
     this.time.delayedCall(900, () => {
       Flow.go(this, 'gameOver', {
         score: this.wallsPassed,
-        time:  Math.floor(this.elapsedTime),
+        time:  this.elapsedTime,
       });
     });
   }
@@ -928,7 +928,7 @@ export class GameScene extends Phaser.Scene {
     const sideVisScale = Phaser.Math.Clamp(1 + (this.charXPx / this.lW - 0.5) * 0.20, 0.90, 1.10);
     this.charSideSprite.setPosition(this.charSideX, this.charYPx).setAngle(this.sideAngle).setScale(sideVisScale * this.sideDisplayScale);
     this.scoreWallsTxt.setText(`${this.wallsPassed} ${GT.scoreUnit}`);
-    this.scoreTimeTxt.setText(`${Math.floor(this.elapsedTime)}s`);
+    this.scoreTimeTxt.setText(`${this.elapsedTime.toFixed(2)}s`);
 
     // ── Debug collision outlines ─────────────────────────────────────────────
     // Draws the pixel-accurate silhouette used for collision detection.

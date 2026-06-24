@@ -48,13 +48,13 @@ export class GameOverScene extends Phaser.Scene {
     fitText(this.add.text(cx, cy - 52 * k, `${score} ${GT.scoreUnit}`, {
       fontSize: fp(38), fontFamily: '"Arial Black", Arial', color: '#ffffff',
     }).setOrigin(0.5), panelW);
-    fitText(this.add.text(cx, cy - 8 * k, `${time}${GT.scoreSurvived}`, {
+    fitText(this.add.text(cx, cy - 8 * k, `${time.toFixed(2)}${GT.scoreSurvived}`, {
       fontSize: fp(22), fontFamily: 'Arial', color: '#b0bec5',
     }).setOrigin(0.5), panelW);
 
     // Best run (most walls; ties broken by more time) — shows both walls and seconds survived.
     const best = this._updateBest(score, time);
-    fitText(this.add.text(cx, cy + 34 * k, `${GT.scoreBest}: ${best.walls} ${GT.scoreUnit}, ${best.time}${GT.scoreSurvived}`, {
+    fitText(this.add.text(cx, cy + 34 * k, `${GT.scoreBest}: ${best.walls} ${GT.scoreUnit}, ${best.time.toFixed(2)}${GT.scoreSurvived}`, {
       fontSize: fp(16), fontFamily: 'Arial', color: '#ffd54f',
     }).setOrigin(0.5), panelW);
 

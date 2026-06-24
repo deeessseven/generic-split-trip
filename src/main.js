@@ -12,6 +12,11 @@ import './registerSW.js';
 import { maybeShowIosInstallHint } from './iosHint.js';
 import { Flow } from './Flow.js';
 import { variant } from './variants/registry.js';
+import { Leaderboard } from './leaderboard.js';
+
+// Global leaderboard: hook the `online` event and do an initial fetch (which also flushes any
+// score that was stashed while offline). No-op when no Worker URL is configured.
+Leaderboard.init();
 
 // Install the active variant's scene-transition overrides (none for base → default flow).
 Flow.configure(variant.routes);

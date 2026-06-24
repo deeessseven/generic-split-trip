@@ -60,6 +60,19 @@ export class GameScene extends Phaser.Scene {
     const W = this.scale.width;
     const H = this.scale.height;
 
+    // ── Uniform scaling for large screens (tablets) ────────────────────────────
+    // heroScale makes the hero, walls, gaps, and the jump/fall physics occupy the same
+    // fraction of the screen on a tablet as they do on a ~REF_SHORT-tall phone. It is FLOORED
+    // at 1, and REF_SHORT (450) sits just above the tallest phone (~430 logical px in landscape),
+    // so for EVERY phone heroScale === 1 and every "* this.heroScale" below is an exact identity —
+    // phones render byte-for-byte as before. Only screens taller than 450px (tablets) scale up.
+    const REF_SHORT = 450;
+    this.heroScale  = Math.max(1, Math.min(W, H) / REF_SHORT);
+    this.wallT      = WALL_THICKNESS * this.heroScale;
+    this.wallW      = WALL_WIDTH     * this.heroScale;
+    this.gravity    = GRAVITY        * this.heroScale;
+    this.flapVel    = FLAP_VELOCITY  * this.heroScale;
+
     // ── Panel layout ──────────────────────────────────────────────────────────
     this.lW = W / 2;
     this.rX = W / 2;
@@ -78,8 +91,8 @@ export class GameScene extends Phaser.Scene {
     // size (+2px) in dist units hides it completely first. Top and side views have different
     // scales, so use whichever needs the larger lead-in.
     this.obstacleSpawnDist = VISIBLE_DIST + Math.max(
-      (WALL_THICKNESS / 2 + 2) / this.topScale,
-      (WALL_WIDTH     / 2 + 2) / this.sideScale,
+      (this.wallT / 2 + 2) / this.topScale,
+      (this.wallW / 2 + 2) / this.sideScale,
     );
 
     // ── Character state ───────────────────────────────────────────────────────
@@ -213,14 +226,14 @@ export class GameScene extends Phaser.Scene {
     // Shaped collision silhouette. For an animated hero it's the AVERAGE outline of its frames
     // (per-row mean of the left/right opaque edges, over the rows a majority of frames share); a
     // single-frame hero (custom upload / static / procedural) uses just its own silhouette.
-    this.hitboxScale    = 0.95;
+    this.hitboxScale    = 0.95 * this.heroScale;
     this.charTopBounds  = this._averagedBounds(this._heroFrameKeys(SPRITE_KEYS.CHAR_TOP,  ctKey));
     this.charSideBounds = this._averagedBounds(this._heroFrameKeys(SPRITE_KEYS.CHAR_SIDE, csKey));
     // Factor that renders the display texture at the 128px logical footprint: gameplay-texture-
     // width / display-texture-width. Display == the 128px frame-1 texture, so this is 1 (a higher-
     // res custom upload would scale down). All visual scaling multiplies by this.
-    this.topDisplayScale  = this.charTopBounds.w  / this.textures.getFrame(ctKey).realWidth;
-    this.sideDisplayScale = this.charSideBounds.w / this.textures.getFrame(csKey).realWidth;
+    this.topDisplayScale  = this.charTopBounds.w  / this.textures.getFrame(ctKey).realWidth  * this.heroScale;
+    this.sideDisplayScale = this.charSideBounds.w / this.textures.getFrame(csKey).realWidth * this.heroScale;
     this.charTopSprite.setScale(this.topDisplayScale);
     this.charSideSprite.setScale(this.sideDisplayScale);
 
@@ -250,8 +263,8 @@ export class GameScene extends Phaser.Scene {
           if (offL < minOff) minOff = offL;
         }
       }
-      this.topClampMaxOff = isFinite(maxOff) ? maxOff : tcx;
-      this.topClampMinOff = isFinite(minOff) ? minOff : -tcx;
+      this.topClampMaxOff = (isFinite(maxOff) ? maxOff : tcx)  * this.heroScale;
+      this.topClampMinOff = (isFinite(minOff) ? minOff : -tcx) * this.heroScale;
     }
 
     // Static center divider — drawn once, never needs to be redrawn
@@ -265,16 +278,17 @@ export class GameScene extends Phaser.Scene {
     // Three anchored pieces (walls right-aligned, centered pipe, seconds left-aligned) so the
     // pipe lands on the vertical divider line regardless of how wide each side gets.
     const scoreStyle = {
-      fontSize: '18px',
+      fontSize: `${Math.round(18 * this.heroScale)}px`,
       fontFamily: '"Arial Black", Arial',
       color: '#ffffff',
       stroke: '#000000',
-      strokeThickness: 4,
+      strokeThickness: Math.max(1, Math.round(4 * this.heroScale)),
     };
     const scoreDivX = W / 2;
-    this.scoreWallsTxt = this.add.text(scoreDivX - 12, 6, `0 ${GT.scoreUnit}`, scoreStyle).setOrigin(1, 0).setDepth(6);
+    const scoreGap  = 12 * this.heroScale;
+    this.scoreWallsTxt = this.add.text(scoreDivX - scoreGap, 6, `0 ${GT.scoreUnit}`, scoreStyle).setOrigin(1, 0).setDepth(6);
     this.add.text(scoreDivX, 6, '|', scoreStyle).setOrigin(0.5, 0).setDepth(6);
-    this.scoreTimeTxt = this.add.text(scoreDivX + 12, 6, '0.00s', scoreStyle).setOrigin(0, 0).setDepth(6);
+    this.scoreTimeTxt = this.add.text(scoreDivX + scoreGap, 6, '0.00s', scoreStyle).setOrigin(0, 0).setDepth(6);
 
     // Panel labels. The screen may have rounded corners and/or a notch/cutout that clips the
     // corners. Vertical inset is small (labels sit near the top edge); horizontal inset is
@@ -291,11 +305,11 @@ export class GameScene extends Phaser.Scene {
     const topViewShift = Math.round(W * 0.04);
     const topViewX = Math.max(2, cornerX + si.left - topViewShift + centerNudge);
     fitText(this.add.text(topViewX, labelTopY, `${GT.labelTopView}\n${GT.labelTopHint}`, {
-      fontSize: '11px', fontFamily: 'Arial', color: '#eceff1',
+      fontSize: `${Math.round(11 * this.heroScale)}px`, fontFamily: 'Arial', color: '#eceff1',
       alpha: 0.7,
     }).setDepth(6), W * 0.45);
     fitText(this.add.text(W - cornerX - si.right - centerNudge, labelTopY, `${GT.labelSideView}\n${GT.labelSideHint}`, {
-      fontSize: '11px', fontFamily: 'Arial', color: '#eceff1', align: 'right',
+      fontSize: `${Math.round(11 * this.heroScale)}px`, fontFamily: 'Arial', color: '#eceff1', align: 'right',
       alpha: 0.7,
     }).setOrigin(1, 0).setDepth(6), W * 0.45);
 
@@ -340,7 +354,7 @@ export class GameScene extends Phaser.Scene {
         this.targetCharXPx = Phaser.Math.Clamp(ptr.x, 0, this.lW);
       }
     } else {
-      this.velY = FLAP_VELOCITY;
+      this.velY = this.flapVel;
       this.sideAngle = -20; // snap CCW immediately on tap
       this.hasTapped = true;
       this.wasRising = true;
@@ -367,7 +381,7 @@ export class GameScene extends Phaser.Scene {
     // untilted (ignores the flap tilt). Tracks the ±15% visual scale.
     if (this.flapFX) {
       const sb = this.charSideBounds;
-      const sc = this.charSideSprite.scaleX / this.sideDisplayScale; // logical (128px→world) scale, minus the display-texture factor
+      const sc = this.charSideSprite.scaleX / this.sideDisplayScale * this.heroScale; // logical (128px→world) scale, minus the display-texture factor; ×heroScale re-applies the large-screen scale folded into sideDisplayScale
       const cx = sb.w / 2, cy = sb.h / 2;
       const px = sb.leftEdge + (sb.rightEdge - sb.leftEdge) * (this._cloudSidePos - 1) / 4;
       const py = sb.botEdge - (sb.botEdge - sb.topEdge) / 5; // up 1/5 of the opaque height
@@ -390,8 +404,8 @@ export class GameScene extends Phaser.Scene {
       const lx = isFinite(tb.rowMinX[row]) ? tb.rowMinX[row] : tb.leftEdge;
       const rx = isFinite(tb.rowMaxX[row]) ? tb.rowMaxX[row] : tb.rightEdge;
       const px = col === 0 ? lx : col === 2 ? rx : (lx + rx) / 2;
-      const ex = this.charXPx  + (px - tcx) * cos - (row - tcy) * sin;
-      const ey = this.charTopY + (px - tcx) * sin + (row - tcy) * cos;
+      const ex = this.charXPx  + ((px - tcx) * cos - (row - tcy) * sin) * this.heroScale;
+      const ey = this.charTopY + ((px - tcx) * sin + (row - tcy) * cos) * this.heroScale;
       this.topFlapFX.emitParticleAt(ex, ey, 1);
     }
   }
@@ -567,7 +581,7 @@ export class GameScene extends Phaser.Scene {
       // Collision mark (a.k.a. hit mark) — uploadable sprite (default: red X). Drawn at 32px
       // to match its preferred 32×32 size.
       const hitKey = SpriteManager.resolveKey(this, SPRITE_KEYS.HIT_MARK);
-      this.add.image(hitX, hitY, hitKey).setDisplaySize(32, 32).setDepth(10);
+      this.add.image(hitX, hitY, hitKey).setDisplaySize(32 * this.heroScale, 32 * this.heroScale).setDepth(10);
 
       // Debris burst at the impact point
       this.add.particles(0, 0, 'st_particle', {
@@ -613,24 +627,24 @@ export class GameScene extends Phaser.Scene {
 
   _drawTopDownObstacle(obs) {
     const screenY = this.charTopY - obs.dist * this.topScale;
-    if (screenY < -WALL_THICKNESS - 2 || screenY > this.pH + WALL_THICKNESS + 2) return;
+    if (screenY < -this.wallT - 2 || screenY > this.pH + this.wallT + 2) return;
 
     const gapCX = obs.gapX * this.lW;
     const gapHW = (obs.gapXW / 2) * this.lW;
-    const wallY = screenY - WALL_THICKNESS / 2;
+    const wallY = screenY - this.wallT / 2;
 
     const leftW = gapCX - gapHW;
-    if (leftW > 0) this._placeTile(0, wallY, leftW, WALL_THICKNESS);
+    if (leftW > 0) this._placeTile(0, wallY, leftW, this.wallT);
 
     const rightStart = gapCX + gapHW;
     const rightW = this.lW - rightStart;
-    if (rightW > 0) this._placeTile(rightStart, wallY, rightW, WALL_THICKNESS);
+    if (rightW > 0) this._placeTile(rightStart, wallY, rightW, this.wallT);
   }
 
   _drawSideObstacle(obs) {
     const screenX  = this.charSideX + obs.dist * this.sideScale;
-    const wallLeft = screenX - WALL_WIDTH / 2;
-    if (wallLeft > this.rX + this.rW + 2 || wallLeft + WALL_WIDTH < this.rX - 2) return;
+    const wallLeft = screenX - this.wallW / 2;
+    if (wallLeft > this.rX + this.rW + 2 || wallLeft + this.wallW < this.rX - 2) return;
 
     const gapCY     = obs.gapY * this.pH;
     const gapHH     = (obs.gapYH / 2) * this.pH;
@@ -638,7 +652,7 @@ export class GameScene extends Phaser.Scene {
     const gapBottom = gapCY + gapHH;
 
     const drawX      = Math.max(wallLeft, this.rX);
-    const drawW      = Math.min(wallLeft + WALL_WIDTH, this.rX + this.rW) - drawX;
+    const drawW      = Math.min(wallLeft + this.wallW, this.rX + this.rW) - drawX;
     if (drawW <= 0) return;
     const clipOffset = drawX - wallLeft; // keep texture aligned when left edge is clipped by divider
 
@@ -692,7 +706,7 @@ export class GameScene extends Phaser.Scene {
     this.bgRightPara.tilePositionX += this.speed * this.sideScale * dt * 0.45;
 
     // ── Vertical physics (side view) ────────────────────────────────────────
-    this.velY    += GRAVITY * dt;
+    this.velY    += this.gravity * dt;
     this.charYPx += this.velY * dt;
 
     // Ceiling / floor — walk each row of the rotated side sprite to find true min/max world Y
@@ -777,13 +791,13 @@ export class GameScene extends Phaser.Scene {
       if (obs.passed) continue;
 
       const absDist     = Math.abs(obs.dist);
-      const topOverlap  = absDist * this.topScale  < WALL_THICKNESS / 2 + rotHalfH_top;
-      const sideOverlap = absDist * this.sideScale < WALL_WIDTH     / 2 + rotHalfW;
+      const topOverlap  = absDist * this.topScale  < this.wallT / 2 + rotHalfH_top;
+      const sideOverlap = absDist * this.sideScale < this.wallW / 2 + rotHalfW;
 
       if (topOverlap) {
         const wallSY   = this.charTopY - obs.dist * this.topScale;
-        const wallTop  = wallSY - WALL_THICKNESS / 2;
-        const wallBot  = wallSY + WALL_THICKNESS / 2;
+        const wallTop  = wallSY - this.wallT / 2;
+        const wallBot  = wallSY + this.wallT / 2;
         const gapLeft  = obs.gapX * this.lW - (obs.gapXW / 2) * this.lW;
         const gapRight = obs.gapX * this.lW + (obs.gapXW / 2) * this.lW;
         for (let row = 0; row < tb.h; row++) {
@@ -831,8 +845,8 @@ export class GameScene extends Phaser.Scene {
 
       if (sideOverlap) {
         const wallSX    = this.charSideX + obs.dist * this.sideScale;
-        const wallLeft  = wallSX - WALL_WIDTH / 2;
-        const wallRight = wallSX + WALL_WIDTH / 2;
+        const wallLeft  = wallSX - this.wallW / 2;
+        const wallRight = wallSX + this.wallW / 2;
         const gapTop    = obs.gapY * this.pH - (obs.gapYH / 2) * this.pH;
         const gapBottom = obs.gapY * this.pH + (obs.gapYH / 2) * this.pH;
         for (let row = 0; row < sb.h; row++) {

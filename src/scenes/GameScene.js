@@ -582,7 +582,7 @@ export class GameScene extends Phaser.Scene {
 
     this.cameras.main.shake(400, 0.018);
     this.cameras.main.flash(250, 255, 60, 60, false);
-    this.time.delayedCall(900, () => {
+    this.time.delayedCall(1500, () => {
       Flow.go(this, 'gameOver', {
         score: this.wallsPassed,
         time:  this.elapsedTime,

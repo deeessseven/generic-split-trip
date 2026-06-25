@@ -8,16 +8,26 @@ import { GT } from './data/GameText.js';
 
 const NAME_MAX = 12;
 
+// At most one prompt on screen at a time. If a new prompt opens (e.g. GameOverScene restarts on a
+// resize/orientation change while the box is up), the stale one is closed first so overlays can't
+// stack or leak. closeActivePrompt() lets a scene tear it down on shutdown.
+let activeClose = null;
+export function closeActivePrompt() { if (activeClose) activeClose(); }
+
 export function promptName(defaultName = '') {
+  if (activeClose) activeClose(); // close any stale prompt before opening a new one
   return new Promise((resolve) => {
     let done = false;
     const finish = (val) => {
       if (done) return;
       done = true;
+      if (activeClose === close) activeClose = null;
       try { document.body.removeChild(overlay); } catch { /* already gone */ }
       window.removeEventListener('keydown', onKey, true);
       resolve(val);
     };
+    const close = () => finish(null);
+    activeClose = close;
 
     // Full-screen dim backdrop.
     const overlay = document.createElement('div');

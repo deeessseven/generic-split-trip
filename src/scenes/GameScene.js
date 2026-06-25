@@ -63,10 +63,11 @@ export class GameScene extends Phaser.Scene {
     // ── Uniform scaling for large screens (tablets) ────────────────────────────
     // heroScale makes the hero, walls, gaps, and the jump/fall physics occupy the same
     // fraction of the screen on a tablet as they do on a ~REF_SHORT-tall phone. It is FLOORED
-    // at 1, and REF_SHORT (450) sits just above the tallest phone (~430 logical px in landscape),
-    // so for EVERY phone heroScale === 1 and every "* this.heroScale" below is an exact identity —
-    // phones render byte-for-byte as before. Only screens taller than 450px (tablets) scale up.
-    const REF_SHORT = 450;
+    // at 1, and REF_SHORT (520) sits above the largest phones' logical landscape short-side
+    // (even high-DPI flagships ~480-512px), so for EVERY phone heroScale === 1 and every
+    // "* this.heroScale" below is an exact identity — phones render byte-for-byte as before.
+    // Only screens taller than 520px (tablets) scale up.
+    const REF_SHORT = 520;
     this.heroScale  = Math.max(1, Math.min(W, H) / REF_SHORT);
     this.wallT      = WALL_THICKNESS * this.heroScale;
     this.wallW      = WALL_WIDTH     * this.heroScale;

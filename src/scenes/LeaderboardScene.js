@@ -55,10 +55,12 @@ export class LeaderboardScene extends Phaser.Scene {
     this._listBottom = backY - Math.round(34 * s);
     this._rows = [];
     this._status = null;
+    this._fetched = false; // becomes true once the network fetch has resolved at least once
 
     // Cached first (instant), then live refresh.
     this._render(Leaderboard.cachedTop());
     Leaderboard.fetchTop().then((entries) => {
+      this._fetched = true;
       if (this.scene.isActive()) this._render(entries);
     });
   }
@@ -71,7 +73,10 @@ export class LeaderboardScene extends Phaser.Scene {
     if (this._status) { this._status.destroy(); this._status = null; }
 
     if (!entries || entries.length === 0) {
-      this._status = this.add.text(cx, (this._listTop + this._listBottom) / 2, GT.lbEmpty, {
+      // Distinguish "still loading" (no fetch yet) from "offline" from a genuinely empty board.
+      const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
+      const msg = !this._fetched ? GT.lbLoading : (offline ? GT.lbOffline : GT.lbEmpty);
+      this._status = this.add.text(cx, (this._listTop + this._listBottom) / 2, msg, {
         fontSize: px(18), fontFamily: 'Arial', color: '#cfd8dc', align: 'center',
         wordWrap: { width: W * 0.8 },
       }).setOrigin(0.5);
@@ -93,8 +98,8 @@ export class LeaderboardScene extends Phaser.Scene {
         return t;
       };
       add(colRankX, `${i + 1}`, 0);
-      const name = fitText(add(colNameX, e.name || 'Anon', 0), (colWallsX - colNameX) - Math.round(40 * s));
-      this._rows.push(name);
+      // add() already pushed this into _rows; fitText returns the same object, so do NOT push again.
+      fitText(add(colNameX, e.name || 'Anon', 0), (colWallsX - colNameX) - Math.round(40 * s));
       add(colWallsX, `${e.walls}`, 1);
       add(colTimeX, `${Number(e.time).toFixed(2)}s`, 1);
     }

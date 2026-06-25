@@ -54,6 +54,7 @@ export const GT = {
   leaderboardBtn:   'Leaderboard',
   lbLoading:        'Loading…',
   lbEmpty:          'No scores yet — be the first!',
+  lbOffline:        'Offline — couldn’t load the leaderboard',
   lbHeaderName:     'NAME',
   lbHeaderWalls:    'WALLS',
   lbHeaderTime:     'TIME',

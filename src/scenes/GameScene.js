@@ -238,30 +238,32 @@ export class GameScene extends Phaser.Scene {
     this.charTopSprite.setScale(this.topDisplayScale);
     this.charSideSprite.setScale(this.sideDisplayScale);
 
-    // Top-view panel-edge clamp extent, measured dynamically from the silhouette over the tilt
-    // range the hero actually holds toward each edge (right edge → 0…+20° CW, left edge →
-    // 0…−20° CCW, matching topTarget). Each edge uses ONLY its own tilt direction, so the
-    // opposite tilt's corner can't inflate the bound — the fully-tilted hero's opaque pixels
-    // touch the edge with no gap, and no intermediate tilt pokes past. Constant (computed once)
-    // so the clamp can't rattle. Movement-only; wall collision is unaffected.
+    // Top-view panel-edge clamp extent. Use the WIDEST extent across ALL animation frames — NOT the
+    // averaged silhouette (charTopBounds) used for collision — so no single frame's edge can poke
+    // past the center divider into the side view. (A frame wider than the average would otherwise
+    // bleed across.) Measured over the tilt range the hero holds toward each edge (right → 0…+20° CW,
+    // left → 0…−20° CCW); each edge uses only its own tilt direction. Constant (computed once) so the
+    // clamp can't rattle. Movement-only; wall collision still uses the averaged charTopBounds.
     {
-      const tb = this.charTopBounds;
-      const tcx = tb.w / 2, tcy = tb.h / 2;
+      const frames = this._heroFrameKeys(SPRITE_KEYS.CHAR_TOP, ctKey).map((k) => this._spriteBounds(k));
+      const tcx = this.charTopBounds.w / 2, tcy = this.charTopBounds.h / 2;
       let maxOff = -Infinity, minOff = Infinity;
-      for (let deg = 0; deg <= 20; deg += 2) {   // right edge: tilt 0 → +20° (CW)
-        const a = deg * Math.PI / 180, ca = Math.cos(a), sa = Math.sin(a);
-        for (let row = 0; row < tb.h; row++) {
-          if (!isFinite(tb.rowMaxX[row])) continue;
-          const offR = (tb.rowMaxX[row] - tcx) * ca - (row - tcy) * sa;
-          if (offR > maxOff) maxOff = offR;
+      for (const fb of frames) {
+        for (let deg = 0; deg <= 20; deg += 2) {   // right edge: tilt 0 → +20° (CW)
+          const a = deg * Math.PI / 180, ca = Math.cos(a), sa = Math.sin(a);
+          for (let row = 0; row < fb.h; row++) {
+            if (!isFinite(fb.rowMaxX[row])) continue;
+            const offR = (fb.rowMaxX[row] - tcx) * ca - (row - tcy) * sa;
+            if (offR > maxOff) maxOff = offR;
+          }
         }
-      }
-      for (let deg = 0; deg >= -20; deg -= 2) {  // left edge: tilt 0 → −20° (CCW)
-        const a = deg * Math.PI / 180, ca = Math.cos(a), sa = Math.sin(a);
-        for (let row = 0; row < tb.h; row++) {
-          if (!isFinite(tb.rowMinX[row])) continue;
-          const offL = (tb.rowMinX[row] - tcx) * ca - (row - tcy) * sa;
-          if (offL < minOff) minOff = offL;
+        for (let deg = 0; deg >= -20; deg -= 2) {  // left edge: tilt 0 → −20° (CCW)
+          const a = deg * Math.PI / 180, ca = Math.cos(a), sa = Math.sin(a);
+          for (let row = 0; row < fb.h; row++) {
+            if (!isFinite(fb.rowMinX[row])) continue;
+            const offL = (fb.rowMinX[row] - tcx) * ca - (row - tcy) * sa;
+            if (offL < minOff) minOff = offL;
+          }
         }
       }
       this.topClampMaxOff = (isFinite(maxOff) ? maxOff : tcx)  * this.heroScale;

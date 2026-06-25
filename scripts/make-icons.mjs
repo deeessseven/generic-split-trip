@@ -265,9 +265,9 @@ function drawDiagonal(canvas, side, w) {
 function buildDiagonalMaster(topPng, sidePng, bg, side = 1024) {
   const canvas = Buffer.alloc(side * side * 4);
   for (let i = 0; i < side * side; i++) { const d = i * 4; canvas[d] = bg[0]; canvas[d + 1] = bg[1]; canvas[d + 2] = bg[2]; canvas[d + 3] = 255; }
-  const box = Math.round(side * 0.42);
-  placeFitted(canvas, side, topPng,  Math.round(side * 0.27), Math.round(side * 0.27), box); // upper-left triangle
-  placeFitted(canvas, side, sidePng, Math.round(side * 0.73), Math.round(side * 0.73), box); // lower-right triangle
+  const box = Math.round(side * 0.60);
+  placeFitted(canvas, side, topPng,  Math.round(side * 0.33), Math.round(side * 0.33), box); // upper-left triangle
+  placeFitted(canvas, side, sidePng, Math.round(side * 0.67), Math.round(side * 0.67), box); // lower-right triangle
   drawDiagonal(canvas, side, Math.max(2, Math.round(side * 0.03)));
   return { rgba: canvas, side };
 }

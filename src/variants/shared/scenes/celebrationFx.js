@@ -109,9 +109,11 @@ export function startFireworks(scene, W, H) {
 // String.replaceAll, which esbuild won't polyfill for the es2015 target → would break old WebKit).
 export function fillTokens(str, { N, Nth, walls, seconds }) {
   const sub = (v) => (v == null ? '' : String(v));
+  // {seconds} is the run's survival time (a float) — always render it to 2 decimals.
+  const secStr = seconds == null ? '' : (Number.isFinite(Number(seconds)) ? Number(seconds).toFixed(2) : String(seconds));
   return String(str || '')
     .replace(/\{Nth\}/g, sub(Nth))
     .replace(/\{N\}/g, sub(N))
     .replace(/\{walls\}/g, sub(walls))
-    .replace(/\{seconds\}/g, sub(seconds));
+    .replace(/\{seconds\}/g, secStr);
 }

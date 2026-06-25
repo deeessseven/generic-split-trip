@@ -12,13 +12,15 @@
     "preview": "vite preview",
     "cap:sync": "npm run build:app && npx cap sync",
     "cap:android": "npm run build:app && npx cap sync && npx cap open android",
-    "cap:ios": "npm run build:app && npx cap sync && npx cap open ios"
+    "cap:ios": "npm run build:app && npx cap sync && npx cap open ios",
+    "assets": "capacitor-assets generate"
   },
   "dependencies": {
     "phaser": "^3.88.0"
   },
   "devDependencies": {
     "@capacitor/android": "^6.0.0",
+    "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^6.0.0",
     "@capacitor/core": "^6.0.0",
     "@capacitor/ios": "^6.0.0",

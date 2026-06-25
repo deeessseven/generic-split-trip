@@ -18,7 +18,7 @@ const SRC = join(ROOT, 'public', 'sprites', 'heroSide1.png');
 const BG = [0x1a, 0x1a, 0x2e]; // #1a1a2e — the game's theme color
 // apple-touch-icon.png = iOS Home Screen (index.html references it by that exact name);
 // icon-192/512.png = Android/PWA manifest icons.
-const OUTPUTS = [['apple-touch-icon.png', 180], ['icon-192.png', 192], ['icon-512.png', 512]];
+const OUTPUTS = [['apple-touch-icon.png', 180], ['icon-192.png', 192], ['icon-512.png', 512], ['icon-1024.png', 1024]];
 
 // ── CRC32 (PNG chunk checksums) ──────────────────────────────────────────────
 const CRC_TABLE = (() => {
@@ -196,11 +196,112 @@ export function makeIcons(srcSpritePng, outDir, bg = BG) {
   return { side };
 }
 
+// ── Diagonal split icon (base game) ─────────────────────────────────────────────
+// A white 45° line from the bottom-left corner to the top-right corner makes two triangles:
+// heroTop1 fits the upper-left triangle, heroSide1 fits the lower-right triangle, both over the
+// solid background. Reuses decode/resize/encode/composite above — still no image deps.
+function opaqueBBox(rgba, w, h, thresh = 16) {
+  let minX = w, minY = h, maxX = -1, maxY = -1;
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    if (rgba[(y * w + x) * 4 + 3] > thresh) {
+      if (x < minX) minX = x; if (x > maxX) maxX = x;
+      if (y < minY) minY = y; if (y > maxY) maxY = y;
+    }
+  }
+  if (maxX < 0) return { x: 0, y: 0, w, h }; // fully transparent → use whole image
+  return { x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1 };
+}
+
+function cropRGBA(rgba, w, bx, by, bw, bh) {
+  const out = Buffer.alloc(bw * bh * 4);
+  for (let y = 0; y < bh; y++) {
+    const from = ((by + y) * w + bx) * 4;
+    rgba.copy(out, y * bw * 4, from, from + bw * 4);
+  }
+  return out;
+}
+
+// Alpha-blend a src image (sw×sh RGBA) onto the opaque canvas (side×side) at (dx,dy).
+function blit(canvas, side, src, sw, sh, dx, dy) {
+  for (let y = 0; y < sh; y++) {
+    const cy = dy + y; if (cy < 0 || cy >= side) continue;
+    for (let x = 0; x < sw; x++) {
+      const cx = dx + x; if (cx < 0 || cx >= side) continue;
+      const s = (y * sw + x) * 4, a = src[s + 3] / 255; if (a <= 0) continue;
+      const d = (cy * side + cx) * 4;
+      canvas[d]     = Math.round(src[s]     * a + canvas[d]     * (1 - a));
+      canvas[d + 1] = Math.round(src[s + 1] * a + canvas[d + 1] * (1 - a));
+      canvas[d + 2] = Math.round(src[s + 2] * a + canvas[d + 2] * (1 - a));
+      canvas[d + 3] = 255;
+    }
+  }
+}
+
+// Fit a sprite's opaque content into a square box of side `boxSide`, centered at (cx,cy).
+function placeFitted(canvas, side, spritePng, cx, cy, boxSide) {
+  const { width, height, rgba } = decodePNG(readFileSync(spritePng));
+  const bb = opaqueBBox(rgba, width, height);
+  const cropped = cropRGBA(rgba, width, bb.x, bb.y, bb.w, bb.h);
+  const scale = Math.min(boxSide / bb.w, boxSide / bb.h);
+  const dw = Math.max(1, Math.round(bb.w * scale)), dh = Math.max(1, Math.round(bb.h * scale));
+  const resized = resize(cropped, bb.w, bb.h, dw, dh);
+  blit(canvas, side, resized, dw, dh, Math.round(cx - dw / 2), Math.round(cy - dh / 2));
+}
+
+// White anti-aliased line along x+y=side (bottom-left corner → top-right corner), thickness `w`.
+function drawDiagonal(canvas, side, w) {
+  const half = w / 2, inv = 1 / Math.SQRT2;
+  for (let y = 0; y < side; y++) for (let x = 0; x < side; x++) {
+    const cov = clamp(half - Math.abs(x + y - side) * inv + 0.5, 0, 1);
+    if (cov <= 0) continue;
+    const d = (y * side + x) * 4;
+    canvas[d]     = Math.round(255 * cov + canvas[d]     * (1 - cov));
+    canvas[d + 1] = Math.round(255 * cov + canvas[d + 1] * (1 - cov));
+    canvas[d + 2] = Math.round(255 * cov + canvas[d + 2] * (1 - cov));
+    canvas[d + 3] = 255;
+  }
+}
+
+function buildDiagonalMaster(topPng, sidePng, bg, side = 1024) {
+  const canvas = Buffer.alloc(side * side * 4);
+  for (let i = 0; i < side * side; i++) { const d = i * 4; canvas[d] = bg[0]; canvas[d + 1] = bg[1]; canvas[d + 2] = bg[2]; canvas[d + 3] = 255; }
+  const box = Math.round(side * 0.42);
+  placeFitted(canvas, side, topPng,  Math.round(side * 0.27), Math.round(side * 0.27), box); // upper-left triangle
+  placeFitted(canvas, side, sidePng, Math.round(side * 0.73), Math.round(side * 0.73), box); // lower-right triangle
+  drawDiagonal(canvas, side, Math.max(2, Math.round(side * 0.03)));
+  return { rgba: canvas, side };
+}
+
+// Base-game icon set from the diagonal composite. Writes the SAME filenames as makeIcons() (so the
+// manifest/index references are unchanged) PLUS icon-1024.png (store master).
+export function makeDiagonalIcons(topPng, sidePng, outDir, bg = BG) {
+  const { rgba: square, side } = buildDiagonalMaster(topPng, sidePng, bg);
+  for (const [name, size] of OUTPUTS) {
+    writeFileSync(join(outDir, name), encodePNG(size, size, resize(square, side, side, size, size)));
+  }
+  const mask = padToMaskable(square, side, bg);
+  for (const size of [192, 512]) {
+    writeFileSync(join(outDir, `icon-maskable-${size}.png`), encodePNG(size, size, resize(mask, side, side, size, size)));
+  }
+  return { side };
+}
+
 // ── CLI ────────────────────────────────────────────────────────────────────────
 if (process.argv[1] && process.argv[1].endsWith('make-icons.mjs')) {
-  const src = process.argv[2] || SRC;
-  const outDir = process.argv[3] || join(ROOT, 'public');
-  if (!existsSync(src)) { console.error('missing', src); process.exit(1); }
-  const { side } = makeIcons(src, outDir);
-  console.log(`✓ icons (${side}×${side} contain over #${BG.map((n) => n.toString(16).padStart(2, '0')).join('')}) → ${outDir}`);
+  const args = process.argv.slice(2);
+  if (args[0] === '--diagonal') {
+    // node scripts/make-icons.mjs --diagonal [heroTopPng] [heroSidePng] [outDir]
+    const top = args[1] || join(ROOT, 'public', 'sprites', 'heroTop1.png');
+    const side = args[2] || SRC;
+    const outDir = args[3] || join(ROOT, 'public');
+    for (const f of [top, side]) if (!existsSync(f)) { console.error('missing', f); process.exit(1); }
+    makeDiagonalIcons(top, side, outDir);
+    console.log(`✓ diagonal icons (heroTop ◤ / heroSide ◢) → ${outDir}`);
+  } else {
+    const src = args[0] || SRC;
+    const outDir = args[1] || join(ROOT, 'public');
+    if (!existsSync(src)) { console.error('missing', src); process.exit(1); }
+    const { side } = makeIcons(src, outDir);
+    console.log(`✓ icons (${side}×${side} contain over #${BG.map((n) => n.toString(16).padStart(2, '0')).join('')}) → ${outDir}`);
+  }
 }

@@ -26,7 +26,7 @@ import { execSync } from 'node:child_process';
 import { existsSync, readdirSync, statSync, cpSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { makeIcons } from './make-icons.mjs';
+import { makeIcons, makeDiagonalIcons } from './make-icons.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DOCS = join(ROOT, 'docs');
@@ -72,8 +72,9 @@ function patchManifestName(docsDir, title, appId) {
 console.log('▶ base → docs/');
 execSync('npm run build', { stdio: 'inherit', cwd: ROOT });
 // Regenerate base icons from current source (so a base-art change can't leave a stale base icon),
-// then bake the base title into the manifest.
-makeIcons(join(PUBLIC, 'sprites', 'heroSide1.png'), DOCS);
+// then bake the base title into the manifest. Base uses the diagonal-split icon (heroTop ◤ +
+// heroSide ◢); variants keep their single-hero icon (makeIcons) below.
+makeDiagonalIcons(join(PUBLIC, 'sprites', 'heroTop1.png'), join(PUBLIC, 'sprites', 'heroSide1.png'), DOCS);
 stampSW(DOCS);
 const baseTitle = readGameTitle(join(PUBLIC, 'gametext.txt'));
 patchManifestName(DOCS, baseTitle, REPO_BASE);

@@ -262,9 +262,36 @@ function drawDiagonal(canvas, side, w) {
   }
 }
 
-function buildDiagonalMaster(topPng, sidePng, bg, side = 1024) {
+// Load a background PNG, scale it to COVER the side×side icon (fill, center-crop overflow), and
+// flatten any alpha over `bg` so the result is fully opaque.
+function loadCover(pngPath, side, bg) {
+  const { width, height, rgba } = decodePNG(readFileSync(pngPath));
+  const scale = Math.max(side / width, side / height);
+  const dw = Math.round(width * scale), dh = Math.round(height * scale);
+  const resized = resize(rgba, width, height, dw, dh);
+  const ox = Math.floor((dw - side) / 2), oy = Math.floor((dh - side) / 2);
+  const out = Buffer.alloc(side * side * 4);
+  for (let y = 0; y < side; y++) for (let x = 0; x < side; x++) {
+    const s = ((y + oy) * dw + (x + ox)) * 4, a = resized[s + 3] / 255;
+    const d = (y * side + x) * 4;
+    out[d]     = Math.round(resized[s]     * a + bg[0] * (1 - a));
+    out[d + 1] = Math.round(resized[s + 1] * a + bg[1] * (1 - a));
+    out[d + 2] = Math.round(resized[s + 2] * a + bg[2] * (1 - a));
+    out[d + 3] = 255;
+  }
+  return out;
+}
+
+// Diagonal icon master. Each triangle is filled with its in-game view background (upper-left = bgTop,
+// lower-right = bgSide), split by the white line; the heroes are composited on top.
+function buildDiagonalMaster(topPng, sidePng, bgTopPng, bgSidePng, bg, side = 1024) {
   const canvas = Buffer.alloc(side * side * 4);
-  for (let i = 0; i < side * side; i++) { const d = i * 4; canvas[d] = bg[0]; canvas[d + 1] = bg[1]; canvas[d + 2] = bg[2]; canvas[d + 3] = 255; }
+  const topBg = loadCover(bgTopPng, side, bg), sideBg = loadCover(bgSidePng, side, bg);
+  for (let y = 0; y < side; y++) for (let x = 0; x < side; x++) {
+    const d = (y * side + x) * 4;
+    const src = (x + y < side) ? topBg : sideBg; // upper-left vs lower-right triangle
+    canvas[d] = src[d]; canvas[d + 1] = src[d + 1]; canvas[d + 2] = src[d + 2]; canvas[d + 3] = 255;
+  }
   const box = Math.round(side * 0.60);
   placeFitted(canvas, side, topPng,  Math.round(side * 0.33), Math.round(side * 0.33), box); // upper-left triangle
   placeFitted(canvas, side, sidePng, Math.round(side * 0.67), Math.round(side * 0.67), box); // lower-right triangle
@@ -274,8 +301,8 @@ function buildDiagonalMaster(topPng, sidePng, bg, side = 1024) {
 
 // Base-game icon set from the diagonal composite. Writes the SAME filenames as makeIcons() (so the
 // manifest/index references are unchanged) PLUS icon-1024.png (store master).
-export function makeDiagonalIcons(topPng, sidePng, outDir, bg = BG) {
-  const { rgba: square, side } = buildDiagonalMaster(topPng, sidePng, bg);
+export function makeDiagonalIcons(topPng, sidePng, bgTopPng, bgSidePng, outDir, bg = BG) {
+  const { rgba: square, side } = buildDiagonalMaster(topPng, sidePng, bgTopPng, bgSidePng, bg);
   for (const [name, size] of OUTPUTS) {
     writeFileSync(join(outDir, name), encodePNG(size, size, resize(square, side, side, size, size)));
   }
@@ -290,13 +317,16 @@ export function makeDiagonalIcons(topPng, sidePng, outDir, bg = BG) {
 if (process.argv[1] && process.argv[1].endsWith('make-icons.mjs')) {
   const args = process.argv.slice(2);
   if (args[0] === '--diagonal') {
-    // node scripts/make-icons.mjs --diagonal [heroTopPng] [heroSidePng] [outDir]
-    const top = args[1] || join(ROOT, 'public', 'sprites', 'heroTop1.png');
-    const side = args[2] || SRC;
-    const outDir = args[3] || join(ROOT, 'public');
-    for (const f of [top, side]) if (!existsSync(f)) { console.error('missing', f); process.exit(1); }
-    makeDiagonalIcons(top, side, outDir);
-    console.log(`✓ diagonal icons (heroTop ◤ / heroSide ◢) → ${outDir}`);
+    // node scripts/make-icons.mjs --diagonal [heroTop] [heroSide] [bgTop] [bgSide] [outDir]
+    const spr = join(ROOT, 'public', 'sprites');
+    const top    = args[1] || join(spr, 'heroTop1.png');
+    const side   = args[2] || SRC;
+    const bgTop  = args[3] || join(spr, 'bkgdTop.png');
+    const bgSide = args[4] || join(spr, 'bkgdSide.png');
+    const outDir = args[5] || join(ROOT, 'public');
+    for (const f of [top, side, bgTop, bgSide]) if (!existsSync(f)) { console.error('missing', f); process.exit(1); }
+    makeDiagonalIcons(top, side, bgTop, bgSide, outDir);
+    console.log(`✓ diagonal icons (bgTop◤+heroTop / bgSide◢+heroSide) → ${outDir}`);
   } else {
     const src = args[0] || SRC;
     const outDir = args[1] || join(ROOT, 'public');

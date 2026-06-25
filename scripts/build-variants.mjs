@@ -74,7 +74,9 @@ execSync('npm run build', { stdio: 'inherit', cwd: ROOT });
 // Regenerate base icons from current source (so a base-art change can't leave a stale base icon),
 // then bake the base title into the manifest. Base uses the diagonal-split icon (heroTop ◤ +
 // heroSide ◢); variants keep their single-hero icon (makeIcons) below.
-makeDiagonalIcons(join(PUBLIC, 'sprites', 'heroTop1.png'), join(PUBLIC, 'sprites', 'heroSide1.png'), DOCS);
+makeDiagonalIcons(
+  join(PUBLIC, 'sprites', 'heroTop1.png'), join(PUBLIC, 'sprites', 'heroSide1.png'),
+  join(PUBLIC, 'sprites', 'bkgdTop.png'), join(PUBLIC, 'sprites', 'bkgdSide.png'), DOCS);
 stampSW(DOCS);
 const baseTitle = readGameTitle(join(PUBLIC, 'gametext.txt'));
 patchManifestName(DOCS, baseTitle, REPO_BASE);

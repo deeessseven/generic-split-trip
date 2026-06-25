@@ -75,9 +75,10 @@ export class GameOverScene extends Phaser.Scene {
       fitText(resultTxt, panelW);
       makeButton(this, cx, cy + 96 * k, Math.round(220 * k), Math.round(40 * k),
         GT.leaderboardBtn, 0x18617a, 0x124b5f, () => Flow.go(this, 'leaderboard'), fp(15));
-      // Only auto-prompt when this run is a NEW personal best AND has at least 1 wall AND makes the
-      // global board — otherwise a short board (< 10 entries) would prompt on every single death.
-      if (score > 0 && best.improved && Leaderboard.qualifies(score, time)) {
+      // Auto-prompt whenever this run earns a global Top-10 slot (qualifies). Do NOT gate on a
+      // personal best — a non-record run can still place on the global board (e.g. your 2nd-best
+      // is global #2). score>0 only avoids a 0-wall prompt while the board still has empty slots.
+      if (score > 0 && Leaderboard.qualifies(score, time)) {
         this._handleQualify(score, time, resultTxt);
       }
     }
@@ -105,8 +106,7 @@ export class GameOverScene extends Phaser.Scene {
   }
 
   // Best run = most walls, ties broken by more time. Stored as JSON { walls, time }; migrates the
-  // old walls-only key ('doubleflap_best_walls'). Returns { walls, time, improved } where `improved`
-  // is true when THIS run set a new personal best (used to gate the leaderboard name prompt).
+  // old walls-only key ('doubleflap_best_walls'). Returns the best { walls, time }.
   _updateBest(score, time) {
     const key = 'doubleflap_best';
     let best = { walls: 0, time: 0 };
@@ -120,12 +120,10 @@ export class GameOverScene extends Phaser.Scene {
         if (oldWalls) best = { walls: oldWalls, time: 0 };
       }
     } catch { /* ignore */ }
-    let improved = false;
     if (score > best.walls || (score === best.walls && time > best.time)) {
       best = { walls: score, time };
-      improved = true;
       try { localStorage.setItem(key, JSON.stringify(best)); } catch { /* ignore */ }
     }
-    return { walls: best.walls, time: best.time, improved };
+    return best;
   }
 }

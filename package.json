@@ -1,6 +1,6 @@
 {
   "name": "generic-split-trip",
-  "version": "1.1.5",
+  "version": "1.1.6",
   "description": "Dual-view obstacle dodger — top-down + side view split screen",
   "type": "module",
   "scripts": {

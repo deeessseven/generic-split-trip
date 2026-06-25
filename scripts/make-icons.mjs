@@ -248,6 +248,27 @@ function placeFitted(canvas, side, spritePng, cx, cy, boxSide) {
   blit(canvas, side, resized, dw, dh, Math.round(cx - dw / 2), Math.round(cy - dh / 2));
 }
 
+// Like placeFitted but PRESERVES the sprite's alpha (straight copy onto a transparent canvas) — for
+// the adaptive-icon foreground layer. The two heroes don't overlap, so a copy is safe.
+function placeFittedAlpha(canvas, side, spritePng, cx, cy, boxSide) {
+  const { width, height, rgba } = decodePNG(readFileSync(spritePng));
+  const bb = opaqueBBox(rgba, width, height);
+  const cropped = cropRGBA(rgba, width, bb.x, bb.y, bb.w, bb.h);
+  const scale = Math.min(boxSide / bb.w, boxSide / bb.h);
+  const dw = Math.max(1, Math.round(bb.w * scale)), dh = Math.max(1, Math.round(bb.h * scale));
+  const resized = resize(cropped, bb.w, bb.h, dw, dh);
+  const dx = Math.round(cx - dw / 2), dy = Math.round(cy - dh / 2);
+  for (let y = 0; y < dh; y++) {
+    const ty = dy + y; if (ty < 0 || ty >= side) continue;
+    for (let x = 0; x < dw; x++) {
+      const tx = dx + x; if (tx < 0 || tx >= side) continue;
+      const s = (y * dw + x) * 4; if (resized[s + 3] <= 0) continue;
+      const d = (ty * side + tx) * 4;
+      canvas[d] = resized[s]; canvas[d + 1] = resized[s + 1]; canvas[d + 2] = resized[s + 2]; canvas[d + 3] = resized[s + 3];
+    }
+  }
+}
+
 // White anti-aliased line along x+y=side (bottom-left corner → top-right corner), thickness `w`.
 function drawDiagonal(canvas, side, w) {
   const half = w / 2, inv = 1 / Math.SQRT2;
@@ -282,34 +303,57 @@ function loadCover(pngPath, side, bg) {
   return out;
 }
 
-// Diagonal icon master. Each triangle is filled with its in-game view background (upper-left = bgTop,
-// lower-right = bgSide), split by the white line; the heroes are composited on top.
-function buildDiagonalMaster(topPng, sidePng, bgTopPng, bgSidePng, bg, side = 1024) {
+// Full-bleed diagonal background: each triangle filled with its in-game view background
+// (upper-left = bgTop ◤, lower-right = bgSide ◢), split by the white line. No heroes — those are
+// composited per icon type so square vs maskable/adaptive can place them differently. It fills the
+// whole square, so when a launcher rounds/circles the icon, the backgrounds reach the rounded edge.
+function buildBackground(bgTopPng, bgSidePng, bg, side = 1024) {
   const canvas = Buffer.alloc(side * side * 4);
   const topBg = loadCover(bgTopPng, side, bg), sideBg = loadCover(bgSidePng, side, bg);
   for (let y = 0; y < side; y++) for (let x = 0; x < side; x++) {
     const d = (y * side + x) * 4;
-    const src = (x + y < side) ? topBg : sideBg; // upper-left vs lower-right triangle
+    const src = (x + y < side) ? topBg : sideBg;
     canvas[d] = src[d]; canvas[d + 1] = src[d + 1]; canvas[d + 2] = src[d + 2]; canvas[d + 3] = 255;
   }
-  const box = Math.round(side * 0.60);
-  placeFitted(canvas, side, topPng,  Math.round(side * 0.33), Math.round(side * 0.33), box); // upper-left triangle
-  placeFitted(canvas, side, sidePng, Math.round(side * 0.67), Math.round(side * 0.67), box); // lower-right triangle
   drawDiagonal(canvas, side, Math.max(2, Math.round(side * 0.03)));
-  return { rgba: canvas, side };
+  return canvas;
 }
 
 // Base-game icon set from the diagonal composite. Writes the SAME filenames as makeIcons() (so the
 // manifest/index references are unchanged) PLUS icon-1024.png (store master).
 export function makeDiagonalIcons(topPng, sidePng, bgTopPng, bgSidePng, outDir, bg = BG) {
-  const { rgba: square, side } = buildDiagonalMaster(topPng, sidePng, bgTopPng, bgSidePng, bg);
+  const side = 1024;
+  const STD_BOX = Math.round(side * 0.60), STD_A = Math.round(side * 0.33), STD_B = Math.round(side * 0.67);
+  // Maskable/adaptive: heroes pulled smaller + toward center so a circular crop never clips them.
+  const SAFE_BOX = Math.round(side * 0.46), SAFE_A = Math.round(side * 0.36), SAFE_B = Math.round(side * 0.64);
+
+  const background = buildBackground(bgTopPng, bgSidePng, bg, side); // full-bleed, reaches the edges
+
+  // Standard square icons: full-bleed background + big heroes (apple-touch, icon-192/512/1024).
+  const master = Buffer.from(background);
+  placeFitted(master, side, topPng,  STD_A, STD_A, STD_BOX);
+  placeFitted(master, side, sidePng, STD_B, STD_B, STD_BOX);
   for (const [name, size] of OUTPUTS) {
-    writeFileSync(join(outDir, name), encodePNG(size, size, resize(square, side, side, size, size)));
+    writeFileSync(join(outDir, name), encodePNG(size, size, resize(master, side, side, size, size)));
   }
-  const mask = padToMaskable(square, side, bg);
+
+  // Web maskable (single flat image): full-bleed background + safe-zone heroes → bg fills the
+  // rounded edge while the birds stay inside the circular crop.
+  const maskable = Buffer.from(background);
+  placeFitted(maskable, side, topPng,  SAFE_A, SAFE_A, SAFE_BOX);
+  placeFitted(maskable, side, sidePng, SAFE_B, SAFE_B, SAFE_BOX);
   for (const size of [192, 512]) {
-    writeFileSync(join(outDir, `icon-maskable-${size}.png`), encodePNG(size, size, resize(mask, side, side, size, size)));
+    writeFileSync(join(outDir, `icon-maskable-${size}.png`), encodePNG(size, size, resize(maskable, side, side, size, size)));
   }
+
+  // Native Android adaptive layers (consumed by @capacitor/assets from resources/): full-bleed
+  // background + transparent foreground holding the safe-zone heroes.
+  const foreground = Buffer.alloc(side * side * 4); // transparent
+  placeFittedAlpha(foreground, side, topPng,  SAFE_A, SAFE_A, SAFE_BOX);
+  placeFittedAlpha(foreground, side, sidePng, SAFE_B, SAFE_B, SAFE_BOX);
+  writeFileSync(join(outDir, 'icon-background.png'), encodePNG(side, side, background));
+  writeFileSync(join(outDir, 'icon-foreground.png'), encodePNG(side, side, foreground));
+
   return { side };
 }
 

@@ -914,7 +914,7 @@ export class GameScene extends Phaser.Scene {
     if (this.hasTapped) {
       if (this.smoothVelY < -15) {
         targetAngle = -20;
-      } else if (this.time.now - this.apexTime < 275) {
+      } else if (this.time.now - this.apexTime < 200) {
         targetAngle = 0;
       } else {
         targetAngle = 20;

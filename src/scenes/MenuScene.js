@@ -88,10 +88,11 @@ export class MenuScene extends Phaser.Scene {
     if (Leaderboard.enabled()) {
       const lbH = Math.round(34 * s);
       const lbW = Math.min(Math.round(260 * s), Math.round(W * 0.7));
-      const lbCY = pillsTop - Math.round(10 * s) - lbH / 2;
+      const lbCY = pillsTop - Math.round(6 * s) - lbH / 2; // sits just above the pills (nudged down)
       makeButton(this, cx, lbCY, lbW, lbH, GT.leaderboardBtn, 0x18617a, 0x124b5f,
         () => Flow.go(this, 'leaderboard'), `${Math.round(15 * s)}px`);
-      clusterTop = lbCY - lbH / 2;
+      // Reserve a clear gap above the button so the PLAY column never overlaps/touches it.
+      clusterTop = lbCY - lbH / 2 - Math.round(22 * s);
     }
     const copyrightTxt = fitText(this.add.text(cx, copyrightY, GT.copyright, {
       fontSize: px(15), fontFamily: 'Arial', color: '#607089',

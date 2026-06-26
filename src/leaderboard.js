@@ -20,7 +20,7 @@ const CACHE_KEY   = 'doubleflap_lb_cache';   // last fetched Top-10 (array)
 const PENDING_KEY = 'doubleflap_lb_pending'; // highest unpushed { name, walls, time, ts }
 const NAME_KEY    = 'doubleflap_lb_name';    // remember the last name the player entered
 const MAX_ENTRIES = 10;
-const NAME_MAX    = 24;
+export const NAME_MAX = 24;
 
 // Mirror of the Worker's blocklist so obviously-bad names are masked before they ever leave the
 // device (the Worker is still the authority). Kept short on purpose.

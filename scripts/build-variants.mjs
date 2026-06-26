@@ -70,7 +70,7 @@ function patchManifestName(docsDir, title, appId) {
 
 // 1. Base build → docs/ (emptyOutDir true clears any stale variant subfolders first).
 console.log('▶ base → docs/');
-execSync('npm run build', { stdio: 'inherit', cwd: ROOT });
+execSync('npm run build:vite', { stdio: 'inherit', cwd: ROOT });
 // Regenerate base icons from current source (so a base-art change can't leave a stale base icon),
 // then bake the base title into the manifest. Base uses the diagonal-split icon (heroTop ◤ +
 // heroSide ◢); variants keep their single-hero icon (makeIcons) below.
@@ -92,7 +92,7 @@ const ids = readdirSync(SRC_VARIANTS).filter(
 
 for (const id of ids) {
   console.log(`▶ variant ${id} → docs/${id}/`);
-  execSync('npm run build', { stdio: 'inherit', cwd: ROOT, env: { ...process.env, VITE_VARIANT: id } });
+  execSync('npm run build:vite', { stdio: 'inherit', cwd: ROOT, env: { ...process.env, VITE_VARIANT: id } });
 
   const ov = join(CONTENT_OVERRIDES, id);
   // Optional content overlay (omit a file to inherit base text/sprites).

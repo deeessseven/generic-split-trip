@@ -34,7 +34,7 @@ const env = { ...process.env, APP_BUILD: '1' };
 if (variant) env.VITE_VARIANT = variant;
 
 console.log(`▶ app build (${variant || 'base'}) → www/`);
-execSync('npm run build', { stdio: 'inherit', cwd: ROOT, env });
+execSync('npm run build:vite', { stdio: 'inherit', cwd: ROOT, env });
 
 // Overlay the variant's complete gametext + sprites (same as the docs/<id> overlay), so the
 // packaged app matches the variant. Base needs no overlay (Vite already copied public/).

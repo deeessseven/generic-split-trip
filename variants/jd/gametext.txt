@@ -9,6 +9,10 @@ gameTitle       = Jackie + David's\nCrash Landing
 gameSubtitle    = Control two dimensions — survive both views
 # copyright is auto-generated from gameTitle as "© 2026 <Title>" — no need to set it here.
 
+# ── Course ──────────────────────────────────────────────────────────────────────
+# Obstacle RNG seed — keep matching the base game so every version shares one course.
+seed            = dacquery
+
 # ── Hero / story (leave blank if unused) ──────────────────────────────────────
 heroName        =
 heroDescription =

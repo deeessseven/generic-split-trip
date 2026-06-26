@@ -9,8 +9,7 @@
 // VisualViewport API, the card is compact, and the overlay scrolls as a last-resort fallback.
 
 import { GT } from './data/GameText.js';
-
-const NAME_MAX = 24;
+import { NAME_MAX } from './leaderboard.js';
 
 // At most one prompt on screen at a time. If a new prompt opens (e.g. GameOverScene restarts on a
 // resize/orientation change while the box is up), the stale one is closed first so overlays can't

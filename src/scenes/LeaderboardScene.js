@@ -47,13 +47,11 @@ export class LeaderboardScene extends Phaser.Scene {
       stroke: '#29b6f6', strokeThickness: Math.max(2, Math.round(4 * s)),
     }).setOrigin(0.5, 0), W * 0.9);
 
-    // Back button — sits to the LEFT of the title, its right edge ~30*s px from the title's left
-    // edge. Same box size as before; only the BACK label font is enlarged. Clamped to the margin.
+    // Back button — top-right area, horizontally centered between the time and date columns
+    // (cx + 0.25W and cx + 0.47W → midpoint cx + 0.36W). Same box size; enlarged BACK label.
     const backH = Math.round(44 * s);
     const backW = Math.round(160 * s);
-    const backRightEdge = title.x - title.width / 2 - Math.round(30 * s);
-    const backCenterX = Math.max((si.left || 0) + Math.round(10 * s) + backW / 2, backRightEdge - backW / 2);
-    makeButton(this, backCenterX, si.top + Math.round(8 * s) + backH / 2,
+    makeButton(this, cx + W * 0.36, si.top + Math.round(8 * s) + backH / 2,
       backW, backH, GT.btnBack, 0x29b6f6, 0x0288d1, () => Flow.go(this, 'leaderboardBack'), px(28));
 
     // Columns (landscape): medal | rank# | name | walls | time | date — numbers right-aligned, name left.

@@ -10,7 +10,7 @@
 
 import { GT } from './data/GameText.js';
 
-const NAME_MAX = 12;
+const NAME_MAX = 24;
 
 // At most one prompt on screen at a time. If a new prompt opens (e.g. GameOverScene restarts on a
 // resize/orientation change while the box is up), the stale one is closed first so overlays can't

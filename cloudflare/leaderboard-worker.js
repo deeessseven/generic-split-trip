@@ -21,7 +21,7 @@
 // Setup: see cloudflare/README.md. You need a KV namespace bound as `LEADERBOARD`.
 
 const MAX_ENTRIES = 10;
-const NAME_MAX = 12;
+const NAME_MAX = 24;
 const WALLS_MAX = 100000; // generous sanity ceiling
 const TIME_MAX = 1000000; // seconds; generous sanity ceiling
 const RATE_LIMIT_PER_MIN = 20; // POSTs per IP per minute

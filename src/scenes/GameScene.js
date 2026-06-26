@@ -441,7 +441,7 @@ export class GameScene extends Phaser.Scene {
     // lands in (0, MIN_SEG) px, snap it to 0 or MIN_SEG (whichever is nearer) by nudging that
     // gap edge. Operating on the STORED gap edges keeps draw + collision consistent. rng order
     // (gapX then gapY) is preserved so the seeded layout is unchanged.
-    const MIN_SEG = 10;
+    const MIN_SEG = 20;
     const snapEdges = (centerFrac, widthFrac, span) => {
       let lo = centerFrac * span - (widthFrac / 2) * span; // near edge (px from 0)
       let hi = centerFrac * span + (widthFrac / 2) * span; // far edge (px to span)

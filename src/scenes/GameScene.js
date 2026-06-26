@@ -99,7 +99,7 @@ export class GameScene extends Phaser.Scene {
     // ── Character state ───────────────────────────────────────────────────────
     this.charXPx       = this.lW / 2;
     this.targetCharXPx = this.lW / 2;
-    this.charYPx       = H * 0.20;
+    this.charYPx       = H * 0.50;
     this.velY          = 0;
 
     // ── Game state ────────────────────────────────────────────────────────────
@@ -429,6 +429,14 @@ export class GameScene extends Phaser.Scene {
     const heroFracX = this.charTopBounds.maxHalfW  * 2 * S / this.lW * GAP_X_SCALE; // hero hitbox width (×1.2) as left-panel fraction
     const heroFracY = this.charSideBounds.maxHalfH * 2 * S / this.pH; // hero hitbox height as panel-height fraction
 
+    // Minimum PASSABLE side gap. The hero collides while tilted up to ±20° (so a WIDE sprite needs
+    // more vertical room) and can't hold a flat line — it bobs one flap-apex. Floor the vertical gap
+    // at that real need + 10% so it can never shrink to an impossible size, regardless of sprite.
+    const TILT = 20 * Math.PI / 180;
+    const tiltedH = (this.charSideBounds.maxHalfH * Math.cos(TILT) + this.charSideBounds.maxHalfW * Math.sin(TILT)) * 2 * S;
+    const flapApex = (this.flapVel * this.flapVel) / (2 * this.gravity);
+    const bandFracY = (tiltedH + flapApex) * 1.10 / this.pH;
+
     // A wall segment may be 0 (gap reaches the edge), but never a thin sliver: if a segment
     // lands in (0, MIN_SEG) px, snap it to 0 or MIN_SEG (whichever is nearer) by nudging that
     // gap edge. Operating on the STORED gap edges keeps draw + collision consistent. rng order
@@ -449,7 +457,7 @@ export class GameScene extends Phaser.Scene {
     const gx = snapEdges(gapXraw, gapXWraw, this.lW);
 
     const gapYraw  = this.rng.realInRange(0.18, 0.82); // rng #2
-    const gapYHraw = Math.max(heroFracY * GAP_MULT_INITIAL * decay, heroFracY * GAP_MULT_MIN);
+    const gapYHraw = Math.max(heroFracY * GAP_MULT_INITIAL * decay, heroFracY * GAP_MULT_MIN, bandFracY);
     const gy = snapEdges(gapYraw, gapYHraw, this.pH);
 
     this.obstacles.push({

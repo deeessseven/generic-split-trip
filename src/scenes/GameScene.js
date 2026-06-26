@@ -131,7 +131,7 @@ export class GameScene extends Phaser.Scene {
     this.smoothVelY = 0;
     this.hasTapped  = false;
     this.wasRising  = false;
-    this.apexTime   = 0;
+    this.apexTime   = this.time.now; // anchor the nosedive timer at game start (so the hero noses down after the delay even before the first tap)
 
     // Top hero's ±15% visual scale (recomputed each frame from the side hero's height)
     this.topVisScale = 1;
@@ -912,15 +912,15 @@ export class GameScene extends Phaser.Scene {
     }
     if (this.smoothVelY < -15) this.wasRising = true;
 
+    // Tilt from velocity + the apex timer — runs from game start (no longer gated on the first tap),
+    // so the hero noses down after the set delay even during the opening fall.
     let targetAngle = 0;
-    if (this.hasTapped) {
-      if (this.smoothVelY < -15) {
-        targetAngle = -20;
-      } else if (this.time.now - this.apexTime < 225) {
-        targetAngle = 0;
-      } else {
-        targetAngle = 20;
-      }
+    if (this.smoothVelY < -15) {
+      targetAngle = -20;
+    } else if (this.time.now - this.apexTime < 225) {
+      targetAngle = 0;
+    } else {
+      targetAngle = 20;
     }
     this.sideAngle = smooth(this.sideAngle, targetAngle, 0.30, dt);
 

@@ -8,6 +8,11 @@ gameTitle       = Double Flap
 gameSubtitle    = Control two dimensions — survive both views
 # copyright is auto-generated from gameTitle as "© 2026 <Title>" — no need to set it here.
 
+# ── Course ──────────────────────────────────────────────────────────────────────
+# Obstacle RNG seed. It's hashed to a fixed sequence of gap positions, so the course is the SAME
+# on every run. Change this string to get a different (still deterministic) wall layout.
+seed            = dacquery
+
 # ── Hero / story (leave blank if unused) ──────────────────────────────────────
 heroName        =
 heroDescription =

@@ -89,6 +89,11 @@ export const GT = {
   milestoneMsg2:    '',
   milestoneTapContinue: '',
 
+  // ── Course ──────────────────────────────────────────────────────────────────
+  // Obstacle RNG seed — hashed to a fixed sequence of gap positions (deterministic course).
+  // Overridable in gametext.txt; change it for a different wall layout.
+  seed:             'dacquery',
+
   // ── Flap puff ("cloud") placement ───────────────────────────────────────────
   // Where the soft white flap puff appears, per view. Stored as strings; parsed to ints.
   cloudTopPos:      '8',  // 1..9 grid over the top-view hero: 1-3 front, 4-6 middle, 7-9 back; cols L/C/R. 5=center, 8=back-center (default)

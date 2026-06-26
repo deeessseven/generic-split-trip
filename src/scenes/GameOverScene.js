@@ -20,14 +20,16 @@ export class GameOverScene extends Phaser.Scene {
     const cx = W / 2, cy = H / 2;
     const score = data?.score ?? 0;
     const time  = data?.time  ?? 0;
+    const fromLb = !!(data && data.fromLeaderboard); // returned here via the leaderboard's Back
 
     // Uniform scale-down on short screens so the fixed-size panel never overflows the viewport.
     // k = 1 at H ≥ 360 (the fullscreen case), so the normal layout is byte-for-byte unchanged.
     const k  = Math.min(1, H / 360);
     const fp = (n) => `${Math.round(n * k)}px`;
 
-    // Short, one-time sad tune (stops the looping theme).
-    AudioSystem.playGameOver();
+    // Short, one-time sad tune (stops the looping theme). Don't replay it when just returning
+    // from the leaderboard.
+    if (!fromLb) AudioSystem.playGameOver();
 
     // Dim overlay
     this.add.rectangle(cx, cy, W, H, 0x000000, 0.72);
@@ -69,12 +71,16 @@ export class GameOverScene extends Phaser.Scene {
     // Leaderboard: a result line + a Leaderboard button, and (if this run made the Top 10) a
     // name prompt → submit. Only when a Worker URL is configured; otherwise the panel is unchanged.
     if (lbOn) {
+      // Tell the leaderboard to send its Back button to THIS game-over screen (with our payload),
+      // not the title — and to skip re-prompting for a name on return (fromLeaderboard).
+      const lbNav = { backScene: this.scene.key, backData: { score, time, fromLeaderboard: true } };
       makeButton(this, cx, cy + 96 * k, Math.round(220 * k), Math.round(40 * k),
-        GT.leaderboardBtn, 0x18617a, 0x124b5f, () => Flow.go(this, 'leaderboard'), fp(15));
+        GT.leaderboardBtn, 0x18617a, 0x124b5f, () => Flow.go(this, 'leaderboard', lbNav), fp(15));
       // Auto-prompt whenever this run earns a global Top-10 slot (qualifies). Do NOT gate on a
       // personal best — a non-record run can still place on the global board (e.g. your 2nd-best
       // is global #2). score>0 only avoids a 0-wall prompt while the board still has empty slots.
-      if (score > 0 && Leaderboard.qualifies(score, time)) {
+      // Skip it when we came BACK from the leaderboard (don't re-ask for a name).
+      if (!fromLb && score > 0 && Leaderboard.qualifies(score, time)) {
         this._handleQualify(score, time);
       }
     }
@@ -96,7 +102,9 @@ export class GameOverScene extends Phaser.Scene {
     const name = await promptName(Leaderboard.lastName());
     if (name == null) return; // player skipped
     await Leaderboard.submit(name, score, time);
-    if (this.scene.isActive()) Flow.go(this, 'leaderboard');
+    if (this.scene.isActive()) {
+      Flow.go(this, 'leaderboard', { backScene: this.scene.key, backData: { score, time, fromLeaderboard: true } });
+    }
   }
 
   // Best run = most walls, ties broken by more time. Stored as JSON { walls, time }; migrates the

@@ -28,8 +28,12 @@ function fmtTs(ts) {
 export class LeaderboardScene extends Phaser.Scene {
   constructor() { super('LeaderboardScene'); }
 
-  create() {
+  create(data) {
     relayoutOnResize(this);
+    // Where Back returns to: the scene that opened us (e.g. GameOverScene, with its payload), or
+    // the title via the default route when opened from the menu (no backScene passed).
+    this._backScene = data && data.backScene ? data.backScene : null;
+    this._backData  = data && data.backData  ? data.backData  : null;
     const { width: W, height: H } = this.scale;
     const cx = W / 2;
     const s = Phaser.Math.Clamp(H / 540, 0.7, 1.4);
@@ -52,7 +56,9 @@ export class LeaderboardScene extends Phaser.Scene {
     const backH = Math.round(44 * s);
     const backW = Math.round(160 * s);
     makeButton(this, cx + W * 0.36, si.top + Math.round(8 * s) + backH / 2,
-      backW, backH, GT.btnBack, 0x29b6f6, 0x0288d1, () => Flow.go(this, 'leaderboardBack'), px(28));
+      backW, backH, GT.btnBack, 0x29b6f6, 0x0288d1,
+      () => { if (this._backScene) this.scene.start(this._backScene, this._backData); else Flow.go(this, 'leaderboardBack'); },
+      px(28));
 
     // Columns (landscape): medal | rank# | name | walls | time | date — numbers right-aligned, name left.
     const L = cx - W * 0.47, R = cx + W * 0.47;

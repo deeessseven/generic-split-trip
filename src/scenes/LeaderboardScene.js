@@ -48,11 +48,11 @@ export class LeaderboardScene extends Phaser.Scene {
       stroke: '#29b6f6', strokeThickness: Math.max(2, Math.round(4 * s)),
     }).setOrigin(0.5, 0), W * 0.9);
 
-    // Back button (bottom)
-    const backH = Math.round(46 * s);
-    const backY = H - si.bottom - Math.round(8 * s) - backH / 2;
-    makeButton(this, cx, backY, Math.round(200 * s), backH, GT.btnBack, 0x37474f, 0x263238,
-      () => Flow.go(this, 'leaderboardBack'), px(18));
+    // Back button — top-left corner, which frees the full bottom of the screen for the rows.
+    const backH = Math.round(40 * s);
+    const backW = Math.round(110 * s);
+    makeButton(this, (si.left || 0) + Math.round(10 * s) + backW / 2, si.top + Math.round(8 * s) + backH / 2,
+      backW, backH, GT.btnBack, 0x37474f, 0x263238, () => Flow.go(this, 'leaderboardBack'), px(16));
 
     // Columns (landscape): rank | name | walls | time | date — numbers right-aligned, name left.
     const L = cx - W * 0.47, R = cx + W * 0.47;
@@ -76,7 +76,7 @@ export class LeaderboardScene extends Phaser.Scene {
     this.add.rectangle(cx, headY + Math.round(12 * s), R - L, Math.max(1, Math.round(2 * s)), 0x4a5b6e, 0.9);
 
     this._listTop = headY + Math.round(22 * s);
-    this._listBottom = backY - backH / 2 - Math.round(12 * s);
+    this._listBottom = H - si.bottom - Math.round(10 * s);
     this._rows = [];
     this._status = null;
     this._fetched = false;
@@ -106,9 +106,11 @@ export class LeaderboardScene extends Phaser.Scene {
 
     const c = this._col;
     const n = Math.min(entries.length, 10);
-    const rowH = Math.min(Math.round(56 * s), (this._listBottom - this._listTop) / n);
-    const mainF = Math.round(Math.min(28 * s, rowH * 0.56));
-    const dateF = Math.round(Math.min(15 * s, rowH * 0.30));
+    const rowH = Math.min(Math.round(64 * s), (this._listBottom - this._listTop) / n);
+    // Pack rows tightly (text fills ~82% of each row) so all 10 fit WITHOUT shrinking the font;
+    // capped at 34px so it doesn't get oversized on large/tablet screens.
+    const mainF = Math.round(Math.min(34, rowH * 0.82));
+    const dateF = Math.round(Math.min(16, rowH * 0.32));
 
     for (let i = 0; i < n; i++) {
       const e = entries[i];

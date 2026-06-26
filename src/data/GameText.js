@@ -60,7 +60,7 @@ export const GT = {
   lbHeaderTime:     'TIME',
   lbHeaderDate:     'DATE',
   lbNamePrompt:     'You made the Top 10!',
-  lbNameSub:        'Enter a name for the leaderboard:',
+  lbNameSub:        'Enter your name for the leaderboard:',
   lbNameSubmit:     'Submit',
   lbNameSkip:       'Skip',
   lbNewRank:        'New high score — rank #', // followed by the number

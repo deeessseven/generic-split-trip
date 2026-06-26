@@ -1,6 +1,6 @@
 {
   "name": "generic-split-trip",
-  "version": "1.1.7",
+  "version": "1.1.8",
   "description": "Dual-view obstacle dodger — top-down + side view split screen",
   "type": "module",
   "scripts": {
@@ -13,7 +13,7 @@
     "cap:sync": "npm run build:app && npx cap sync",
     "cap:android": "npm run build:app && npx cap sync && npx cap open android",
     "cap:ios": "npm run build:app && npx cap sync && npx cap open ios",
-    "assets": "capacitor-assets generate && node scripts/fix-adaptive-icon.mjs"
+    "assets": "capacitor-assets generate --android && node scripts/fix-adaptive-icon.mjs"
   },
   "dependencies": {
     "phaser": "^3.88.0"

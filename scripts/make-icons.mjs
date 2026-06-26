@@ -323,7 +323,7 @@ function buildBackground(bgTopPng, bgSidePng, bg, side = 1024) {
 // manifest/index references are unchanged) PLUS icon-1024.png (store master).
 export function makeDiagonalIcons(topPng, sidePng, bgTopPng, bgSidePng, outDir, bg = BG) {
   const side = 1024;
-  const STD_BOX = Math.round(side * 0.60), STD_A = Math.round(side * 0.33), STD_B = Math.round(side * 0.67);
+  const STD_BOX = Math.round(side * 0.55), STD_A = Math.round(side * 0.31), STD_B = Math.round(side * 0.67);
   // Maskable/adaptive: heroes pulled smaller + toward center so a circular crop never clips them.
   const SAFE_BOX = Math.round(side * 0.46), SAFE_A = Math.round(side * 0.36), SAFE_B = Math.round(side * 0.64);
 

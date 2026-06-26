@@ -47,11 +47,14 @@ export class LeaderboardScene extends Phaser.Scene {
       stroke: '#29b6f6', strokeThickness: Math.max(2, Math.round(4 * s)),
     }).setOrigin(0.5, 0), W * 0.9);
 
-    // Back button — top-left corner (wide + bright so it's prominent), frees the bottom for rows.
+    // Back button — sits to the LEFT of the title, its right edge ~30*s px from the title's left
+    // edge. Same box size as before; only the BACK label font is enlarged. Clamped to the margin.
     const backH = Math.round(44 * s);
     const backW = Math.round(160 * s);
-    makeButton(this, (si.left || 0) + Math.round(10 * s) + backW / 2, si.top + Math.round(8 * s) + backH / 2,
-      backW, backH, GT.btnBack, 0x29b6f6, 0x0288d1, () => Flow.go(this, 'leaderboardBack'), px(18));
+    const backRightEdge = title.x - title.width / 2 - Math.round(30 * s);
+    const backCenterX = Math.max((si.left || 0) + Math.round(10 * s) + backW / 2, backRightEdge - backW / 2);
+    makeButton(this, backCenterX, si.top + Math.round(8 * s) + backH / 2,
+      backW, backH, GT.btnBack, 0x29b6f6, 0x0288d1, () => Flow.go(this, 'leaderboardBack'), px(28));
 
     // Columns (landscape): medal | rank# | name | walls | time | date — numbers right-aligned, name left.
     const L = cx - W * 0.47, R = cx + W * 0.47;
@@ -119,12 +122,8 @@ export class LeaderboardScene extends Phaser.Scene {
       const top3 = i < 3;
       const color = top3 ? RANK_COLOR[i] : '#000000';
       const fam = top3 ? '"Arial Black", Arial' : 'Arial';
-      // Top 3 sit on the dark background (gold/silver/bronze text). Ranks 4–10 get a light row
-      // background (alternating shades) so their black text is readable.
-      if (!top3) {
-        const lightBg = (i % 2 === 0) ? 0xeef1f5 : 0xdde3ea;
-        this._rows.push(this.add.rectangle(cx, y, this._listW, rowH, lightBg, 1));
-      }
+      // Subtle zebra striping on the dark background; ranks 4–10 use black text (option c).
+      if (i % 2 === 1) this._rows.push(this.add.rectangle(cx, y, this._listW, rowH, 0xffffff, 0.05));
 
       const add = (x, txt, ox, f, fm) => {
         const t = this.add.text(x, y, txt, { fontSize: `${f || mainF}px`, fontFamily: fm || fam, color }).setOrigin(ox, 0.5);

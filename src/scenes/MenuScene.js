@@ -89,8 +89,11 @@ export class MenuScene extends Phaser.Scene {
       const lbH = Math.round(34 * s);
       const lbW = Math.min(Math.round(260 * s), Math.round(W * 0.7));
       const lbCY = pillsTop - Math.round(6 * s) - lbH / 2; // sits just above the pills (nudged down)
+      // Pass an explicit { backScene: null } so the leaderboard's Back returns to the TITLE — Phaser
+      // retains a scene's previous data when started with none, so without this the leaderboard would
+      // reuse a stale backScene from a prior game-over visit and wrongly go back to Game Over.
       makeButton(this, cx, lbCY, lbW, lbH, GT.leaderboardBtn, 0x18617a, 0x124b5f,
-        () => Flow.go(this, 'leaderboard'), `${Math.round(15 * s)}px`);
+        () => Flow.go(this, 'leaderboard', { backScene: null }), `${Math.round(15 * s)}px`);
       // Reserve a clear gap above the button so the PLAY column never overlaps/touches it.
       clusterTop = lbCY - lbH / 2 - Math.round(22 * s);
     }

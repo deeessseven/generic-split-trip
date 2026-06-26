@@ -78,6 +78,11 @@ export function promptName(defaultName = '') {
     ].join(';');
     input.addEventListener('focus', () => { input.style.borderColor = '#29b6f6'; });
     input.addEventListener('blur',  () => { input.style.borderColor = '#37474f'; });
+    // The maxLength attribute isn't reliably honored in some in-app webviews, so also hard-cap the
+    // value to NAME_MAX (= the Cloudflare Worker's limit) on every input — covers typing/paste/IME.
+    input.addEventListener('input', () => {
+      if (input.value.length > NAME_MAX) input.value = input.value.slice(0, NAME_MAX);
+    });
 
     const row = document.createElement('div');
     row.style.cssText = 'display:flex;gap:10px;';

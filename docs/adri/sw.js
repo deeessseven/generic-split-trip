@@ -12,7 +12,7 @@
 // If anything goes wrong (offline + uncached, unsupported API), it fails exactly as it would with
 // no service worker at all.
 
-const VERSION = '1782468186187';
+const VERSION = '1782469037492';
 const SCOPE_PATH = new URL(self.registration.scope).pathname;
 // Cache Storage is shared across the whole ORIGIN, so the cache name is namespaced by this
 // worker's scope. On activate we purge ONLY this scope's own older versions (and legacy

@@ -11,7 +11,7 @@ gameSubtitle    = Control two dimensions — survive both views
 # ── Course ──────────────────────────────────────────────────────────────────────
 # Obstacle RNG seed. It's hashed to a fixed sequence of gap positions, so the course is the SAME
 # on every run. Change this string to get a different (still deterministic) wall layout.
-seed            = dacquery
+seed            = doubleflap
 
 # ── Hero / story (leave blank if unused) ──────────────────────────────────────
 heroName        =

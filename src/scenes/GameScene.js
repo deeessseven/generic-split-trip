@@ -99,7 +99,7 @@ export class GameScene extends Phaser.Scene {
     // ── Character state ───────────────────────────────────────────────────────
     this.charXPx       = this.lW / 2;
     this.targetCharXPx = this.lW / 2;
-    this.charYPx       = H * 0.50;
+    this.charYPx       = H * 0.65;
     this.velY          = 0;
 
     // ── Game state ────────────────────────────────────────────────────────────

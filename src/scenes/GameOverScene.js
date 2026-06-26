@@ -69,17 +69,13 @@ export class GameOverScene extends Phaser.Scene {
     // Leaderboard: a result line + a Leaderboard button, and (if this run made the Top 10) a
     // name prompt → submit. Only when a Worker URL is configured; otherwise the panel is unchanged.
     if (lbOn) {
-      const resultTxt = this.add.text(cx, cy + 62 * k, '', {
-        fontSize: fp(16), fontFamily: '"Arial Black", Arial', color: '#ffd54f', align: 'center',
-      }).setOrigin(0.5);
-      fitText(resultTxt, panelW);
       makeButton(this, cx, cy + 96 * k, Math.round(220 * k), Math.round(40 * k),
         GT.leaderboardBtn, 0x18617a, 0x124b5f, () => Flow.go(this, 'leaderboard'), fp(15));
       // Auto-prompt whenever this run earns a global Top-10 slot (qualifies). Do NOT gate on a
       // personal best — a non-record run can still place on the global board (e.g. your 2nd-best
       // is global #2). score>0 only avoids a 0-wall prompt while the board still has empty slots.
       if (score > 0 && Leaderboard.qualifies(score, time)) {
-        this._handleQualify(score, time, resultTxt);
+        this._handleQualify(score, time);
       }
     }
 
@@ -94,15 +90,13 @@ export class GameOverScene extends Phaser.Scene {
     }, fp(16));
   }
 
-  // Qualifying run → prompt for a name → submit. Updates the result line with the rank, or a
-  // "saved offline" note if the submit had to be queued. Guards against the scene being gone.
-  async _handleQualify(score, time, resultTxt) {
+  // Qualifying run → prompt for a name → submit → jump straight to the leaderboard so the player
+  // sees their placement. Skipping the name prompt leaves them on the game-over screen.
+  async _handleQualify(score, time) {
     const name = await promptName(Leaderboard.lastName());
     if (name == null) return; // player skipped
-    const res = await Leaderboard.submit(name, score, time);
-    if (!this.scene.isActive() || !resultTxt.active) return;
-    if (res.ok) resultTxt.setText(res.rank ? `${GT.lbNewRank}${res.rank}` : GT.lbSubmitted);
-    else resultTxt.setText(GT.lbPendingNote);
+    await Leaderboard.submit(name, score, time);
+    if (this.scene.isActive()) Flow.go(this, 'leaderboard');
   }
 
   // Best run = most walls, ties broken by more time. Stored as JSON { walls, time }; migrates the

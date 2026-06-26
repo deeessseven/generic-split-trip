@@ -325,7 +325,7 @@ export function makeDiagonalIcons(topPng, sidePng, bgTopPng, bgSidePng, outDir, 
   const side = 1024;
   const STD_BOX = Math.round(side * 0.55), STD_A = Math.round(side * 0.31), STD_B = Math.round(side * 0.67);
   // Maskable/adaptive: heroes pulled smaller + toward center so a circular crop never clips them.
-  const SAFE_BOX = Math.round(side * 0.40), SAFE_A = Math.round(side * 0.35), SAFE_B = Math.round(side * 0.65);
+  const SAFE_BOX = Math.round(side * 0.50), SAFE_A = Math.round(side * 0.33), SAFE_B = Math.round(side * 0.67);
 
   const background = buildBackground(bgTopPng, bgSidePng, bg, side); // full-bleed, reaches the edges
 

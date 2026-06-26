@@ -8,8 +8,7 @@ import { Leaderboard } from '../leaderboard.js';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const MEDAL = ['🥇', '🥈', '🥉'];
-const RANK_COLOR = ['#ffd54f', '#cfd8dc', '#d7a16b']; // gold / silver / bronze
-const REST_COLOR = '#c7d0d9';
+const RANK_COLOR = ['#ffd54f', '#cfd8dc', '#d7a16b']; // gold / silver / bronze (ranks 1–3)
 
 // Epoch ms → { date: "Jun 25, 2026", time: "9:14 PM" } in the viewer's local time. null if no ts.
 function fmtTs(ts) {
@@ -48,18 +47,19 @@ export class LeaderboardScene extends Phaser.Scene {
       stroke: '#29b6f6', strokeThickness: Math.max(2, Math.round(4 * s)),
     }).setOrigin(0.5, 0), W * 0.9);
 
-    // Back button — top-left corner, which frees the full bottom of the screen for the rows.
-    const backH = Math.round(40 * s);
-    const backW = Math.round(110 * s);
+    // Back button — top-left corner (wide + bright so it's prominent), frees the bottom for rows.
+    const backH = Math.round(44 * s);
+    const backW = Math.round(160 * s);
     makeButton(this, (si.left || 0) + Math.round(10 * s) + backW / 2, si.top + Math.round(8 * s) + backH / 2,
-      backW, backH, GT.btnBack, 0x37474f, 0x263238, () => Flow.go(this, 'leaderboardBack'), px(16));
+      backW, backH, GT.btnBack, 0x29b6f6, 0x0288d1, () => Flow.go(this, 'leaderboardBack'), px(18));
 
-    // Columns (landscape): rank | name | walls | time | date — numbers right-aligned, name left.
+    // Columns (landscape): medal | rank# | name | walls | time | date — numbers right-aligned, name left.
     const L = cx - W * 0.47, R = cx + W * 0.47;
     this._L = L; this._listW = R - L;
     this._col = {
-      rankX:  L + W * 0.005,
-      nameX:  L + W * 0.065,
+      medalX: L + W * 0.012,
+      rankX:  L + W * 0.088,
+      nameX:  L + W * 0.115,
       wallsX: cx + W * 0.06,
       timeX:  cx + W * 0.25,
       dateX:  R,
@@ -69,6 +69,7 @@ export class LeaderboardScene extends Phaser.Scene {
     // Header row + divider
     const headY = title.y + title.height + Math.round(12 * s);
     const hStyle = { fontSize: px(13), fontFamily: '"Arial Black", Arial', color: '#8da0b3' };
+    this.add.text(this._col.rankX,  headY, '#',              hStyle).setOrigin(1, 0.5);
     this.add.text(this._col.nameX,  headY, GT.lbHeaderName,  hStyle).setOrigin(0, 0.5);
     this.add.text(this._col.wallsX, headY, GT.lbHeaderWalls, hStyle).setOrigin(1, 0.5);
     this.add.text(this._col.timeX,  headY, GT.lbHeaderTime,  hStyle).setOrigin(1, 0.5);
@@ -115,16 +116,23 @@ export class LeaderboardScene extends Phaser.Scene {
     for (let i = 0; i < n; i++) {
       const e = entries[i];
       const y = this._listTop + rowH * i + rowH / 2;
-      const color = i < 3 ? RANK_COLOR[i] : REST_COLOR;
-      const fam = i < 3 ? '"Arial Black", Arial' : 'Arial';
-      if (i % 2 === 1) this._rows.push(this.add.rectangle(cx, y, this._listW, rowH, 0xffffff, 0.05));
+      const top3 = i < 3;
+      const color = top3 ? RANK_COLOR[i] : '#000000';
+      const fam = top3 ? '"Arial Black", Arial' : 'Arial';
+      // Top 3 sit on the dark background (gold/silver/bronze text). Ranks 4–10 get a light row
+      // background (alternating shades) so their black text is readable.
+      if (!top3) {
+        const lightBg = (i % 2 === 0) ? 0xeef1f5 : 0xdde3ea;
+        this._rows.push(this.add.rectangle(cx, y, this._listW, rowH, lightBg, 1));
+      }
 
       const add = (x, txt, ox, f, fm) => {
         const t = this.add.text(x, y, txt, { fontSize: `${f || mainF}px`, fontFamily: fm || fam, color }).setOrigin(ox, 0.5);
         this._rows.push(t);
         return t;
       };
-      add(c.rankX, i < 3 ? MEDAL[i] : `${i + 1}`, 0);          // medal (top 3) or rank number
+      if (top3) add(c.medalX, MEDAL[i], 0);                       // medal — own column, top 3 only
+      add(c.rankX, `${i + 1}`, 1);                                // rank number — every row, right-aligned
       fitText(add(c.nameX, e.name || 'Anon', 0), this._nameMaxW); // name (already pushed by add)
       add(c.wallsX, `${e.walls}`, 1);
       add(c.timeX, `${Number(e.time).toFixed(2)}s`, 1);

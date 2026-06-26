@@ -2,7 +2,7 @@ import {
   GRAVITY, FLAP_VELOCITY,
   BASE_SPEED, SPEED_RAMP, MAX_SPEED,
   SPAWN_DIST, VISIBLE_DIST,
-  GAP_MULT_INITIAL, GAP_MULT_MIN, GAP_X_SCALE,
+  GAP_MULT_INITIAL, GAP_MULT_MIN, GAP_X_SCALE, SIDE_GAP_MIN_TIME,
   WALL_THICKNESS, WALL_WIDTH,
   CHAR_TOPDOWN_Y_FRAC, CHAR_SIDE_X_FRAC,
   SPRITE_KEYS, GROUND_MARGIN,
@@ -437,6 +437,14 @@ export class GameScene extends Phaser.Scene {
     const flapApex = (this.flapVel * this.flapVel) / (2 * this.gravity);
     const bandFracY = (tiltedH + flapApex) * 1.10 / this.pH;
 
+    // The SIDE gap narrows on its OWN gentler schedule (not the shared 0.99/s `decay`): its rate is
+    // derived per-sprite so the shrink curve reaches its floor at exactly SIDE_GAP_MIN_TIME seconds.
+    // Start is unchanged (3× hero); it just ramps down more gradually. sideDecayBase is clamped ≤ 1
+    // so a sprite whose floor already meets/exceeds the start can never make the gap GROW over time.
+    const sideFloor = Math.max(heroFracY * GAP_MULT_MIN, bandFracY);
+    const sideDecayBase = Math.min(1, Math.pow(sideFloor / (heroFracY * GAP_MULT_INITIAL), 1 / SIDE_GAP_MIN_TIME));
+    const sideDecay = Math.pow(sideDecayBase, steps);
+
     // A wall segment may be 0 (gap reaches the edge), but never a thin sliver: if a segment
     // lands in (0, MIN_SEG) px, snap it to 0 or MIN_SEG (whichever is nearer) by nudging that
     // gap edge. Operating on the STORED gap edges keeps draw + collision consistent. rng order
@@ -457,7 +465,7 @@ export class GameScene extends Phaser.Scene {
     const gx = snapEdges(gapXraw, gapXWraw, this.lW);
 
     const gapYraw  = this.rng.realInRange(0.18, 0.82); // rng #2
-    const gapYHraw = Math.max(heroFracY * GAP_MULT_INITIAL * decay, heroFracY * GAP_MULT_MIN, bandFracY);
+    const gapYHraw = Math.max(heroFracY * GAP_MULT_INITIAL * sideDecay, sideFloor);
     const gy = snapEdges(gapYraw, gapYHraw, this.pH);
 
     this.obstacles.push({

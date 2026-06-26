@@ -20,6 +20,8 @@ export const VISIBLE_DIST = 920;   // world units of lookahead shown in each pan
 export const GAP_MULT_INITIAL = 3.0;  // starting gap = 3× the hero's opaque size (per axis)
 export const GAP_MULT_MIN     = 1.4;  // floor: gap never tightens below 1.4× the hero (always passable)
 export const GAP_X_SCALE      = 1.5;  // extra widening for the horizontal gap only (+50%)
+export const SIDE_GAP_MIN_TIME = 60;  // seconds: the SIDE (vertical) gap reaches its floor at this time
+                                      // (its narrowing rate is derived per-sprite from this target)
 
 // Obstacle appearance
 export const WALL_THICKNESS = 64;  // px — top-down horizontal wall height

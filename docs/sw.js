@@ -12,7 +12,7 @@
 // If anything goes wrong (offline + uncached, unsupported API), it fails exactly as it would with
 // no service worker at all.
 
-const VERSION = '1782472382477';
+const VERSION = '1783034287222';
 const SCOPE_PATH = new URL(self.registration.scope).pathname;
 // Cache Storage is shared across the whole ORIGIN, so the cache name is namespaced by this
 // worker's scope. On activate we purge ONLY this scope's own older versions (and legacy
@@ -52,7 +52,13 @@ function cacheable(res) {
 async function networkFirst(request) {
   const cache = await caches.open(CACHE);
   try {
-    const res = await fetch(request);
+    // cache:'no-cache' revalidates with the server instead of trusting the HTTP cache.
+    // Without it, for up to max-age after a deploy the HTTP cache can serve the OLD
+    // index.html whose hashed bundle no longer exists on the server (→ black screen,
+    // since activate() already purged the old bundle from our cache). Fetch by URL
+    // string: constructing a fetch from a navigate-mode Request with options throws
+    // in some browsers.
+    const res = await fetch(request.url, { cache: 'no-cache' });
     if (cacheable(res)) cache.put(request, res.clone());
     return res;
   } catch (err) {

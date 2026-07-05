@@ -56,7 +56,8 @@ export class LeaderboardScene extends Phaser.Scene {
     const gap = Math.round(12 * s); // minimum clearance between neighboring elements
 
     // Columns (landscape): medal | rank# | name | walls | time | date — numbers right-aligned,
-    // name left. walls/time are nudged +20px right to give long (24-char) names more room.
+    // name left. walls is nudged +40px and time +20px right (screen-scaled) to give long
+    // (24-char) names more room; the measure-based caps below adapt automatically.
     const L = cx - W * 0.47, R = cx + W * 0.47;
     this._L = L; this._listW = R - L;
     const colShift = Math.round(20 * s);
@@ -64,7 +65,7 @@ export class LeaderboardScene extends Phaser.Scene {
       medalX: L + W * 0.012,
       rankX:  L + W * 0.088,
       nameX:  L + W * 0.115,
-      wallsX: cx + W * 0.06 + colShift,
+      wallsX: cx + W * 0.06 + colShift * 2,
       timeX:  cx + W * 0.25 + colShift,
       dateX:  R,
     };

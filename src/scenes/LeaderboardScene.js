@@ -56,8 +56,9 @@ export class LeaderboardScene extends Phaser.Scene {
     const gap = Math.round(12 * s); // minimum clearance between neighboring elements
 
     // Columns (landscape): medal | rank# | name | walls | time | date — numbers right-aligned,
-    // name left. walls is nudged +40px and time +20px right (screen-scaled) to give long
-    // (24-char) names more room; the measure-based caps below adapt automatically.
+    // name left. walls sits +60px right of its original spot and time +20px (screen-scaled).
+    // The last +20 of the walls shift is PURE WHITESPACE before the walls numbers: the name
+    // cap in _render subtracts it back out (extraNameClear), so names don't grow into it.
     const L = cx - W * 0.47, R = cx + W * 0.47;
     this._L = L; this._listW = R - L;
     const colShift = Math.round(20 * s);
@@ -65,11 +66,12 @@ export class LeaderboardScene extends Phaser.Scene {
       medalX: L + W * 0.012,
       rankX:  L + W * 0.088,
       nameX:  L + W * 0.115,
-      wallsX: cx + W * 0.06 + colShift * 2,
+      wallsX: cx + W * 0.06 + colShift * 3,
       timeX:  cx + W * 0.25 + colShift,
       dateX:  R,
     };
     this._gap = gap;
+    this._extraNameClear = colShift;
 
     // Back button — top-right, centered between the time and date columns.
     const backH = Math.round(44 * s);
@@ -165,7 +167,9 @@ export class LeaderboardScene extends Phaser.Scene {
       // left edge of THIS row's walls number — no name/walls collision at any width or digits.
       const wallsT = fitText(add(c.wallsX, `${e.walls}`, 1), c.wallsX - c.nameX - gap);
       fitText(add(c.timeX, `${Number(e.time).toFixed(2)}s`, 1), c.timeX - c.wallsX - gap);
-      fitText(add(c.nameX, e.name || 'Anon', 0), (c.wallsX - wallsT.width) - gap - c.nameX);
+      // extraNameClear keeps the last chunk of the walls shift as guaranteed empty space —
+      // the longest name ends (gap + extraNameClear) left of this row's walls number.
+      fitText(add(c.nameX, e.name || 'Anon', 0), (c.wallsX - wallsT.width) - gap - this._extraNameClear - c.nameX);
 
       const dt = fmtTs(e.ts);
       const dateMaxW = c.dateX - c.timeX - gap;

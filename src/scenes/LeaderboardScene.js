@@ -45,42 +45,63 @@ export class LeaderboardScene extends Phaser.Scene {
     bg.fillGradientStyle(0x324990, 0x324990, 0x243150, 0x243150, 1);
     bg.fillRect(0, 0, W, H);
 
-    // Title
-    const title = fitText(this.add.text(cx, si.top + Math.round(10 * s), GT.leaderboardTitle, {
-      fontSize: px(30), fontFamily: '"Arial Black", Arial', color: '#ffffff',
-      stroke: '#29b6f6', strokeThickness: Math.max(2, Math.round(4 * s)),
-    }).setOrigin(0.5, 0), W * 0.9);
+    // ── Overlap-proof layout ──────────────────────────────────────────────
+    // Every element is sized/positioned against its ACTUAL neighbors (measured text widths,
+    // computed edges) rather than assumptions, so no screen size, font scale, name length or
+    // digit count can make elements collide:
+    //   • title is width-capped to stop before the Back button's left edge
+    //   • header row sits below BOTH the title and the Back button
+    //   • per row: time is width-capped to its column gap; the name is capped against the
+    //     MEASURED left edge of that row's walls number; dates are capped to their gap.
+    const gap = Math.round(12 * s); // minimum clearance between neighboring elements
 
-    // Back button — top-right area, horizontally centered between the time and date columns
-    // (cx + 0.25W and cx + 0.47W → midpoint cx + 0.36W). Same box size; enlarged BACK label.
-    const backH = Math.round(44 * s);
-    const backW = Math.round(160 * s);
-    makeButton(this, cx + W * 0.36, si.top + Math.round(8 * s) + backH / 2,
-      backW, backH, GT.btnBack, 0x29b6f6, 0x0288d1,
-      () => { if (this._backScene) this.scene.start(this._backScene, this._backData); else Flow.go(this, 'leaderboardBack'); },
-      px(28));
-
-    // Columns (landscape): medal | rank# | name | walls | time | date — numbers right-aligned, name left.
+    // Columns (landscape): medal | rank# | name | walls | time | date — numbers right-aligned,
+    // name left. walls/time are nudged +20px right to give long (24-char) names more room.
     const L = cx - W * 0.47, R = cx + W * 0.47;
     this._L = L; this._listW = R - L;
+    const colShift = Math.round(20 * s);
     this._col = {
       medalX: L + W * 0.012,
       rankX:  L + W * 0.088,
       nameX:  L + W * 0.115,
-      wallsX: cx + W * 0.06,
-      timeX:  cx + W * 0.25,
+      wallsX: cx + W * 0.06 + colShift,
+      timeX:  cx + W * 0.25 + colShift,
       dateX:  R,
     };
-    this._nameMaxW = (this._col.wallsX - this._col.nameX) - Math.round(36 * s);
+    this._gap = gap;
 
-    // Header row + divider
-    const headY = title.y + title.height + Math.round(12 * s);
+    // Back button — top-right, centered between the time and date columns.
+    const backH = Math.round(44 * s);
+    const backW = Math.round(160 * s);
+    const backX = (this._col.timeX + this._col.dateX) / 2;
+    const backBottom = si.top + Math.round(8 * s) + backH;
+    makeButton(this, backX, backBottom - backH / 2,
+      backW, backH, GT.btnBack, 0x29b6f6, 0x0288d1,
+      () => { if (this._backScene) this.scene.start(this._backScene, this._backData); else Flow.go(this, 'leaderboardBack'); },
+      px(28));
+
+    // Title — centered; width-capped so it can never run under the Back button (it may
+    // extend right of center only as far as the button's left edge, minus clearance).
+    const titleMaxW = Math.min(W * 0.9, 2 * ((backX - backW / 2) - gap - cx));
+    const title = fitText(this.add.text(cx, si.top + Math.round(10 * s), GT.leaderboardTitle, {
+      fontSize: px(30), fontFamily: '"Arial Black", Arial', color: '#ffffff',
+      stroke: '#29b6f6', strokeThickness: Math.max(2, Math.round(4 * s)),
+    }).setOrigin(0.5, 0), titleMaxW);
+
+    // Header row + divider — always BELOW the Back button as well as the title, so the
+    // TIME/DATE/WALLS headers can never slide underneath it (happens when a short/shrunk
+    // title would otherwise pull the header row up into the Back button's band).
+    const headY = Math.max(title.y + title.height + Math.round(12 * s),
+      backBottom + Math.round(10 * s));
+    // Headers are gametext-editable, so width-cap each to its column span (name and walls
+    // share the name→walls span half-and-half since they grow toward each other).
     const hStyle = { fontSize: px(13), fontFamily: '"Arial Black", Arial', color: '#8da0b3' };
+    const nameSpanHalf = (this._col.wallsX - this._col.nameX) / 2 - gap;
     this.add.text(this._col.rankX,  headY, '#',              hStyle).setOrigin(1, 0.5);
-    this.add.text(this._col.nameX,  headY, GT.lbHeaderName,  hStyle).setOrigin(0, 0.5);
-    this.add.text(this._col.wallsX, headY, GT.lbHeaderWalls, hStyle).setOrigin(1, 0.5);
-    this.add.text(this._col.timeX,  headY, GT.lbHeaderTime,  hStyle).setOrigin(1, 0.5);
-    this.add.text(this._col.dateX,  headY, GT.lbHeaderDate,  hStyle).setOrigin(1, 0.5);
+    fitText(this.add.text(this._col.nameX,  headY, GT.lbHeaderName,  hStyle).setOrigin(0, 0.5), nameSpanHalf);
+    fitText(this.add.text(this._col.wallsX, headY, GT.lbHeaderWalls, hStyle).setOrigin(1, 0.5), nameSpanHalf);
+    fitText(this.add.text(this._col.timeX,  headY, GT.lbHeaderTime,  hStyle).setOrigin(1, 0.5), this._col.timeX - this._col.wallsX - gap);
+    fitText(this.add.text(this._col.dateX,  headY, GT.lbHeaderDate,  hStyle).setOrigin(1, 0.5), this._col.dateX - this._col.timeX - gap);
     this.add.rectangle(cx, headY + Math.round(12 * s), R - L, Math.max(1, Math.round(2 * s)), 0x4a5b6e, 0.9);
 
     this._listTop = headY + Math.round(22 * s);
@@ -115,10 +136,11 @@ export class LeaderboardScene extends Phaser.Scene {
     const c = this._col;
     const n = Math.min(entries.length, 10);
     const rowH = Math.min(Math.round(64 * s), (this._listBottom - this._listTop) / n);
-    // Pack rows tightly (text fills ~82% of each row) so all 10 fit WITHOUT shrinking the font;
-    // capped at 34px so it doesn't get oversized on large/tablet screens.
-    const mainF = Math.round(Math.min(34, rowH * 0.82));
-    const dateF = Math.round(Math.min(16, rowH * 0.32));
+    // Pack rows tightly (text fills ~82% of each row) so all 10 fit WITHOUT shrinking the font.
+    // Caps scale with the screen (34/16 at the 540px reference height) instead of being fixed
+    // pixels, so the whole layout sizes dynamically from phone through tablet.
+    const mainF = Math.round(Math.min(34 * s, rowH * 0.82));
+    const dateF = Math.round(Math.min(16 * s, rowH * 0.32));
 
     for (let i = 0; i < n; i++) {
       const e = entries[i];
@@ -134,16 +156,21 @@ export class LeaderboardScene extends Phaser.Scene {
         this._rows.push(t);
         return t;
       };
+      const gap = this._gap;
       if (top3) add(c.medalX, MEDAL[i], 0);                       // medal — own column, top 3 only
       add(c.rankX, `${i + 1}`, 1);                                // rank number — every row, right-aligned
-      fitText(add(c.nameX, e.name || 'Anon', 0), this._nameMaxW); // name (already pushed by add)
-      add(c.wallsX, `${e.walls}`, 1);
-      add(c.timeX, `${Number(e.time).toFixed(2)}s`, 1);
+      // Numbers are right-aligned, so they extend LEFT of their column x by their own width.
+      // Cap each against its left neighbor's column, then cap the name against the MEASURED
+      // left edge of THIS row's walls number — no name/walls collision at any width or digits.
+      const wallsT = fitText(add(c.wallsX, `${e.walls}`, 1), c.wallsX - c.nameX - gap);
+      fitText(add(c.timeX, `${Number(e.time).toFixed(2)}s`, 1), c.timeX - c.wallsX - gap);
+      fitText(add(c.nameX, e.name || 'Anon', 0), (c.wallsX - wallsT.width) - gap - c.nameX);
 
       const dt = fmtTs(e.ts);
+      const dateMaxW = c.dateX - c.timeX - gap;
       if (dt) {
-        add(c.dateX, dt.date, 1, dateF, 'Arial').setY(y - dateF * 0.62);
-        add(c.dateX, dt.time, 1, dateF, 'Arial').setY(y + dateF * 0.62);
+        fitText(add(c.dateX, dt.date, 1, dateF, 'Arial'), dateMaxW).setY(y - dateF * 0.62);
+        fitText(add(c.dateX, dt.time, 1, dateF, 'Arial'), dateMaxW).setY(y + dateF * 0.62);
       } else {
         add(c.dateX, '—', 1, dateF, 'Arial');
       }

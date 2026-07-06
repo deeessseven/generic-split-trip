@@ -56,8 +56,8 @@ export class LeaderboardScene extends Phaser.Scene {
     const gap = Math.round(12 * s); // minimum clearance between neighboring elements
 
     // Columns (landscape): medal | rank# | name | walls | time | date — numbers right-aligned,
-    // name left. walls sits +70px right of its original spot and time +20px (screen-scaled),
-    // so the name→walls gap is 10px wider and the walls→time gap 10px narrower than the ratios.
+    // name left. walls sits +80px right of its original spot and time +20px (screen-scaled),
+    // so the name→walls gap is 20px wider and the walls→time gap 20px narrower than the ratios.
     // +20 of the walls shift is PURE WHITESPACE before the walls numbers: the name
     // cap in _render subtracts it back out (extraNameClear), so names don't grow into it.
     const L = cx - W * 0.47, R = cx + W * 0.47;
@@ -67,7 +67,7 @@ export class LeaderboardScene extends Phaser.Scene {
       medalX: L + W * 0.012,
       rankX:  L + W * 0.088,
       nameX:  L + W * 0.115,
-      wallsX: cx + W * 0.06 + colShift * 3 + Math.round(10 * s),
+      wallsX: cx + W * 0.06 + colShift * 3 + Math.round(20 * s),
       timeX:  cx + W * 0.25 + colShift,
       dateX:  R,
     };
@@ -99,7 +99,7 @@ export class LeaderboardScene extends Phaser.Scene {
       backBottom + Math.round(10 * s));
     // Headers are gametext-editable, so width-cap each to its column span (name and walls
     // share the name→walls span half-and-half since they grow toward each other).
-    const hStyle = { fontSize: px(13), fontFamily: '"Arial Black", Arial', color: '#8da0b3' };
+    const hStyle = { fontSize: px(16), fontFamily: '"Arial Black", Arial', color: '#8da0b3' };
     const nameSpanHalf = (this._col.wallsX - this._col.nameX) / 2 - gap;
     this.add.text(this._col.rankX,  headY, '#',              hStyle).setOrigin(1, 0.5);
     fitText(this.add.text(this._col.nameX,  headY, GT.lbHeaderName,  hStyle).setOrigin(0, 0.5), nameSpanHalf);
@@ -141,10 +141,10 @@ export class LeaderboardScene extends Phaser.Scene {
     const n = Math.min(entries.length, 10);
     const rowH = Math.min(Math.round(64 * s), (this._listBottom - this._listTop) / n);
     // Pack rows tightly (text fills ~82% of each row) so all 10 fit WITHOUT shrinking the font.
-    // Caps scale with the screen (34/16 at the 540px reference height) instead of being fixed
+    // Caps scale with the screen (34/20 at the 540px reference height) instead of being fixed
     // pixels, so the whole layout sizes dynamically from phone through tablet.
     const mainF = Math.round(Math.min(34 * s, rowH * 0.82));
-    const dateF = Math.round(Math.min(16 * s, rowH * 0.32));
+    const dateF = Math.round(Math.min(20 * s, rowH * 0.38));
 
     for (let i = 0; i < n; i++) {
       const e = entries[i];

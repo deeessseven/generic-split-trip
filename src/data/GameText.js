@@ -58,7 +58,7 @@ export const GT = {
   lbHeaderName:     'NAME',
   lbHeaderWalls:    'WALLS',
   lbHeaderTime:     'TIME',
-  lbHeaderDate:     'DATE',
+  lbHeaderDate:     'WHEN',
   lbNamePrompt:     'You made the Top 10!',
   lbNameSub:        'Enter your name for the leaderboard:',
   lbNameSubmit:     'Submit',

@@ -56,8 +56,9 @@ export class LeaderboardScene extends Phaser.Scene {
     const gap = Math.round(12 * s); // minimum clearance between neighboring elements
 
     // Columns (landscape): medal | rank# | name | walls | time | date — numbers right-aligned,
-    // name left. walls sits +60px right of its original spot and time +20px (screen-scaled).
-    // The last +20 of the walls shift is PURE WHITESPACE before the walls numbers: the name
+    // name left. walls sits +70px right of its original spot and time +20px (screen-scaled),
+    // so the name→walls gap is 10px wider and the walls→time gap 10px narrower than the ratios.
+    // +20 of the walls shift is PURE WHITESPACE before the walls numbers: the name
     // cap in _render subtracts it back out (extraNameClear), so names don't grow into it.
     const L = cx - W * 0.47, R = cx + W * 0.47;
     this._L = L; this._listW = R - L;
@@ -66,7 +67,7 @@ export class LeaderboardScene extends Phaser.Scene {
       medalX: L + W * 0.012,
       rankX:  L + W * 0.088,
       nameX:  L + W * 0.115,
-      wallsX: cx + W * 0.06 + colShift * 3,
+      wallsX: cx + W * 0.06 + colShift * 3 + Math.round(10 * s),
       timeX:  cx + W * 0.25 + colShift,
       dateX:  R,
     };
@@ -174,8 +175,8 @@ export class LeaderboardScene extends Phaser.Scene {
       const dt = fmtTs(e.ts);
       const dateMaxW = c.dateX - c.timeX - gap;
       if (dt) {
-        fitText(add(c.dateX, dt.date, 1, dateF, 'Arial'), dateMaxW).setY(y - dateF * 0.62);
-        fitText(add(c.dateX, dt.time, 1, dateF, 'Arial'), dateMaxW).setY(y + dateF * 0.62);
+        // Single line, vertically centered; fitText shrinks it to the column span.
+        fitText(add(c.dateX, `${dt.date} · ${dt.time}`, 1, dateF, 'Arial'), dateMaxW);
       } else {
         add(c.dateX, '—', 1, dateF, 'Arial');
       }

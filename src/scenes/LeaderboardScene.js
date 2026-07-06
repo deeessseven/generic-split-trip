@@ -99,7 +99,7 @@ export class LeaderboardScene extends Phaser.Scene {
       backBottom + Math.round(10 * s));
     // Headers are gametext-editable, so width-cap each to its column span (name and walls
     // share the name→walls span half-and-half since they grow toward each other).
-    const hStyle = { fontSize: px(16), fontFamily: '"Arial Black", Arial', color: '#8da0b3' };
+    const hStyle = { fontSize: px(20), fontFamily: '"Arial Black", Arial', color: '#8da0b3' };
     const nameSpanHalf = (this._col.wallsX - this._col.nameX) / 2 - gap;
     this.add.text(this._col.rankX,  headY, '#',              hStyle).setOrigin(1, 0.5);
     fitText(this.add.text(this._col.nameX,  headY, GT.lbHeaderName,  hStyle).setOrigin(0, 0.5), nameSpanHalf);
@@ -141,10 +141,10 @@ export class LeaderboardScene extends Phaser.Scene {
     const n = Math.min(entries.length, 10);
     const rowH = Math.min(Math.round(64 * s), (this._listBottom - this._listTop) / n);
     // Pack rows tightly (text fills ~82% of each row) so all 10 fit WITHOUT shrinking the font.
-    // Caps scale with the screen (34/20 at the 540px reference height) instead of being fixed
+    // Caps scale with the screen (34/24 at the 540px reference height) instead of being fixed
     // pixels, so the whole layout sizes dynamically from phone through tablet.
     const mainF = Math.round(Math.min(34 * s, rowH * 0.82));
-    const dateF = Math.round(Math.min(20 * s, rowH * 0.38));
+    const dateF = Math.round(Math.min(24 * s, rowH * 0.46));
 
     for (let i = 0; i < n; i++) {
       const e = entries[i];

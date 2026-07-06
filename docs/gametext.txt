@@ -73,10 +73,6 @@ btnBack          = BACK
 toastSpriteSaved = Sprite saved! It will apply next game.
 toastUploadError = Could not read that image — try another file.
 
-# ── Leaderboard ───────────────────────────────────────────────────────────────
-# Column header for the date+time a score was set (keep it short — it width-caps).
-lbHeaderDate    = WHEN
-
 # ── Debug ─────────────────────────────────────────────────────────────────────
 # Set to true to draw the black collision outline over the heroes (for tuning hitboxes).
 debugOutline = false

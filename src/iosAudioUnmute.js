@@ -17,14 +17,7 @@
 // iOS-only for the mute-switch part; the WeChat unlock runs in WeChat on any platform. No-op on
 // plain Android/desktop, so the Capacitor/Android build is unaffected.
 
-function isIOS() {
-  if (typeof navigator === 'undefined') return false;
-  const ua = navigator.userAgent || '';
-  const iPhoneIPodIPad = /iP(hone|od|ad)/.test(ua);
-  // iPadOS 13+ masquerades as desktop Safari ("MacIntel") but has a touch screen.
-  const iPadOS = navigator.platform === 'MacIntel' && (navigator.maxTouchPoints || 0) > 1;
-  return iPhoneIPodIPad || iPadOS;
-}
+import { isIOS } from './platform.js';
 
 let _installed = false;
 

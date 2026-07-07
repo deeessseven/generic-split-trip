@@ -20,10 +20,11 @@ const CACHE_KEY   = 'doubleflap_lb_cache';   // last fetched Top-10 (array)
 const PENDING_KEY = 'doubleflap_lb_pending'; // highest unpushed { name, walls, time, ts }
 const NAME_KEY    = 'doubleflap_lb_name';    // remember the last name the player entered
 const MAX_ENTRIES = 10;
-export const NAME_MAX = 24;
+export const NAME_MAX = 24; // must match NAME_MAX in cloudflare/leaderboard-worker.js
 
 // Mirror of the Worker's blocklist so obviously-bad names are masked before they ever leave the
 // device (the Worker is still the authority). Kept short on purpose.
+// SYNC: keep this list, sanitizeName, and rankCmp below in sync with cloudflare/leaderboard-worker.js.
 const PROFANITY = [
   'fuck', 'shit', 'bitch', 'cunt', 'nigger', 'nigga', 'faggot', 'fag', 'rape',
   'whore', 'slut', 'dick', 'cock', 'pussy', 'asshole', 'retard',

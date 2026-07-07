@@ -7,13 +7,12 @@
 // Safety: the banner itself is pointer-events:none — it can NEVER swallow a game tap. Only the
 // small dismiss button opts back into pointer events. So it cannot regress input (Bug 1) or any
 // gameplay handler.
+import { isIOS } from './platform.js';
+
 export function maybeShowIosInstallHint() {
   try {
     const ua = navigator.userAgent || '';
-    // iPhone/iPod/iPad, plus iPadOS 13+ which masquerades as "Macintosh" but reports touch points.
-    const isIOS = /iP(hone|od|ad)/.test(ua) ||
-      (/Macintosh/.test(ua) && typeof navigator.maxTouchPoints === 'number' && navigator.maxTouchPoints > 1);
-    if (!isIOS) return;
+    if (!isIOS()) return;
     // Other iOS browsers are all WebKit but can't "Add to Home Screen" this way — Safari only.
     if (/CriOS|FxiOS|EdgiOS|OPiOS|mercury/i.test(ua)) return;
     // Already installed / running standalone → nothing to suggest.

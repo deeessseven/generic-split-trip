@@ -14,6 +14,7 @@ import { maybeShowIosInstallHint } from './iosHint.js';
 import { Flow } from './Flow.js';
 import { variant } from './variants/registry.js';
 import { Leaderboard } from './leaderboard.js';
+import { isIOS } from './platform.js';
 
 // Global leaderboard: hook the `online` event and do an initial fetch (which also flushes any
 // score that was stashed while offline). No-op when no Worker URL is configured.
@@ -51,13 +52,7 @@ window.addEventListener('pagehide', () => AudioSystem.pauseForBackground());
 // in full screen / Stay in Full Screen?" banner mid-gameplay — a web page cannot suppress that.
 // The game already fills the dynamic viewport (100dvh/dvw) without fullscreen; true fullscreen on
 // iOS comes from "Add to Home Screen" (see iosHint.js), which never triggers this banner.
-const IS_IOS = (() => {
-  try {
-    const ua = navigator.userAgent || '';
-    return /iP(hone|od|ad)/.test(ua) ||
-      (/Macintosh/.test(ua) && typeof navigator.maxTouchPoints === 'number' && navigator.maxTouchPoints > 1);
-  } catch { return false; }
-})();
+const IS_IOS = isIOS();
 
 // On tap (non-iOS), enter fullscreen (hides the address bar) and lock to landscape-primary so the
 // device rotation has no effect. Triggered on pointerUP (finger-lift): Android Chrome honors the

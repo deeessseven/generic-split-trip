@@ -20,8 +20,10 @@
 //
 // Setup: see cloudflare/README.md. You need a KV namespace bound as `LEADERBOARD`.
 
+// SYNC: NAME_MAX, PROFANITY, cleanName and rankCmp below are mirrored in src/leaderboard.js
+// (the client masks bad input before sending; this Worker is the authority). Keep them in sync.
 const MAX_ENTRIES = 10;
-const NAME_MAX = 24;
+const NAME_MAX = 24; // must match NAME_MAX in src/leaderboard.js
 const WALLS_MAX = 100000; // generous sanity ceiling
 const TIME_MAX = 1000000; // seconds; generous sanity ceiling
 const RATE_LIMIT_PER_MIN = 20; // POSTs per IP per minute

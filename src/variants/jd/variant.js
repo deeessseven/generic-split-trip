@@ -1,4 +1,4 @@
-// jd — Adriana's birthday edition. Same engine + sprites as the base game; adds
+// jd — Jackie & David's anniversary edition. Same engine + sprites as the base game; adds
 // two celebration views. All their text lives in this variant's gametext.txt (variants/
 // jd/gametext.txt), which is appended onto the base gametext at build time. The
 // base game registers none of this and is unaffected.

@@ -93,7 +93,7 @@ export const GT = {
   // ── Course ──────────────────────────────────────────────────────────────────
   // Obstacle RNG seed — hashed to a fixed sequence of gap positions (deterministic course).
   // Overridable in gametext.txt; change it for a different wall layout.
-  seed:             'dacquery',
+  seed:             'doubleflap',
 
   // ── Flap puff ("cloud") placement ───────────────────────────────────────────
   // Where the soft white flap puff appears, per view. Stored as strings; parsed to ints.

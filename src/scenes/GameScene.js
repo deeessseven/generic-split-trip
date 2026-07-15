@@ -293,28 +293,25 @@ export class GameScene extends Phaser.Scene {
     this.add.text(scoreDivX, 6, '|', scoreStyle).setOrigin(0.5, 0).setDepth(6);
     this.scoreTimeTxt = this.add.text(scoreDivX + scoreGap, 6, '0.00s', scoreStyle).setOrigin(0, 0).setDepth(6);
 
-    // Panel labels. The screen may have rounded corners and/or a notch/cutout that clips the
-    // corners. Vertical inset is small (labels sit near the top edge); horizontal inset is
-    // larger so BOTH labels clear the rounded corners — otherwise the side WITHOUT a safe-area
-    // inset (the non-notch side) clips while the notch side stays clear. Per-side safe-area is
-    // added on top to also clear an actual notch/cutout.
+    // Panel labels, CENTERED at fixed 10% / 90% of the width (David's spec 2026-07-15).
+    // Fixed percentages need no horizontal safe-area input — the native WebView reports
+    // env(safe-area-inset-left) as 0 (unlike Chrome/PWA), which used to clamp TOP VIEW to
+    // the physical left edge, under the camera cutout. 10% from either edge clears any
+    // cutout regardless of which way the phone is rotated. Vertical keeps the small top
+    // inset (+ safe-area top where the browser reports one).
     const si = safeInsets();
     const cornerY = Math.round(Math.min(W, H) * 0.02);
-    const cornerX = Math.round(Math.min(W, H) * 0.04);
     const labelTopY = cornerY + si.top;
-    // Both labels nudged ~10px toward the horizontal center, dynamically (W × 0.01).
-    // TOP VIEW also keeps its ~40px left offset (W × 0.04), clamped to the left edge.
-    const centerNudge = Math.round(W * 0.01);
-    const topViewShift = Math.round(W * 0.04);
-    const topViewX = Math.max(2, cornerX + si.left - topViewShift + centerNudge);
-    fitText(this.add.text(topViewX, labelTopY, `${GT.labelTopView}\n${GT.labelTopHint}`, {
+    // fitText cap 16% of W: a long custom gametext hint SHRINKS instead of growing back
+    // toward the screen edge / cutout (centered text grows in BOTH directions).
+    fitText(this.add.text(Math.round(W * 0.10), labelTopY, `${GT.labelTopView}\n${GT.labelTopHint}`, {
       fontSize: `${Math.round(11 * this.heroScale)}px`, fontFamily: 'Arial', color: '#eceff1',
-      alpha: 0.7,
-    }).setDepth(6), W * 0.45);
-    fitText(this.add.text(W - cornerX - si.right - centerNudge, labelTopY, `${GT.labelSideView}\n${GT.labelSideHint}`, {
-      fontSize: `${Math.round(11 * this.heroScale)}px`, fontFamily: 'Arial', color: '#eceff1', align: 'right',
-      alpha: 0.7,
-    }).setOrigin(1, 0).setDepth(6), W * 0.45);
+      align: 'center', alpha: 0.7,
+    }).setOrigin(0.5, 0).setDepth(6), W * 0.16);
+    fitText(this.add.text(Math.round(W * 0.90), labelTopY, `${GT.labelSideView}\n${GT.labelSideHint}`, {
+      fontSize: `${Math.round(11 * this.heroScale)}px`, fontFamily: 'Arial', color: '#eceff1',
+      align: 'center', alpha: 0.7,
+    }).setOrigin(0.5, 0).setDepth(6), W * 0.16);
 
     // First-time-only gesture hint (the menu thumbs); no per-game text messages.
     this._showStartThumbs();

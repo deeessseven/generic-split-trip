@@ -171,12 +171,15 @@ export class GameOverScene extends Phaser.Scene {
     try {
       this._replayUrl = URL.createObjectURL(this._clip.blob);
       const vid = this.add.video(W / 2, H / 2).setDepth(-5); // behind the dim + panel (depth 0)
-      vid.once('created', () => vid.setDisplaySize(W, H));   // fill the screen once dims are known
-      vid.setMute(true); // the background loop is ALWAYS muted; sound belongs to Watch Replay
+      this._vid = vid;
+      vid.once('created', () => {          // underlying <video> exists only from here on
+        vid.setDisplaySize(W, H);          // fill the screen once dims are known
+        this._setVidMute(this._vidShouldBeMuted()); // re-assert — pre-load mute state doesn't stick
+      });
       vid.setLoop(true);
       vid.loadURL(this._replayUrl);
       vid.play(true);
-      this._vid = vid;
+      this._setVidMute(true); // background loop is ALWAYS silent; sound belongs to Watch Replay
     } catch { this._vid = null; }
     // See-through only when the loop actually plays behind us.
     if (this._vid) {
@@ -198,18 +201,36 @@ export class GameOverScene extends Phaser.Scene {
     const k = this._k;
     const cover = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 1).setDepth(24)
       .setInteractive(); // swallows taps so the panel buttons underneath can't be hit
-    const audible = AudioSystem.isMusicEnabled() || AudioSystem.isSfxEnabled();
     this._vid.setDepth(25);
-    this._vid.setMute(!audible);
+    this._setVidMute(this._vidShouldBeMuted());
     const by = H - Math.round(34 * k);
     const share = this._button(W / 2 - 95 * k, by, Math.round(170 * k), Math.round(44 * k),
       GT.btnShareReplay, 0x2e7d32, 0x1b5e20, () => this._share(), `${Math.round(15 * k)}px`, 30);
     const back = this._button(W / 2 + 95 * k, by, Math.round(170 * k), Math.round(44 * k),
       GT.btnBack, 0x37474f, 0x263238, () => {
         share.destroy(); back.destroy(); cover.destroy();
-        this._vid.setMute(true).setDepth(-5);
         this._watching = false;
+        this._setVidMute(true);
+        this._vid.setDepth(-5);
       }, `${Math.round(15 * k)}px`, 30);
+  }
+
+  // The loop behind the panel is ALWAYS silent (the game-over tune owns that moment); the
+  // full-screen Watch Replay view has sound per the player's audio settings — silent only when
+  // Music AND Sound FX are both off (the clip is one mixed track, so it's all-or-nothing).
+  _vidShouldBeMuted() {
+    if (!this._watching) return true;
+    return !(AudioSystem.isMusicEnabled() || AudioSystem.isSfxEnabled());
+  }
+
+  // Set mute through Phaser AND directly on the underlying <video> element. Phaser's setMute
+  // before the element exists (pre-'created') does not reliably carry over to it — the cause of
+  // the background loop audibly playing — so every state change re-asserts both.
+  _setVidMute(m) {
+    if (!this._vid) return;
+    try { this._vid.setMute(m); } catch { /* */ }
+    const el = this._vid.video;
+    if (el) { el.muted = m; if (!m) el.volume = 1; }
   }
 
   // Hand the clip to the platform's share path (system share sheet / web share / download).

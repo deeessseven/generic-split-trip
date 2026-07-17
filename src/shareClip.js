@@ -64,9 +64,12 @@ export async function shareClip(clip) {
     }
   }
 
-  // Web share sheet (Android Chrome and other mobile browsers).
+  // Web share sheet (Android Chrome and other mobile browsers). The File must carry the PLAIN
+  // container type — canShare() rejects a MIME with codec parameters (e.g. "video/mp4;codecs=…"),
+  // which silently demoted every share to the download fallback.
   try {
-    const file = new File([clip.blob], name, { type: clip.mime });
+    const plainMime = (clip.mime || '').split(';')[0].trim() || 'video/mp4';
+    const file = new File([clip.blob], name, { type: plainMime });
     if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
       await navigator.share({ files: [file], title });
       return 'shared';

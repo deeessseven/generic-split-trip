@@ -8,6 +8,12 @@ gameTitle       = Double Flap
 gameSubtitle    = Control two dimensions — survive both views
 # copyright is auto-generated from gameTitle as "© 2026 <Title>" — no need to set it here.
 
+# ── Sharing ───────────────────────────────────────────────────────────────────
+# Link sent by the title-screen SHARE GAME button (blank = share the page's own URL),
+# and the small second line burned into replay-clip watermarks (blank = no second line).
+shareUrl        = https://play.google.com/store/apps/details?id=com.dacquery.doubleflap
+replayBrandTag  = Get it on Google Play
+
 # ── Course ──────────────────────────────────────────────────────────────────────
 # Obstacle RNG seed. It's hashed to a fixed sequence of gap positions, so the course is the SAME
 # on every run. Change this string to get a different (still deterministic) wall layout.

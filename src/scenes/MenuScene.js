@@ -10,6 +10,7 @@ import { buildThumbTexture, addThumbHints } from '../thumbHints.js';
 import { Flow } from '../Flow.js';
 import { GameScene } from './GameScene.js';
 import { Leaderboard } from '../leaderboard.js';
+import { shareGame } from '../shareClip.js';
 
 export class MenuScene extends Phaser.Scene {
   constructor() { super('MenuScene'); }
@@ -70,7 +71,8 @@ export class MenuScene extends Phaser.Scene {
     const copyrightY = H - si.bottom - Math.round(6 * s);
     const soundCY = copyrightY - Math.round(26 * s) - pillH / 2 - Math.round(2 * s); // both pills sit ~8px lower than before (dynamic)
     const musicCY = soundCY - (pillH + Math.round(6 * s));
-    const pillsTop = musicCY - pillH / 2;
+    const shareCY = musicCY - (pillH + Math.round(6 * s)); // SHARE GAME button atop the pill stack
+    const pillsTop = shareCY - pillH / 2;
     // Make both pills the SAME width: measure each "<label>Off" (widest toggle state) at the pill
     // font, take the max, add the same padding _audioToggle uses, and pass it to both.
     const measurePill = (label) => {
@@ -80,6 +82,17 @@ export class MenuScene extends Phaser.Scene {
     const pillW = Math.max(measurePill('Music: '), measurePill('Sound FX: ')) + Math.round(24 * pillUi);
     this._audioToggle(cx, musicCY, 'Music: ',    () => AudioSystem.isMusicEnabled(), (v) => AudioSystem.setMusicEnabled(v), pillUi, pillW);
     this._audioToggle(cx, soundCY, 'Sound FX: ', () => AudioSystem.isSfxEnabled(),   (v) => AudioSystem.setSfxEnabled(v), pillUi, pillW);
+    // SHARE GAME — system share sheet with a message + link (gametext shareUrl, e.g. the Play
+    // Store); desktop falls back to copying the message, confirmed by a small toast.
+    let shareBusy = false;
+    makeButton(this, cx, shareCY, pillW, pillH, GT.btnShareGame, 0x18617a, 0x124b5f, async () => {
+      if (shareBusy) return;
+      shareBusy = true;
+      try {
+        const r = await shareGame();
+        if (r === 'copied' && this.scene.isActive()) this._toast(GT.toastLinkCopied);
+      } finally { shareBusy = false; }
+    }, `${Math.round(13 * pillUi)}px`);
 
     // Leaderboard button sits just above the audio pills (only when a Worker URL is configured).
     // It joins the bottom "cluster", so `clusterTop` (used for the center-column band below) moves
@@ -222,6 +235,24 @@ export class MenuScene extends Phaser.Scene {
 
     // Classy entrance: a quick fade from the dark background.
     this.cameras.main.fadeIn(350, 9, 9, 18);
+  }
+
+  // Brief self-destroying confirmation toast (used by SHARE GAME's clipboard fallback).
+  _toast(msg) {
+    const { width: W, height: H } = this.scale;
+    const P = Math.min(1, H / 360);
+    const toast = fitText(this.add.text(W / 2, Math.round(H * 0.70), msg, {
+      fontSize: `${Math.round(20 * P)}px`, fontFamily: 'Arial', color: '#ffffff',
+      backgroundColor: '#263238',
+      padding: { x: Math.round(12 * P), y: Math.round(8 * P) },
+    }).setOrigin(0.5).setDepth(20).setAlpha(0), W * 0.92);
+    this.tweens.add({
+      targets: toast,
+      alpha: { from: 0, to: 1 },
+      yoyo: true, hold: 1400,
+      duration: 250,
+      onComplete: () => toast.destroy(),
+    });
   }
 
   // Tappable On/Off pill button (rounded-rect background + centered label), anchored by its

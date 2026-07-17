@@ -35,6 +35,12 @@ export const GT = {
   btnWatchReplay:   'WATCH REPLAY',
   btnShareReplay:   'SHARE REPLAY',
   replayRankPrefix: 'TOP 10 · #', // burned into the clip's final frames, followed by the rank
+  replayBrandTag:   '', // small second watermark line (e.g. "Get it on Google Play"); '' = off
+
+  // ── Share game (title-screen button; see shareGame in shareClip.js) ───────
+  btnShareGame:     'SHARE GAME',
+  toastLinkCopied:  'Link copied!',
+  shareUrl:         '', // link the share/copy sends; '' = the page's own URL
 
   // ── Settings ──────────────────────────────────────────────────────────────
   // Toggle for the "Customize Sprites" button (main menu) AND its upload page (SettingsScene).

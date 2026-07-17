@@ -213,6 +213,7 @@ export const ClipRecorder = {
       }
 
       const title = String(GT.gameTitle || '').replace(/\s*\n\s*/g, ' ').trim();
+      const brand = String(GT.replayBrandTag || '').trim(); // e.g. "Get it on Google Play"
       const s = {
         game: scene.game, getHud, comp, cctx, stream, watchStream, audioMime,
         mime: picked.mime, ext: picked.ext,
@@ -229,6 +230,7 @@ export const ClipRecorder = {
           const px = Math.max(12, Math.round(ch * 0.042));
           const m = Math.round(ch * 0.025);
           if (title) drawTag(cctx, title, m, ch - m, px, 'left');
+          if (brand) drawTag(cctx, brand, m, ch - m - Math.round(px * 1.25), Math.round(px * 0.72), 'left', '#b3e5fc');
           const hud = getHud();
           if (hud) {
             const t = `${hud.walls} ${GT.scoreUnit} · ${hud.time.toFixed(1)}s`;

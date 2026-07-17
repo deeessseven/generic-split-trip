@@ -34,12 +34,14 @@ export class GameOverScene extends Phaser.Scene {
     const replayUi = ClipRecorder.mightHaveClip();
 
     // Row centers (design px, scaled by k below) + nominal panel height per layout. The
-    // non-replay numbers are the original layout, unchanged.
+    // non-replay numbers are the original layout, unchanged. The replay+leaderboard set keeps
+    // the same row-to-row gaps but is shifted so the content sits CENTERED in its taller panel
+    // (rows only appended at the bottom left a dead band above the title).
     let rows;
-    if (replayUi && lbOn) rows = { replay: 96, lb: 142, nav: 192, panelH: 444 };
-    else if (replayUi)    rows = { replay: 78,          nav: 128, panelH: 330 };
-    else if (lbOn)        rows = {             lb: 96,  nav: 150, panelH: 360 };
-    else                  rows = {                      nav: 115, panelH: 300 };
+    if (replayUi && lbOn) rows = { title: -149, walls: -86, time: -42, best: 0,  replay: 62, lb: 108, nav: 158, panelH: 380 };
+    else if (replayUi)    rows = { title: -115, walls: -52, time: -8,  best: 34, replay: 78,          nav: 128, panelH: 330 };
+    else if (lbOn)        rows = { title: -115, walls: -52, time: -8,  best: 34,             lb: 96,  nav: 150, panelH: 360 };
+    else                  rows = { title: -115, walls: -52, time: -8,  best: 34,                      nav: 115, panelH: 300 };
 
     // Uniform scale-down on short screens so the fixed-size panel never overflows the viewport.
     // Basis 360 keeps the original layouts byte-for-byte; only the taller replay+leaderboard
@@ -61,7 +63,7 @@ export class GameOverScene extends Phaser.Scene {
     const panelW = Math.round(360 * k) * 0.9;
 
     // Title
-    fitText(this.add.text(cx, cy - 115 * k, GT.gameOverTitle, {
+    fitText(this.add.text(cx, cy + rows.title * k, GT.gameOverTitle, {
       fontSize: fp(44),
       fontFamily: '"Arial Black", Arial',
       color: '#ef5350',
@@ -71,16 +73,16 @@ export class GameOverScene extends Phaser.Scene {
     }).setOrigin(0.5), panelW);
 
     // This run: wall count (primary), then seconds survived below it.
-    fitText(this.add.text(cx, cy - 52 * k, `${score} ${GT.scoreUnit}`, {
+    fitText(this.add.text(cx, cy + rows.walls * k, `${score} ${GT.scoreUnit}`, {
       fontSize: fp(38), fontFamily: '"Arial Black", Arial', color: '#ffffff',
     }).setOrigin(0.5), panelW);
-    fitText(this.add.text(cx, cy - 8 * k, `${time.toFixed(2)}${GT.scoreSurvived}`, {
+    fitText(this.add.text(cx, cy + rows.time * k, `${time.toFixed(2)}${GT.scoreSurvived}`, {
       fontSize: fp(22), fontFamily: 'Arial', color: '#b0bec5',
     }).setOrigin(0.5), panelW);
 
     // Best run (most walls; ties broken by more time) — shows both walls and seconds survived.
     const best = this._updateBest(score, time);
-    fitText(this.add.text(cx, cy + 34 * k, `${GT.scoreBest}: ${best.walls} ${GT.scoreUnit}, ${best.time.toFixed(2)}${GT.scoreSurvived}`, {
+    fitText(this.add.text(cx, cy + rows.best * k, `${GT.scoreBest}: ${best.walls} ${GT.scoreUnit}, ${best.time.toFixed(2)}${GT.scoreSurvived}`, {
       fontSize: fp(16), fontFamily: 'Arial', color: '#ffd54f',
     }).setOrigin(0.5), panelW);
 

@@ -74,6 +74,7 @@ function drawTag(ctx, text, x, y, px, align, color = '#ffffff') {
   ctx.font = `bold ${px}px "Arial Black", Arial, sans-serif`;
   ctx.textAlign = align;
   ctx.textBaseline = 'alphabetic';
+  ctx.lineJoin = 'round'; // miter joins spike outward on sharp glyph corners
   ctx.lineWidth = Math.max(2, Math.round(px / 6));
   ctx.strokeStyle = 'rgba(0,0,0,0.75)';
   ctx.strokeText(text, x, y);
@@ -132,14 +133,25 @@ function teardown(force = false) {
   if (s.rotTimer) { clearInterval(s.rotTimer); s.rotTimer = null; }
   if (s.onVis) { document.removeEventListener('visibilitychange', s.onVis); s.onVis = null; }
   if (!s.done || force) {
-    // No capture in flight (or forced): stop recorders, stop drawing, release audio.
+    // No capture in flight (or forced): stop recorders, stop drawing, release everything.
+    // torn=true makes a still-pending capture's finish() a no-op — otherwise its late cleanup
+    // would call endCapture()/clear state out from under a NEWER session (e.g. a resize-restart
+    // during the death freeze starting the next run before the old capture finalized).
+    s.torn = true;
     for (const r of s.recs) stopQuietly(r);
     s.recs = [];
     detachDraw(s);
+    releaseStream(s);
     AudioSystem.endCapture();
     session = null;
   }
-  // else: a crash capture is pending — finishCapture() completes the teardown.
+  // else: a crash capture is pending — its finish() completes the teardown.
+}
+
+// Stop the composite canvas's capture track so it stops holding the canvas alive after the
+// session ends. The AUDIO tracks belong to AudioSystem's persistent taps — never stop those.
+function releaseStream(s) {
+  try { if (s.stream) s.stream.getVideoTracks().forEach((t) => t.stop()); } catch { /* */ }
 }
 
 function detachDraw(s) {
@@ -205,7 +217,7 @@ export const ClipRecorder = {
         game: scene.game, getHud, comp, cctx, stream, watchStream, audioMime,
         mime: picked.mime, ext: picked.ext,
         recs: [], rotTimer: null, rotNext: 1, drawFn: null, onVis: null,
-        rank: null, done: false, capture: null,
+        rank: null, done: false, capture: null, torn: false,
       };
       session = s;
 
@@ -276,10 +288,12 @@ export const ClipRecorder = {
 
     s.capture = new Promise((resolve) => {
       const finish = (clip) => {
+        if (s.torn) { resolve(null); return; } // superseded — teardown(true) already cleaned up
         latestClip = clip;
         detachDraw(s);
         for (const r of s.recs) stopQuietly(r); // no-op for the one that just stopped
         s.recs = [];
+        releaseStream(s);
         if (s.onVis) { document.removeEventListener('visibilitychange', s.onVis); s.onVis = null; }
         AudioSystem.endCapture();
         if (session === s) session = null;

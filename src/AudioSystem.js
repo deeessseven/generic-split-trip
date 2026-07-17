@@ -141,6 +141,8 @@ export const AudioSystem = {
   _sfxMute: null,    // speaker-path mute for SFX (gain 1/0 per the Sound toggle)
   _recordMix: null,  // record tap: full PRE-mute mix (music + SFX) for the clip recorder
   _recordDest: null, // MediaStreamDestination the recorder consumes
+  _watchMix: null,   // watch tap: POST-mute speaker mix (what the player hears) for Watch Replay
+  _watchDest: null,  // MediaStreamDestination for the watch track
   _captureActive: false, // a clip capture session is running (see beginCapture/endCapture)
   _noise: null,
   _gameOverVoices: null,
@@ -251,6 +253,25 @@ export const AudioSystem = {
         this._recordMix.connect(this._recordDest);
       }
       return this._recordDest.stream;
+    } catch { return null; }
+  },
+
+  // Speaker-mix MediaStream for the Watch Replay track: music + SFX tapped AFTER their mute
+  // gains, so it contains exactly what the player hears under their current toggles. Only
+  // recorded when the toggles are mixed (see clipRecorder.start).
+  getWatchStream() {
+    this.init();
+    if (!this.ctx) return null;
+    try {
+      if (!this._watchDest) {
+        this._watchMix = this.ctx.createGain();
+        this._watchMix.gain.value = 0.5; // mirror _master so watch loudness matches the game
+        this._watchDest = this.ctx.createMediaStreamDestination();
+        this._musicMute.connect(this._watchMix);
+        this._sfxMute.connect(this._watchMix);
+        this._watchMix.connect(this._watchDest);
+      }
+      return this._watchDest.stream;
     } catch { return null; }
   },
 

@@ -94,6 +94,10 @@ export class GameOverScene extends Phaser.Scene {
     this._replayOn = false;
     this._watching = false;
     this._shareBusy = false;
+    this._watchAudioEl = null;
+    this._watchAudioUrl = null;
+    this._watchSync = null;
+    this._watchSyncEl = null;
     this._k = k;
     const willPrompt = lbOn && !fromLb && score > 0 && Leaderboard.qualifies(score, time);
     this._replayAllowed = !willPrompt;
@@ -112,7 +116,10 @@ export class GameOverScene extends Phaser.Scene {
         this._maybeEnableReplay();
       });
       this.events.once('shutdown', () => {
+        this._stopWatchAudio();
         if (this._replayUrl) { URL.revokeObjectURL(this._replayUrl); this._replayUrl = null; }
+        if (this._watchAudioUrl) { URL.revokeObjectURL(this._watchAudioUrl); this._watchAudioUrl = null; }
+        this._watchAudioEl = null;
       });
     }
 
@@ -202,7 +209,9 @@ export class GameOverScene extends Phaser.Scene {
     const cover = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 1).setDepth(24)
       .setInteractive(); // swallows taps so the panel buttons underneath can't be hit
     this._vid.setDepth(25);
+    try { this._vid.setCurrentTime(0); } catch { /* start the watch from the clip's beginning */ }
     this._setVidMute(this._vidShouldBeMuted());
+    if (this._clip && this._clip.watchAudio) this._startWatchAudio();
     const by = H - Math.round(34 * k);
     const share = this._button(W / 2 - 95 * k, by, Math.round(170 * k), Math.round(44 * k),
       GT.btnShareReplay, 0x2e7d32, 0x1b5e20, () => this._share(), `${Math.round(15 * k)}px`, 30);
@@ -210,17 +219,55 @@ export class GameOverScene extends Phaser.Scene {
       GT.btnBack, 0x37474f, 0x263238, () => {
         share.destroy(); back.destroy(); cover.destroy();
         this._watching = false;
+        this._stopWatchAudio();
         this._setVidMute(true);
         this._vid.setDepth(-5);
       }, `${Math.round(15 * k)}px`, 30);
   }
 
-  // The loop behind the panel is ALWAYS silent (the game-over tune owns that moment); the
-  // full-screen Watch Replay view has sound per the player's audio settings — silent only when
-  // Music AND Sound FX are both off (the clip is one mixed track, so it's all-or-nothing).
+  // The loop behind the panel is ALWAYS silent (the game-over tune owns that moment). Watch
+  // Replay matches the player's audio settings: both toggles on → the clip's own full-mix track;
+  // both off → muted; MIXED (one on, one off) → the video stays muted and the side-recorded
+  // WATCH track (the speaker mix — exactly what the player heard) plays in sync instead.
+  // Sharing always sends the video with its full-mix track.
   _vidShouldBeMuted() {
     if (!this._watching) return true;
+    if (this._clip && this._clip.watchAudio) return true; // sound comes from the watch track
     return !(AudioSystem.isMusicEnabled() || AudioSystem.isSfxEnabled());
+  }
+
+  // Play the clip's watch-audio blob alongside the (muted) video, glued to it by a 4Hz drift
+  // check on the video element's timeupdate — this also self-heals the loop wrap-around.
+  _startWatchAudio() {
+    try {
+      if (!this._watchAudioEl) {
+        this._watchAudioUrl = URL.createObjectURL(this._clip.watchAudio);
+        this._watchAudioEl = new Audio(this._watchAudioUrl);
+        this._watchAudioEl.loop = true;
+      }
+      const a = this._watchAudioEl;
+      a.currentTime = 0;
+      a.play().catch(() => {});
+      const el = this._vid && this._vid.video;
+      if (el && !this._watchSync) {
+        this._watchSync = () => {
+          try {
+            if (Math.abs(a.currentTime - el.currentTime) > 0.25) a.currentTime = el.currentTime;
+          } catch { /* */ }
+        };
+        el.addEventListener('timeupdate', this._watchSync);
+        this._watchSyncEl = el;
+      }
+    } catch { /* watch audio is best-effort — a silent watch beats a crash */ }
+  }
+
+  _stopWatchAudio() {
+    if (this._watchAudioEl) { try { this._watchAudioEl.pause(); } catch { /* */ } }
+    if (this._watchSync && this._watchSyncEl) {
+      try { this._watchSyncEl.removeEventListener('timeupdate', this._watchSync); } catch { /* */ }
+      this._watchSync = null;
+      this._watchSyncEl = null;
+    }
   }
 
   // Set mute through Phaser AND directly on the underlying <video> element. Phaser's setMute

@@ -25,7 +25,6 @@
 import { AudioSystem } from './AudioSystem.js';
 import { GT } from './data/GameText.js';
 
-const ENABLED_KEY = 'doubleflap_replay';   // 'off' disables; anything else = on (default on)
 const ROT_MS      = 3000;                  // recorder rotation — oldest is always 3-6s deep
 const TAIL_MS     = 1200;                  // post-crash recording (< GameScene's 1.5s delay)
 const MAX_W       = 1280;                  // composite width cap (≈720p for a 2:1 canvas)
@@ -40,6 +39,14 @@ const MIME_CANDIDATES = [
   ['video/webm', 'webm'],
 ];
 
+// Audio-only candidates for the WATCH track (the speaker mix — see start()).
+const AUDIO_MIME_CANDIDATES = [
+  'audio/webm;codecs=opus',
+  'audio/mp4;codecs=mp4a.40.2',
+  'audio/mp4',
+  'audio/webm',
+];
+
 let session    = null;  // active recording session (one per run)
 let latestClip = null;  // { blob, mime, ext } of the last finished capture
 let runtimeOk  = true;  // flipped false on any recorder error — feature hides for the session
@@ -48,6 +55,15 @@ function pickMime() {
   try {
     for (const [mime, ext] of MIME_CANDIDATES) {
       if (MediaRecorder.isTypeSupported(mime)) return { mime, ext };
+    }
+  } catch { /* fall through */ }
+  return null;
+}
+
+function pickAudioMime() {
+  try {
+    for (const mime of AUDIO_MIME_CANDIDATES) {
+      if (MediaRecorder.isTypeSupported(mime)) return mime;
     }
   } catch { /* fall through */ }
   return null;
@@ -66,7 +82,7 @@ function drawTag(ctx, text, x, y, px, align, color = '#ffffff') {
 }
 
 function makeRecorder(sess) {
-  const rec = { mr: null, chunks: [], startedAt: performance.now() };
+  const rec = { mr: null, chunks: [], amr: null, achunks: [], startedAt: performance.now() };
   const mr = new MediaRecorder(sess.stream, {
     mimeType: sess.mime,
     videoBitsPerSecond: 5_000_000,
@@ -76,14 +92,29 @@ function makeRecorder(sess) {
   mr.onerror = () => disable();
   mr.start(); // no timeslice — one full blob arrives on stop()
   rec.mr = mr;
+  // Paired WATCH-track recorder (audio-only, opus/aac — negligible CPU). Started/stopped in
+  // lockstep with the video recorder so both blobs cover the same time window.
+  if (sess.watchStream && sess.audioMime) {
+    try {
+      const amr = new MediaRecorder(sess.watchStream, { mimeType: sess.audioMime, audioBitsPerSecond: 96_000 });
+      amr.ondataavailable = (e) => { if (e.data && e.data.size > 0) rec.achunks.push(e.data); };
+      amr.start();
+      rec.amr = amr;
+    } catch { rec.amr = null; } // watch track is best-effort — never sink the video capture
+  }
   return rec;
 }
 
 function stopQuietly(rec) {
-  if (!rec || !rec.mr) return;
-  try { rec.mr.ondataavailable = null; rec.mr.onstop = null; } catch { /* */ }
-  try { if (rec.mr.state !== 'inactive') rec.mr.stop(); } catch { /* */ }
+  if (!rec) return;
+  for (const key of ['mr', 'amr']) {
+    const r = rec[key];
+    if (!r) continue;
+    try { r.ondataavailable = null; r.onstop = null; } catch { /* */ }
+    try { if (r.state !== 'inactive') r.stop(); } catch { /* */ }
+  }
   rec.chunks = [];
+  rec.achunks = [];
 }
 
 // Hard-disable for the rest of the session (recorder error): tear down and hide the feature.
@@ -127,21 +158,13 @@ export const ClipRecorder = {
     } catch { return false; }
   },
 
-  enabled() {
-    try { return localStorage.getItem(ENABLED_KEY) !== 'off'; } catch { return true; }
-  },
-
-  setEnabled(on) {
-    try { localStorage.setItem(ENABLED_KEY, on ? 'on' : 'off'); } catch { /* ignore */ }
-    if (!on) { teardown(true); latestClip = null; }
-  },
-
   // Begin the rolling capture for a new run. Call from GameScene.create(); cleans itself up on
   // the scene's shutdown. getHud() must return { walls, time } for the live watermark.
+  // Always on when supported (David dropped the menu toggle 2026-07-16).
   start(scene, getHud) {
     teardown(true);        // a resize-restart mid-run must not leak the old session
     latestClip = null;     // a new run invalidates the previous run's clip
-    if (!this.isSupported() || !this.enabled()) return;
+    if (!this.isSupported()) return;
 
     try {
       const gameCanvas = scene.game.canvas;
@@ -165,9 +188,21 @@ export const ClipRecorder = {
       const stream = comp.captureStream(30);
       if (audio) for (const t of audio.getAudioTracks()) stream.addTrack(t);
 
+      // WATCH track: when the audio settings are MIXED (exactly one of music/SFX on), the shared
+      // clip's full-mix track can't serve Watch Replay — record a second, audio-only track of the
+      // SPEAKER mix (what the player actually hears). Both-on / both-off need no extra track:
+      // Watch plays the full mix / stays muted. Toggles live on the title screen only, so the
+      // setting can't change between recording and watching.
+      let watchStream = null, audioMime = null;
+      if (audio && AudioSystem.isMusicEnabled() !== AudioSystem.isSfxEnabled()) {
+        watchStream = AudioSystem.getWatchStream();
+        audioMime = pickAudioMime();
+        if (!audioMime) watchStream = null;
+      }
+
       const title = String(GT.gameTitle || '').replace(/\s*\n\s*/g, ' ').trim();
       const s = {
-        game: scene.game, getHud, comp, cctx, stream,
+        game: scene.game, getHud, comp, cctx, stream, watchStream, audioMime,
         mime: picked.mime, ext: picked.ext,
         recs: [], rotTimer: null, rotNext: 1, drawFn: null, onVis: null,
         rank: null, done: false, capture: null,
@@ -253,13 +288,22 @@ export const ClipRecorder = {
       if (!rec) { finish(null); return; }
       setTimeout(() => {
         try {
-          rec.mr.onstop = () => {
+          // Stop video + (best-effort) watch-audio recorders and wait for BOTH final blobs.
+          const stopOne = (r) => new Promise((res) => {
+            if (!r || r.state === 'inactive') { res(); return; }
+            try { r.onstop = () => res(); r.stop(); } catch { res(); }
+          });
+          Promise.all([stopOne(rec.mr), stopOne(rec.amr)]).then(() => {
             try {
               const blob = new Blob(rec.chunks, { type: s.mime });
-              finish(blob.size > 0 ? { blob, mime: s.mime, ext: s.ext } : null);
+              let watchAudio = null;
+              if (rec.amr && rec.achunks.length) {
+                const ab = new Blob(rec.achunks, { type: s.audioMime });
+                if (ab.size > 0) watchAudio = ab;
+              }
+              finish(blob.size > 0 ? { blob, mime: s.mime, ext: s.ext, watchAudio } : null);
             } catch { finish(null); }
-          };
-          rec.mr.stop();
+          });
         } catch { finish(null); }
       }, TAIL_MS);
     });

@@ -31,6 +31,11 @@ export const GT = {
   btnPlayAgain:     'PLAY AGAIN',
   btnMainMenu:      'MAIN MENU',
 
+  // ── Replay clips (see clipRecorder.js) ────────────────────────────────────
+  btnWatchReplay:   'WATCH REPLAY',
+  btnShareReplay:   'SHARE REPLAY',
+  replayRankPrefix: 'TOP 10 · #', // burned into the clip's final frames, followed by the rank
+
   // ── Settings ──────────────────────────────────────────────────────────────
   // Toggle for the "Customize Sprites" button (main menu) AND its upload page (SettingsScene).
   // 'true' shows the button and lets players open the page to upload custom image sprites;

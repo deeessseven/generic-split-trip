@@ -16,6 +16,8 @@ import { safeInsets } from '../safeArea.js';
 import { relayoutOnResize } from '../responsive.js';
 import { addThumbHints } from '../thumbHints.js';
 import { Flow } from '../Flow.js';
+import { ClipRecorder } from '../clipRecorder.js';
+import { Leaderboard } from '../leaderboard.js';
 
 // ── Debug flag ────────────────────────────────────────────────────────────────
 // Per-variant debug collision outline, toggled via gametext (debugOutline = true/false).
@@ -321,6 +323,10 @@ export class GameScene extends Phaser.Scene {
     this.input.on('pointermove',      this._onMove, this);
     this.input.on('pointerup',        this._onUp,   this);
     this.input.on('pointerupoutside', this._onUp,   this);
+
+    // Rolling replay recorder — last after all visuals exist. Self-cleans on scene shutdown;
+    // every failure path inside is caught, so it can never affect gameplay.
+    ClipRecorder.start(this, () => ({ walls: this.wallsPassed, time: this.elapsedTime }));
   }
 
   // Create a hero Sprite at (x, y). For the bundled hero (dispKey === baseKey) with 2+ frames,
@@ -592,6 +598,10 @@ export class GameScene extends Phaser.Scene {
     this.charTopSprite.stop();
     this.charSideSprite.stop();
     AudioSystem.playCrash();
+
+    // Finalize the replay clip: keep recording ~1.2s (inside the 1.5s delay below) so the
+    // impact/particles/shake land in frame, stamped with the provisional Top-10 rank if any.
+    ClipRecorder.captureCrash(Leaderboard.provisionalRank(this.wallsPassed, this.elapsedTime));
 
     if (hitX !== undefined) {
       // Collision mark (a.k.a. hit mark) — uploadable sprite (default: red X). Drawn at 32px

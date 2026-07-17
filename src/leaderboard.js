@@ -77,6 +77,17 @@ export const Leaderboard = {
     return walls > last.walls || (walls === last.walls && time > last.time);
   },
 
+  // Provisional rank (1-10) this run would take on the CACHED board, or null if it wouldn't
+  // place. Computed at crash time for the replay clip's "TOP 10 · #N!" stamp — the true rank
+  // is only known after submit, so this can be off if the board moved since the last fetch.
+  provisionalRank(walls, time) {
+    if (!this.qualifies(walls, time)) return null;
+    const entry = { walls, time, ts: Date.now() };
+    // rankCmp sorts better-first; entries beating `entry` sit above it.
+    const above = this.cachedTop().filter((e) => rankCmp(e, entry) < 0).length;
+    return above + 1;
+  },
+
   // Fetch the live Top-10. Caches on success and opportunistically flushes any pending score.
   // Falls back to the cached board on any failure (offline, error) so callers always get an array.
   async fetchTop() {

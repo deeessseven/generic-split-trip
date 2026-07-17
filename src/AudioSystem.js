@@ -136,6 +136,12 @@ export const AudioSystem = {
   _master: null,
   _musicGain: null,
   _musicLP: null,
+  _sfxBus: null,     // all SFX sum here (was: directly into _master)
+  _musicMute: null,  // speaker-path mute for music (gain 1/0 per the Music toggle)
+  _sfxMute: null,    // speaker-path mute for SFX (gain 1/0 per the Sound toggle)
+  _recordMix: null,  // record tap: full PRE-mute mix (music + SFX) for the clip recorder
+  _recordDest: null, // MediaStreamDestination the recorder consumes
+  _captureActive: false, // a clip capture session is running (see beginCapture/endCapture)
   _noise: null,
   _gameOverVoices: null,
   _musicVoices: null, // voices of the current loop, so a stop/toggle can hard-cut them
@@ -155,7 +161,7 @@ export const AudioSystem = {
         this._master = this.ctx.createGain();
         this._master.gain.value = 0.5;
         this._master.connect(this.ctx.destination);
-        // Music bus: gain -> gentle lowpass (warmth, tames harsh harmonics) -> master.
+        // Music bus: gain -> gentle lowpass (warmth, tames harsh harmonics) -> mute -> master.
         this._musicGain = this.ctx.createGain();
         this._musicGain.gain.value = 0.4;
         this._musicLP = this.ctx.createBiquadFilter();
@@ -163,7 +169,19 @@ export const AudioSystem = {
         this._musicLP.frequency.value = 4200;
         this._musicLP.Q.value = 0.6;
         this._musicGain.connect(this._musicLP);
-        this._musicLP.connect(this._master);
+        // Per-category SPEAKER mutes. Off no longer only means "don't synthesize" — during a clip
+        // capture the sounds still play (so the recording has full audio) with the speaker path
+        // muted here. Outside a capture the old don't-synthesize gates below still short-circuit,
+        // so these sit at unity (or on a silent bus) and nothing audible changes.
+        this._musicMute = this.ctx.createGain();
+        this._musicMute.gain.value = this.musicEnabled ? 1 : 0;
+        this._sfxBus = this.ctx.createGain();
+        this._sfxMute = this.ctx.createGain();
+        this._sfxMute.gain.value = this.sfxEnabled ? 1 : 0;
+        this._musicLP.connect(this._musicMute);
+        this._musicMute.connect(this._master);
+        this._sfxBus.connect(this._sfxMute);
+        this._sfxMute.connect(this._master);
         // Defense: if the browser/OS auto-resumes the context while the page is hidden
         // (common on screen lock / backgrounding), force it back to suspended + muted so
         // audio can't leak out.
@@ -197,7 +215,43 @@ export const AudioSystem = {
         this._kicked = true;
       } catch { /* ignore */ }
     }
-    if (this.musicEnabled && !this._musicOn) this.startMusic();
+    if ((this.musicEnabled || this._captureActive) && !this._musicOn) this.startMusic();
+  },
+
+  // ── Clip-capture session (see clipRecorder.js) ───────────────────────────────
+  // While active, music + SFX are synthesized even when their toggles are OFF — the toggles
+  // only silence the SPEAKER path (_musicMute/_sfxMute); the record tap gets the full mix.
+  beginCapture() {
+    this.init();
+    if (!this.ctx) return;
+    this._captureActive = true;
+    // Music off → start the (speaker-muted) current track so the recording has music.
+    // Music on → this is a no-op (already playing this track).
+    this.startMusic(this._trackName || 'game');
+  },
+
+  endCapture() {
+    if (!this._captureActive) return;
+    this._captureActive = false;
+    if (!this.musicEnabled) this.stopMusic(); // was only playing to feed the recording
+  },
+
+  // Full-mix MediaStream for the recorder: music (post-lowpass) + SFX, tapped BEFORE the
+  // speaker mutes, at the same overall level as the speaker path (_master's 0.5).
+  getRecordStream() {
+    this.init();
+    if (!this.ctx) return null;
+    try {
+      if (!this._recordDest) {
+        this._recordMix = this.ctx.createGain();
+        this._recordMix.gain.value = 0.5; // mirror _master so the clip's loudness matches the game
+        this._recordDest = this.ctx.createMediaStreamDestination();
+        this._musicLP.connect(this._recordMix);
+        this._sfxBus.connect(this._recordMix);
+        this._recordMix.connect(this._recordDest);
+      }
+      return this._recordDest.stream;
+    } catch { return null; }
   },
 
   isMusicEnabled() { this.init(); return this.musicEnabled; },
@@ -218,7 +272,7 @@ export const AudioSystem = {
     if (typeof document !== 'undefined' && document.hidden) return; // still hidden — stay paused
     if (this._master) this._master.gain.value = 0.5;
     if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
-    if (!this.musicEnabled) return;
+    if (!this.musicEnabled && !this._captureActive) return;
     // On the game-over screen the looping theme is suppressed and the short sad tune was
     // hard-cut by pauseForBackground — replay it so returning to the foreground there isn't
     // silent. playGameOver() hard-cuts any prior voices first, so a focus + visibilitychange
@@ -231,13 +285,16 @@ export const AudioSystem = {
     this.init();
     this.musicEnabled = on;
     try { localStorage.setItem('doubleflap_music', on ? 'on' : 'off'); } catch { /* ignore */ }
-    if (on) this.startMusic(); else this.stopMusic();
+    if (this._musicMute) this._musicMute.gain.value = on ? 1 : 0;
+    // During a capture the (now speaker-muted) music must KEEP PLAYING for the recording.
+    if (on) this.startMusic(); else if (!this._captureActive) this.stopMusic();
   },
 
   setSfxEnabled(on) {
     this.init();
     this.sfxEnabled = on;
     try { localStorage.setItem('doubleflap_sfx', on ? 'on' : 'off'); } catch { /* ignore */ }
+    if (this._sfxMute) this._sfxMute.gain.value = on ? 1 : 0;
   },
 
   // ── Music loop ──────────────────────────────────────────────────────────────
@@ -252,7 +309,7 @@ export const AudioSystem = {
     else if (this._musicSuppressed) return;
     this.stopGameOver(); // any restart hard-cuts the game-over tune
     const track = which || this._trackName || 'menu';
-    if (!this.ctx || !this.musicEnabled) { this._trackName = track; return; }
+    if (!this.ctx || (!this.musicEnabled && !this._captureActive)) { this._trackName = track; return; }
     if (this._musicOn && this._trackName === track) return; // already playing this track
     this.stopMusic();
     this._trackName = track;
@@ -266,7 +323,7 @@ export const AudioSystem = {
       // second setInterval would orphan the first (leak) and schedule the song twice (doubled
       // notes). _musicOn and _timer are always set/cleared together (here and in stopMusic).
       if (this._musicOn || this._timer) return;
-      if (!this.musicEnabled || this._trackName !== track) return; // switched while resuming
+      if ((!this.musicEnabled && !this._captureActive) || this._trackName !== track) return; // switched while resuming
       this._musicOn = true;
       this._evIdx = 0;
       this._loopStart = this.ctx.currentTime + 0.15;
@@ -356,7 +413,7 @@ export const AudioSystem = {
 
   // ── SFX (routed past the music bus so the music toggle doesn't affect them) ──
   playJump() {
-    if (!this.sfxEnabled || !this.ctx) return;
+    if (!this.ctx || (!this.sfxEnabled && !this._captureActive)) return;
     if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
     const t = this.ctx.currentTime;
     const o = this.ctx.createOscillator();
@@ -368,7 +425,7 @@ export const AudioSystem = {
     g.gain.linearRampToValueAtTime(0.08, t + 0.01); // 50% quieter than before
     g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
     o.connect(g);
-    g.connect(this._master);
+    g.connect(this._sfxBus);
     o.start(t);
     o.stop(t + 0.18);
   },
@@ -377,7 +434,7 @@ export const AudioSystem = {
   // lowpass swept in a LOW range to cut the harsh highs that sound like a rattle), with a
   // soft attack/decay. Triggered by top-view horizontal motion.
   playShuffle() {
-    if (!this.sfxEnabled || !this.ctx) return;
+    if (!this.ctx || (!this.sfxEnabled && !this._captureActive)) return;
     if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
     const t = this.ctx.currentTime;
     const src = this.ctx.createBufferSource();
@@ -399,14 +456,14 @@ export const AudioSystem = {
     src.connect(hp);
     hp.connect(lp);
     lp.connect(g);
-    g.connect(this._master);
+    g.connect(this._sfxBus);
     src.start(t);
     src.stop(t + 0.42);
   },
 
   // Collision/death impact: a low filtered-noise thud layered with a descending tone.
   playCrash() {
-    if (!this.sfxEnabled || !this.ctx) return;
+    if (!this.ctx || (!this.sfxEnabled && !this._captureActive)) return;
     if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
     const t = this.ctx.currentTime;
 
@@ -422,7 +479,7 @@ export const AudioSystem = {
     ng.gain.setValueAtTime(0.0001, t);
     ng.gain.linearRampToValueAtTime(0.3, t + 0.01);
     ng.gain.exponentialRampToValueAtTime(0.0001, t + 0.4);
-    src.connect(lp); lp.connect(ng); ng.connect(this._master);
+    src.connect(lp); lp.connect(ng); ng.connect(this._sfxBus);
     src.start(t); src.stop(t + 0.42);
 
     // Descending tone for a "fail" impact.
@@ -434,7 +491,7 @@ export const AudioSystem = {
     og.gain.setValueAtTime(0.0001, t);
     og.gain.linearRampToValueAtTime(0.16, t + 0.01);
     og.gain.exponentialRampToValueAtTime(0.0001, t + 0.38);
-    o.connect(og); og.connect(this._master);
+    o.connect(og); og.connect(this._sfxBus);
     o.start(t); o.stop(t + 0.4);
   },
 

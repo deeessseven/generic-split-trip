@@ -10,6 +10,7 @@ import { buildThumbTexture, addThumbHints } from '../thumbHints.js';
 import { Flow } from '../Flow.js';
 import { GameScene } from './GameScene.js';
 import { Leaderboard } from '../leaderboard.js';
+import { ClipRecorder } from '../clipRecorder.js';
 
 export class MenuScene extends Phaser.Scene {
   constructor() { super('MenuScene'); }
@@ -70,14 +71,22 @@ export class MenuScene extends Phaser.Scene {
     const copyrightY = H - si.bottom - Math.round(6 * s);
     const soundCY = copyrightY - Math.round(26 * s) - pillH / 2 - Math.round(2 * s); // both pills sit ~8px lower than before (dynamic)
     const musicCY = soundCY - (pillH + Math.round(6 * s));
-    const pillsTop = musicCY - pillH / 2;
-    // Make both pills the SAME width: measure each "<label>Off" (widest toggle state) at the pill
-    // font, take the max, add the same padding _audioToggle uses, and pass it to both.
+    // Replay-recording pill sits above the audio pills — only on devices that can record at all
+    // (MediaRecorder + canvas captureStream); elsewhere the layout is exactly the old two-pill one.
+    const showReplayPill = ClipRecorder.isSupported();
+    const replayCY = musicCY - (pillH + Math.round(6 * s));
+    const pillsTop = (showReplayPill ? replayCY : musicCY) - pillH / 2;
+    // Make all pills the SAME width: measure each "<label>Off" (widest toggle state) at the pill
+    // font, take the max, add the same padding _audioToggle uses, and pass it to all.
     const measurePill = (label) => {
       const t = this.add.text(0, 0, label + 'Off', { fontSize: `${Math.round(13 * pillUi)}px`, fontFamily: '"Arial Black", Arial' });
       const wpx = Math.ceil(t.width); t.destroy(); return wpx;
     };
-    const pillW = Math.max(measurePill('Music: '), measurePill('Sound FX: ')) + Math.round(24 * pillUi);
+    const pillLabels = ['Music: ', 'Sound FX: ', ...(showReplayPill ? ['Replay: '] : [])];
+    const pillW = Math.max(...pillLabels.map(measurePill)) + Math.round(24 * pillUi);
+    if (showReplayPill) {
+      this._audioToggle(cx, replayCY, 'Replay: ', () => ClipRecorder.enabled(), (v) => ClipRecorder.setEnabled(v), pillUi, pillW);
+    }
     this._audioToggle(cx, musicCY, 'Music: ',    () => AudioSystem.isMusicEnabled(), (v) => AudioSystem.setMusicEnabled(v), pillUi, pillW);
     this._audioToggle(cx, soundCY, 'Sound FX: ', () => AudioSystem.isSfxEnabled(),   (v) => AudioSystem.setSfxEnabled(v), pillUi, pillW);
 

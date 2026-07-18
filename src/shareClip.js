@@ -28,6 +28,33 @@ function blobToBase64(blob) {
   });
 }
 
+// The last failure, as "step: message" — surfaced in the game-over toast so a failure on the
+// native app diagnoses itself on screen (no USB debugging available on David's setup).
+let lastError = null;
+export function getLastShareError() { return lastError; }
+
+function noteError(step, e) {
+  lastError = `${step}: ${e?.message || e?.errorMessage || e || 'unknown'}`.slice(0, 120);
+  console.error(`[shareClip] ${step} failed:`, e);
+}
+
+// Write the clip into the app cache in slices — one writeFile per ~0.75 MB. A single
+// multi-MB base64 string through the JS→native bridge is the most fragile link in the native
+// share chain; slices keep each bridge message small and peak memory flat. CHUNK is a multiple
+// of 3 so each slice base64-encodes independently and plain concatenation is valid.
+const CHUNK = 768 * 1024;
+async function writeClipToCache(Filesystem, Directory, blob, name) {
+  let uri = null;
+  for (let off = 0; off < blob.size; off += CHUNK) {
+    const data = await blobToBase64(blob.slice(off, off + CHUNK));
+    const opts = { path: name, data, directory: Directory.Cache };
+    if (off === 0) uri = (await Filesystem.writeFile(opts)).uri;
+    else await Filesystem.appendFile(opts);
+  }
+  if (!uri) throw new Error('empty clip');
+  return uri;
+}
+
 function download(clip, name) {
   const url = URL.createObjectURL(clip.blob);
   const a = document.createElement('a');
@@ -44,26 +71,36 @@ export async function shareClip(clip) {
   const name = fileName(clip.ext);
   const title = String(GT.gameTitle || '').replace(/\s*\n\s*/g, ' ').trim();
 
-  // Native shell → cache file + system share sheet via the Capacitor plugins.
+  // Native shell → cache file + system share sheet via the Capacitor plugins. The web paths
+  // below are dead ends inside the WebView (no navigator.share; the download anchor is a
+  // no-op), so each step fails HARD here — recorded via noteError so the UI can say why.
   if (window.Capacitor?.isNativePlatform?.()) {
+    lastError = null;
+    let Filesystem, Directory, Share;
     try {
-      const [{ Filesystem, Directory }, { Share }] = await Promise.all([
+      [{ Filesystem, Directory }, { Share }] = await Promise.all([
         import('@capacitor/filesystem'),
         import('@capacitor/share'),
       ]);
-      const written = await Filesystem.writeFile({
-        path: name,
-        data: await blobToBase64(clip.blob),
-        directory: Directory.Cache,
-      });
-      await Share.share({ title, files: [written.uri] });
+    } catch (e) { noteError('import', e); return 'failed'; }
+    let uri;
+    try {
+      uri = await writeClipToCache(Filesystem, Directory, clip.blob, name);
+    } catch (e) { noteError('write', e); return 'failed'; }
+    try {
+      await Share.share({ title, files: [uri] });
       return 'shared';
     } catch (e) {
       if (isCancel(e)) return 'cancelled';
-      // Log before falling through — in the WebView the web paths below are dead ends (no
-      // navigator.share, download ignored), so this error IS the user-visible failure.
-      console.error('[shareClip] native share failed:', e);
-      // fall through to the web paths — better a download than nothing
+      // Retry once with the officially-documented single-file shape before giving up.
+      try {
+        await Share.share({ title, url: uri });
+        return 'shared';
+      } catch (e2) {
+        if (isCancel(e2)) return 'cancelled';
+        noteError('share', e2);
+        return 'failed';
+      }
     }
   }
 

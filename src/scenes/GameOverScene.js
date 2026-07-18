@@ -8,7 +8,7 @@ import { GameScene } from './GameScene.js';
 import { Leaderboard } from '../leaderboard.js';
 import { promptName, closeActivePrompt } from '../nameEntry.js';
 import { ClipRecorder } from '../clipRecorder.js';
-import { shareClip, shareGame } from '../shareClip.js';
+import { shareClip, shareGame, getLastShareError } from '../shareClip.js';
 
 export class GameOverScene extends Phaser.Scene {
   constructor() { super('GameOverScene'); }
@@ -303,7 +303,13 @@ export class GameOverScene extends Phaser.Scene {
     if (!this._clip || this._shareBusy) return;
     this._shareBusy = true;
     shareClip(this._clip).then((r) => {
-      if (r === 'failed' && this.scene.isActive()) this._toast(GT.toastShareFailed);
+      if (r === 'failed' && this.scene.isActive()) {
+        // Include the recorded step+error — the toast is the only diagnostic channel on the
+        // native app (no USB debugging available), and failures should be rare enough that
+        // the extra line never bothers a player.
+        const detail = getLastShareError();
+        this._toast(detail ? `${GT.toastShareFailed}\n(${detail})` : GT.toastShareFailed);
+      }
     }).finally(() => { this._shareBusy = false; });
   }
 

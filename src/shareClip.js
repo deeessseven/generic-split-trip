@@ -60,6 +60,9 @@ export async function shareClip(clip) {
       return 'shared';
     } catch (e) {
       if (isCancel(e)) return 'cancelled';
+      // Log before falling through — in the WebView the web paths below are dead ends (no
+      // navigator.share, download ignored), so this error IS the user-visible failure.
+      console.error('[shareClip] native share failed:', e);
       // fall through to the web paths — better a download than nothing
     }
   }
@@ -79,6 +82,9 @@ export async function shareClip(clip) {
     // fall through to download
   }
 
+  // The download anchor is a silent no-op inside the native WebView (no download handler is
+  // wired) — report failure there so callers can toast instead of pretending it worked.
+  if (window.Capacitor?.isNativePlatform?.()) return 'failed';
   try { download(clip, name); return 'downloaded'; } catch { return 'failed'; }
 }
 

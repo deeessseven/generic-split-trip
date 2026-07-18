@@ -269,6 +269,36 @@ function placeFittedAlpha(canvas, side, spritePng, cx, cy, boxSide) {
   }
 }
 
+// Android adaptive icons only GUARANTEE a center circle of the canvas is visible (66dp of the
+// 108dp layer → radius ≈ 30.6% of the side); launchers mask everything outside it. The SAFE_*
+// placement alone still let wing/beak pixels reach ~53% from center, so circular masks cut them
+// (the Play-app icon bug, 2026-07-18). Measure how far the layer's opaque pixels actually reach
+// and shrink the WHOLE layer about its center until everything fits inside the safe circle.
+function opaqueMaxRadius(rgba, side, thresh = 16) {
+  const half = side / 2;
+  let max = 0;
+  for (let y = 0; y < side; y++) for (let x = 0; x < side; x++) {
+    if (rgba[(y * side + x) * 4 + 3] > thresh) {
+      const r = Math.hypot(x + 0.5 - half, y + 0.5 - half);
+      if (r > max) max = r;
+    }
+  }
+  return max;
+}
+
+function shrinkIntoCircle(canvas, side, radius) {
+  const maxR = opaqueMaxRadius(canvas, side);
+  if (maxR <= radius) return canvas;
+  const inner = Math.max(1, Math.round(side * (radius / maxR)));
+  const scaled = resize(canvas, side, side, inner, inner);
+  const out = Buffer.alloc(side * side * 4); // transparent
+  const off = Math.floor((side - inner) / 2);
+  for (let y = 0; y < inner; y++) {
+    scaled.copy(out, ((off + y) * side + off) * 4, y * inner * 4, (y + 1) * inner * 4);
+  }
+  return out;
+}
+
 // White anti-aliased line along x+y=side (bottom-left corner → top-right corner), thickness `w`.
 function drawDiagonal(canvas, side, w) {
   const half = w / 2, inv = 1 / Math.SQRT2;
@@ -348,9 +378,11 @@ export function makeDiagonalIcons(topPng, sidePng, bgTopPng, bgSidePng, outDir, 
 
   // Native Android adaptive layers (consumed by @capacitor/assets from resources/): full-bleed
   // background + transparent foreground holding the safe-zone heroes.
-  const foreground = Buffer.alloc(side * side * 4); // transparent
+  let foreground = Buffer.alloc(side * side * 4); // transparent
   placeFittedAlpha(foreground, side, topPng,  SAFE_A, SAFE_A, SAFE_BOX);
   placeFittedAlpha(foreground, side, sidePng, SAFE_B, SAFE_B, SAFE_BOX);
+  // 0.30 (vs the spec's 0.3056) leaves a ~2% breathing margin inside the guaranteed circle.
+  foreground = shrinkIntoCircle(foreground, side, Math.round(side * 0.30));
   writeFileSync(join(outDir, 'icon-background.png'), encodePNG(side, side, background));
   writeFileSync(join(outDir, 'icon-foreground.png'), encodePNG(side, side, foreground));
 

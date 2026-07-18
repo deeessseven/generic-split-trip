@@ -34,12 +34,13 @@ export const GT = {
   // ── Replay clips (see clipRecorder.js) ────────────────────────────────────
   btnWatchReplay:   'WATCH REPLAY',
   btnShareReplay:   'SHARE REPLAY',
-  replayRankPrefix: 'TOP 10 · #', // burned into the clip's final frames, followed by the rank
+  replayRankPrefix: 'Currently TOP 10 · #', // burned into the clip's final frames, followed by the rank
   replayBrandTag:   '', // small second watermark line (e.g. "Get it on Google Play"); '' = off
 
   // ── Share game (title-screen button; see shareGame in shareClip.js) ───────
   btnShareGame:     'SHARE GAME',
   toastLinkCopied:  'Link copied!',
+  toastShareFailed: 'Sharing failed — please try again',
   shareUrl:         '', // link the share/copy sends; '' = the page's own URL
 
   // ── Settings ──────────────────────────────────────────────────────────────

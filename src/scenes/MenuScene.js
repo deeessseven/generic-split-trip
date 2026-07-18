@@ -95,6 +95,7 @@ export class MenuScene extends Phaser.Scene {
       try {
         const r = await shareGame();
         if (r === 'copied' && this.scene.isActive()) this._toast(GT.toastLinkCopied);
+        else if (r === 'failed' && this.scene.isActive()) this._toast(GT.toastShareFailed);
       } finally { shareBusy = false; }
     }, `${Math.round(15 * s)}px`);
 

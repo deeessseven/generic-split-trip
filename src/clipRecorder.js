@@ -171,7 +171,9 @@ export const ClipRecorder = {
   },
 
   // Begin the rolling capture for a new run. Call from GameScene.create(); cleans itself up on
-  // the scene's shutdown. getHud() must return { walls, time } for the live watermark.
+  // the scene's shutdown. getHud() must return { walls, time } (currently unused by the
+  // watermark — the live walls·time corner readout was removed 2026-07-18 — kept for API
+  // stability and any future stamp that wants live HUD data).
   // Always on when supported (David dropped the menu toggle 2026-07-16).
   start(scene, getHud) {
     teardown(true);        // a resize-restart mid-run must not leak the old session
@@ -227,15 +229,14 @@ export const ClipRecorder = {
       s.drawFn = () => {
         try {
           cctx.drawImage(gameCanvas, 0, 0, cw, ch);
+          // px is the rank stamp's basis (its pre-2026-07-18 size, pinned); the title/brand block
+          // draws larger (tpx) and sits 5% of the width in from the left edge (David's spec).
           const px = Math.max(12, Math.round(ch * 0.042));
+          const tpx = Math.max(17, Math.round(ch * 0.06));
           const m = Math.round(ch * 0.025);
-          if (title) drawTag(cctx, title, m, ch - m, px, 'left');
-          if (brand) drawTag(cctx, brand, m, ch - m - Math.round(px * 1.25), Math.round(px * 0.72), 'left', '#b3e5fc');
-          const hud = getHud();
-          if (hud) {
-            const t = `${hud.walls} ${GT.scoreUnit} · ${hud.time.toFixed(1)}s`;
-            drawTag(cctx, t, cw - m, ch - m, px, 'right');
-          }
+          const tx = m + Math.round(cw * 0.05);
+          if (title) drawTag(cctx, title, tx, ch - m, tpx, 'left');
+          if (brand) drawTag(cctx, brand, tx, ch - m - Math.round(tpx * 1.25), Math.round(tpx * 0.72), 'left', '#b3e5fc');
           if (s.rank) {
             drawTag(cctx, `${GT.replayRankPrefix}${s.rank}!`, cw / 2, Math.round(ch * 0.30),
               Math.round(px * 1.9), 'center', '#ffd54f');

@@ -8,7 +8,7 @@ import { GameScene } from './GameScene.js';
 import { Leaderboard } from '../leaderboard.js';
 import { promptName, closeActivePrompt } from '../nameEntry.js';
 import { ClipRecorder } from '../clipRecorder.js';
-import { shareClip } from '../shareClip.js';
+import { shareClip, shareGame } from '../shareClip.js';
 
 export class GameOverScene extends Phaser.Scene {
   constructor() { super('GameOverScene'); }
@@ -33,15 +33,15 @@ export class GameOverScene extends Phaser.Scene {
     // no run recorded) leaves this screen EXACTLY as it was before the replay feature.
     const replayUi = ClipRecorder.mightHaveClip();
 
-    // Row centers (design px, scaled by k below) + nominal panel height per layout. The
-    // non-replay numbers are the original layout, unchanged. The replay+leaderboard set keeps
-    // the same row-to-row gaps but is shifted so the content sits CENTERED in its taller panel
-    // (rows only appended at the bottom left a dead band above the title).
+    // Row centers (design px, scaled by k below) + nominal panel height per layout. Button grid
+    // (David's 2026-07-18 spec): Watch Replay | Share Replay, Leaderboard | Share Game, Play
+    // Again | Main Menu. The middle row ALWAYS exists (Share Game has no config gate — a lone
+    // Share Game centers itself if the leaderboard is ever disabled); row 1 only when a clip may
+    // arrive, collapsing the panel to a 2-row grid otherwise. Both sets keep the pre-grid row
+    // positions (replay+lb 380-panel and lb 360-panel layouts, verified numerically 2026-07-17).
     let rows;
-    if (replayUi && lbOn) rows = { title: -149, walls: -86, time: -42, best: 0,  replay: 62, lb: 108, nav: 158, panelH: 380 };
-    else if (replayUi)    rows = { title: -115, walls: -52, time: -8,  best: 34, replay: 78,          nav: 128, panelH: 330 };
-    else if (lbOn)        rows = { title: -115, walls: -52, time: -8,  best: 34,             lb: 96,  nav: 150, panelH: 360 };
-    else                  rows = { title: -115, walls: -52, time: -8,  best: 34,                      nav: 115, panelH: 300 };
+    if (replayUi) rows = { title: -149, walls: -86, time: -42, best: 0,  replay: 62, mid: 108, nav: 158, panelH: 380 };
+    else          rows = { title: -115, walls: -52, time: -8,  best: 34,             mid: 96,  nav: 150, panelH: 360 };
 
     // Uniform scale-down on short screens so the fixed-size panel never overflows the viewport.
     // Basis 360 keeps the original layouts byte-for-byte; only the taller replay+leaderboard
@@ -125,14 +125,14 @@ export class GameOverScene extends Phaser.Scene {
       });
     }
 
-    // Leaderboard: a result line + a Leaderboard button, and (if this run made the Top 10) a
-    // name prompt → submit. Only when a Worker URL is configured; otherwise the panel is unchanged.
+    // Middle row: Leaderboard (when a Worker URL is configured) + Share Game.
+    const midY = cy + rows.mid * k;
     if (lbOn) {
       // Tell the leaderboard to send its Back button to THIS game-over screen (with our payload),
       // not the title — and to skip re-prompting for a name on return (fromLeaderboard).
       const lbNav = { backScene: this.scene.key, backData: { score, time, fromLeaderboard: true } };
-      makeButton(this, cx, cy + rows.lb * k, Math.round(220 * k), Math.round(40 * k),
-        GT.leaderboardBtn, 0x18617a, 0x124b5f, () => Flow.go(this, 'leaderboard', lbNav), fp(15));
+      makeButton(this, cx - 90 * k, midY, Math.round(160 * k), Math.round(40 * k),
+        GT.leaderboardBtn, 0x18617a, 0x124b5f, () => Flow.go(this, 'leaderboard', lbNav), fp(14));
       // Auto-prompt whenever this run earns a global Top-10 slot (qualifies). Do NOT gate on a
       // personal best — a non-record run can still place on the global board (e.g. your 2nd-best
       // is global #2). score>0 only avoids a 0-wall prompt while the board still has empty slots.
@@ -141,6 +141,20 @@ export class GameOverScene extends Phaser.Scene {
         this._handleQualify(score, time);
       }
     }
+    // Share Game — same behavior as the title screen's button (shareGame(): share sheet with the
+    // gametext link; desktop copies to the clipboard + toast). Failures get a toast too.
+    this._shareGameBusy = false;
+    makeButton(this, lbOn ? cx + 90 * k : cx, midY, Math.round((lbOn ? 160 : 220) * k), Math.round(40 * k),
+      GT.btnShareGame, 0x18617a, 0x124b5f, async () => {
+        if (this._shareGameBusy) return;
+        this._shareGameBusy = true;
+        try {
+          const r = await shareGame();
+          if (!this.scene.isActive()) return;
+          if (r === 'copied') this._toast(GT.toastLinkCopied);
+          else if (r === 'failed') this._toast(GT.toastShareFailed);
+        } finally { this._shareGameBusy = false; }
+      }, fp(14));
 
     // Buttons
     const navY = rows.nav * k;
@@ -283,10 +297,33 @@ export class GameOverScene extends Phaser.Scene {
   }
 
   // Hand the clip to the platform's share path (system share sheet / web share / download).
+  // A failure gets a toast — on the native app every error path used to end in silence (the
+  // WebView has no navigator.share and ignores the download fallback), which read as a dead button.
   _share() {
     if (!this._clip || this._shareBusy) return;
     this._shareBusy = true;
-    shareClip(this._clip).finally(() => { this._shareBusy = false; });
+    shareClip(this._clip).then((r) => {
+      if (r === 'failed' && this.scene.isActive()) this._toast(GT.toastShareFailed);
+    }).finally(() => { this._shareBusy = false; });
+  }
+
+  // Brief self-destroying toast (ported from MenuScene). Depth 40 clears the watch-replay
+  // overlay (cover 24, its buttons 30) so share feedback shows there too.
+  _toast(msg) {
+    const { width: W, height: H } = this.scale;
+    const P = Math.min(1, H / 360);
+    const toast = fitText(this.add.text(W / 2, Math.round(H * 0.70), msg, {
+      fontSize: `${Math.round(20 * P)}px`, fontFamily: 'Arial', color: '#ffffff',
+      backgroundColor: '#263238',
+      padding: { x: Math.round(12 * P), y: Math.round(8 * P) },
+    }).setOrigin(0.5).setDepth(40).setAlpha(0), W * 0.92);
+    this.tweens.add({
+      targets: toast,
+      alpha: { from: 0, to: 1 },
+      yoyo: true, hold: 1400,
+      duration: 250,
+      onComplete: () => toast.destroy(),
+    });
   }
 
   // makeButton clone that ALSO returns the label + supports depth and show/hide — needed for the

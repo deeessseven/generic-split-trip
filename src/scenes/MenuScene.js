@@ -71,8 +71,12 @@ export class MenuScene extends Phaser.Scene {
     const copyrightY = H - si.bottom - Math.round(6 * s);
     const soundCY = copyrightY - Math.round(26 * s) - pillH / 2 - Math.round(2 * s); // both pills sit ~8px lower than before (dynamic)
     const musicCY = soundCY - (pillH + Math.round(6 * s));
-    const shareCY = musicCY - (pillH + Math.round(6 * s)); // SHARE GAME button atop the pill stack
-    const pillsTop = shareCY - pillH / 2;
+    // SHARE GAME button atop the pill stack — SAME dimensions as the Leaderboard button above it
+    // (David's spec 2026-07-17), so the two stacked buttons read as one family.
+    const shareH = Math.round(34 * s);
+    const shareW = Math.min(Math.round(260 * s), Math.round(W * 0.7));
+    const shareCY = musicCY - pillH / 2 - Math.round(6 * s) - shareH / 2;
+    const pillsTop = shareCY - shareH / 2;
     // Make both pills the SAME width: measure each "<label>Off" (widest toggle state) at the pill
     // font, take the max, add the same padding _audioToggle uses, and pass it to both.
     const measurePill = (label) => {
@@ -85,14 +89,14 @@ export class MenuScene extends Phaser.Scene {
     // SHARE GAME — system share sheet with a message + link (gametext shareUrl, e.g. the Play
     // Store); desktop falls back to copying the message, confirmed by a small toast.
     let shareBusy = false;
-    makeButton(this, cx, shareCY, pillW, pillH, GT.btnShareGame, 0x18617a, 0x124b5f, async () => {
+    makeButton(this, cx, shareCY, shareW, shareH, GT.btnShareGame, 0x18617a, 0x124b5f, async () => {
       if (shareBusy) return;
       shareBusy = true;
       try {
         const r = await shareGame();
         if (r === 'copied' && this.scene.isActive()) this._toast(GT.toastLinkCopied);
       } finally { shareBusy = false; }
-    }, `${Math.round(13 * pillUi)}px`);
+    }, `${Math.round(15 * s)}px`);
 
     // Leaderboard button sits just above the audio pills (only when a Worker URL is configured).
     // It joins the bottom "cluster", so `clusterTop` (used for the center-column band below) moves

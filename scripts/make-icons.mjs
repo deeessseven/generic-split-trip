@@ -289,12 +289,31 @@ function opaqueMaxRadius(rgba, side, thresh = 16) {
 function shrinkIntoCircle(canvas, side, radius) {
   const maxR = opaqueMaxRadius(canvas, side);
   if (maxR <= radius) return canvas;
-  const inner = Math.max(1, Math.round(side * (radius / maxR)));
+  return scaleToRadius(canvas, side, radius, maxR);
+}
+
+// Scale the WHOLE layer about its center so its opaque content's max radius hits `radius`
+// EXACTLY (grows OR shrinks) — used to dial the launcher icon's visible size as a precise % of
+// its current (already safe-zone-clamped) size, e.g. targetRadius = safeRadius * 1.08 for "8%
+// bigger". Caller is responsible for keeping targetRadius inside the guaranteed-safe circle
+// (~30.6% of side) if clipping must be avoided.
+function scaleToRadius(canvas, side, targetRadius, maxR = null) {
+  if (maxR === null) maxR = opaqueMaxRadius(canvas, side);
+  if (maxR <= 0) return canvas;
+  const inner = Math.max(1, Math.round(side * (targetRadius / maxR)));
   const scaled = resize(canvas, side, side, inner, inner);
   const out = Buffer.alloc(side * side * 4); // transparent
-  const off = Math.floor((side - inner) / 2);
-  for (let y = 0; y < inner; y++) {
-    scaled.copy(out, ((off + y) * side + off) * 4, y * inner * 4, (y + 1) * inner * 4);
+  if (inner <= side) {
+    const off = Math.floor((side - inner) / 2);
+    for (let y = 0; y < inner; y++) {
+      scaled.copy(out, ((off + y) * side + off) * 4, y * inner * 4, (y + 1) * inner * 4);
+    }
+  } else { // enlarging past the canvas — center-crop the oversized scaled image back to `side`
+    const off = Math.floor((inner - side) / 2);
+    for (let y = 0; y < side; y++) {
+      const srcRow = (off + y) * inner + off;
+      scaled.copy(out, y * side * 4, srcRow * 4, (srcRow + side) * 4);
+    }
   }
   return out;
 }
@@ -351,7 +370,12 @@ function buildBackground(bgTopPng, bgSidePng, bg, side = 1024) {
 
 // Base-game icon set from the diagonal composite. Writes the SAME filenames as makeIcons() (so the
 // manifest/index references are unchanged) PLUS icon-1024.png (store master).
-export function makeDiagonalIcons(topPng, sidePng, bgTopPng, bgSidePng, outDir, bg = BG) {
+// launcherIconScale: multiplies the adaptive-icon foreground's safe-zone target radius (base
+// 0.30·side, ~2% under the guaranteed-visible 0.3056·side). 1.0 = the 2026-07-18 safe-clamp fix;
+// 1.08 = David's 2026-07-20 "~8% bigger" — verified via a masked-circle render that the overflow
+// past the strict guarantee is a hair (crest-tip only), nowhere near the original crop bug, and
+// most real launchers show more than the bare minimum anyway.
+export function makeDiagonalIcons(topPng, sidePng, bgTopPng, bgSidePng, outDir, bg = BG, launcherIconScale = 1.08) {
   const side = 1024;
   const STD_BOX = Math.round(side * 0.55), STD_A = Math.round(side * 0.31), STD_B = Math.round(side * 0.67);
   // Maskable/adaptive: heroes pulled smaller + toward center so a circular crop never clips them.
@@ -381,8 +405,9 @@ export function makeDiagonalIcons(topPng, sidePng, bgTopPng, bgSidePng, outDir, 
   let foreground = Buffer.alloc(side * side * 4); // transparent
   placeFittedAlpha(foreground, side, topPng,  SAFE_A, SAFE_A, SAFE_BOX);
   placeFittedAlpha(foreground, side, sidePng, SAFE_B, SAFE_B, SAFE_BOX);
-  // 0.30 (vs the spec's 0.3056) leaves a ~2% breathing margin inside the guaranteed circle.
-  foreground = shrinkIntoCircle(foreground, side, Math.round(side * 0.30));
+  // Base target 0.30 (vs the spec's 0.3056) leaves a ~2% breathing margin inside the guaranteed
+  // circle; launcherIconScale dials the actual on-screen size from there (see param doc above).
+  foreground = scaleToRadius(foreground, side, Math.round(side * 0.30 * launcherIconScale));
   writeFileSync(join(outDir, 'icon-background.png'), encodePNG(side, side, background));
   writeFileSync(join(outDir, 'icon-foreground.png'), encodePNG(side, side, foreground));
 

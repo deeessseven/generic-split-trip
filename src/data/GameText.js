@@ -36,6 +36,7 @@ export const GT = {
   btnShareReplay:   'SHARE REPLAY',
   replayRankPrefix: 'Currently TOP 10 · #', // burned into the clip's final frames, followed by the rank
   replayBrandTag:   '', // small second watermark line (e.g. "Get it on Google Play"); '' = off
+  shareClipCaption: '', // caption sent alongside a shared replay (shareUrl appended); '' = bare video, no caption/link
 
   // ── Share game (title-screen button; see shareGame in shareClip.js) ───────
   btnShareGame:     'SHARE GAME',

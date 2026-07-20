@@ -11,8 +11,11 @@ gameSubtitle    = Control two dimensions — survive both views
 # ── Sharing ───────────────────────────────────────────────────────────────────
 # Link sent by the title-screen SHARE GAME button (blank = share the page's own URL),
 # and the small second line burned into replay-clip watermarks (blank = no second line).
-shareUrl        = https://play.google.com/store/apps/details?id=com.dacquery.doubleflap
-replayBrandTag  = Get it on Google Play
+shareUrl          = https://play.google.com/store/apps/details?id=com.dacquery.doubleflap
+replayBrandTag    = Get it on Google Play
+# Caption sent alongside a shared replay clip (shareUrl above is appended after it). Blank = share
+# the bare video with no caption/link.
+shareClipCaption  = Check out my run in Double Flap! Get it on Google Play:
 
 # ── Course ──────────────────────────────────────────────────────────────────────
 # Obstacle RNG seed. It's hashed to a fixed sequence of gap positions, so the course is the SAME

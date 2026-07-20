@@ -71,6 +71,18 @@ export async function shareClip(clip) {
   const name = fileName(clip.ext);
   const title = String(GT.gameTitle || '').replace(/\s*\n\s*/g, ' ').trim();
 
+  // Optional caption + link sent ALONGSIDE the video (David's spec 2026-07-20): off by default
+  // (gametext `shareClipCaption` = '', same convention as replayBrandTag) — base sets it to point
+  // at the Play Store listing; variants (jd/adri) inherit the '' default and share a bare video,
+  // unchanged from before. Merged into one string (not a separate `url` field) so it works
+  // identically whether the receiving app honors captions alongside a file attachment or not —
+  // WhatsApp/SMS/Email/X prefill it; Instagram's composer ignores incoming caption text on a
+  // media share (an Android/app-level limitation, not something this app can override).
+  const caption = String(GT.shareClipCaption || '').trim();
+  const captionText = caption
+    ? `${caption} ${String(GT.shareUrl || '').trim() || (typeof location !== 'undefined' ? location.href : '')}`.trim()
+    : '';
+
   // Native shell → cache file + system share sheet via the Capacitor plugins. The web paths
   // below are dead ends inside the WebView (no navigator.share; the download anchor is a
   // no-op), so each step fails HARD here — recorded via noteError so the UI can say why.
@@ -88,11 +100,13 @@ export async function shareClip(clip) {
       uri = await writeClipToCache(Filesystem, Directory, clip.blob, name);
     } catch (e) { noteError('write', e); return 'failed'; }
     try {
-      await Share.share({ title, files: [uri] });
+      await Share.share({ title, ...(captionText ? { text: captionText } : {}), files: [uri] });
       return 'shared';
     } catch (e) {
       if (isCancel(e)) return 'cancelled';
-      // Retry once with the officially-documented single-file shape before giving up.
+      // Retry once with the officially-documented single-file shape before giving up. `url` here
+      // is the FILE's own uri (the plugin's single-file attachment shape) — it can't also carry
+      // the caption/link, so this fallback path stays bare on retry.
       try {
         await Share.share({ title, url: uri });
         return 'shared';
@@ -111,7 +125,7 @@ export async function shareClip(clip) {
     const plainMime = (clip.mime || '').split(';')[0].trim() || 'video/mp4';
     const file = new File([clip.blob], name, { type: plainMime });
     if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({ files: [file], title });
+      await navigator.share({ files: [file], title, ...(captionText ? { text: captionText } : {}) });
       return 'shared';
     }
   } catch (e) {

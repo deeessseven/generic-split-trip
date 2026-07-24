@@ -3,13 +3,16 @@
 Copy/paste into Play Console. Adapt per store variant if you ship a themed edition.
 
 ## Basics
-- **App name:** Double Flap  *(≤30 chars)*
+- **App name:** Double Flap: Split-Screen Game  *(30/30 chars — ASO keyword variant; this is the
+  Play Store LISTING title only, weighted by Play search/ranking. It's separate from the Android
+  app label under the home-screen icon, which stays plain "Double Flap" — nothing about the
+  installed app changes. Update via Play Console → Store presence → Main store listing → App name.)*
 - **App type:** Game · **Category:** Arcade · **Price:** Free · **Ads:** No · **In-app purchases:** No
 - **Contact email:** deeessseven@gmail.com  *(change if you prefer a different public address)*
 - **Privacy policy:** https://deeessseven.github.io/generic-split-trip/privacy.html
 
 ## Short description  *(≤80 chars)*
-> Control two views at once — dodge the walls in both and survive as long as you can.
+> One bird, two synced views, endless walls — chase the global leaderboard.
 
 ## Full description  *(≤4000 chars)*
 > One screen, two challenges — at the same time! Double Flap splits the screen between a top-down lane
@@ -20,10 +23,11 @@ Copy/paste into Play Console. Adapt per store variant if you ship a themed editi
 > • A unique split-screen test of focus — steer and fly simultaneously.
 > • Simple one-finger-per-side controls, instantly pick-up-and-play.
 > • Speeds up as you go — how many walls can you pass?
-> • Tracks your best run (walls passed and time survived).
+> • Global leaderboard — see how your best run stacks up against players everywhere.
+> • Instant replay clips — watch back your last run and share it with friends.
 > • Customizable hero and background art.
 >
-> 100% offline. No ads. No in-app purchases. No accounts. Plays in seconds, hard to put down.
+> 100% offline gameplay. No ads. No accounts required. Plays in seconds, hard to put down.
 >
 > How far can you get before the two worlds collide?
 
